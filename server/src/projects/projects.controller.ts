@@ -8,7 +8,9 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
+import { ApiBody } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
+
 import { CreateProjectDto } from './dto/create-project.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -18,9 +20,11 @@ export class ProjectsController {
   constructor(private projectsService: ProjectsService) {}
 
   @Post()
+  @ApiBody({ type: CreateProjectDto })
   create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
     return this.projectsService.create(createProjectDto, req.user);
   }
+
 
   @Get()
   findAll(@Query('classroomId') classroomId: string) {

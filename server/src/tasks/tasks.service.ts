@@ -23,8 +23,12 @@ export class TasksService {
     return this.tasksRepository.save(task);
   }
 
+  async findAllForProject(projectId: string): Promise<Task[]> {
+    return this.tasksRepository.find({ where: { projectId } });
+  }
 
   async updateStatus(
+
     id: string,
     updateTaskStatusDto: UpdateTaskStatusDto,
     user: User,

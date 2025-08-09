@@ -10,9 +10,6 @@ import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
 import { ChatModule } from './chat/chat.module';
 
-
-
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -35,8 +32,6 @@ import { ChatModule } from './chat/chat.module';
     TasksModule,
     ChatModule,
   ],
-
-
 
   controllers: [AppController],
   providers: [AppService],

@@ -9,20 +9,27 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { ClassroomsService } from './classrooms.service';
+
+
 import { CreateClassroomDto } from './dto/create-classroom.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Role } from '../users/entities/role.enum';
 
 @Controller('classrooms')
 @UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class ClassroomsController {
+
   constructor(private classroomsService: ClassroomsService) {}
 
   @Post()
+  @ApiBody({ type: CreateClassroomDto })
   create(@Body() createClassroomDto: CreateClassroomDto, @Request() req) {
     if (req.user.role !== Role.Teacher) {
       throw new ForbiddenException('Only teachers can create classrooms.');
+
     }
     return this.classroomsService.create(createClassroomDto, req.user);
   }
