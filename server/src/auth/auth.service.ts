@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { SignUpDto } from './dto/signup.dto';
@@ -14,32 +14,49 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async signUp(signUpDto: SignUpDto): Promise<{ accessToken: string }> {
-    const { name, email, password } = signUpDto;
+  async signUp(signUpDto: SignUpDto): Promise<{ access_token: string }> {
+    const { name, email, password, role: rawRole } = signUpDto;
 
     const existingUser = await this.usersService.findByEmail(email);
     if (existingUser) {
       throw new ConflictException('Email already exists');
     }
 
-    const userCount = await this.usersService.count();
-    const role = userCount === 0 ? Role.SystemUser : Role.Student;
+    // Normalize and validate requested role (only allow Teacher or Student from client)
+    const normalizeRole = (r?: string): Role | undefined => {
+      if (!r) return undefined;
+      const v = r.toString().trim().toLowerCase();
+      if (v === 'teacher') return Role.Teacher;
+      if (v === 'student') return Role.Student;
+      return undefined;
+    };
 
+    const requestedRole = normalizeRole(rawRole);
+
+    if (rawRole && !requestedRole) {
+      throw new BadRequestException('Invalid role. Allowed values: teacher, student');
+    }
+
+    const userCount = await this.usersService.count();
+
+    // First user in the system remains SystemUser
+    const finalRole =
+      userCount === 0 ? Role.SystemUser : requestedRole ?? Role.Student;
 
     const user = await this.usersService.create({
       name,
       email,
       password,
-      role,
+      role: finalRole,
     });
 
     const payload = { sub: user.id, email: user.email };
     return {
-      accessToken: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload),
     };
   }
 
-  async login(loginDto: LoginDto): Promise<{ accessToken: string }> {
+  async login(loginDto: LoginDto): Promise<{ access_token: string }> {
     const { email, password } = loginDto;
     const user = await this.usersService.findByEmail(email);
 
@@ -49,7 +66,7 @@ export class AuthService {
 
     const payload = { sub: user.id, email: user.email };
     return {
-      accessToken: this.jwtService.sign(payload),
+      access_token: this.jwtService.sign(payload),
     };
   }
 }

@@ -15,16 +15,19 @@ import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { useThemeStore } from "./lib/store";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { AuthProvider } from "./hooks/AuthContext";
+
 
 const queryClient = new QueryClient();
 
 function ThemeProvider() {
   const { theme } = useThemeStore();
-  
+
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
-  
+
   return null;
 }
 
@@ -35,29 +38,33 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          {/* Redirect root to dashboard */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          
-          {/* Auth routes */}
-          <Route path="/" element={<AuthLayout />}>
-            <Route path="signup" element={<SignUp />} />
-            <Route path="login" element={<Login />} />
-          </Route>
+        <AuthProvider>
+          <Routes>
 
           {/* App routes */}
-          <Route path="/" element={<AppLayout />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="classrooms" element={<Classrooms />} />
-            <Route path="projects" element={<Projects />} />
-            <Route path="chat" element={<Chat />} />
-            <Route path="settings" element={<Settings />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/" element={<AppLayout />}>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="classrooms" element={<Classrooms />} />
+              <Route path="projects"   element={<Projects />} />
+              <Route path="chat" element={<Chat />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+          </Route>
+          
+          {/* Auth routes */}
+          <Route element={<AuthLayout />}>
+            <Route path="login" element={<Login />} />
+            <Route path="signup" element={<SignUp />} />
           </Route>
 
           {/* 404 route */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
+
     </TooltipProvider>
   </QueryClientProvider>
 );

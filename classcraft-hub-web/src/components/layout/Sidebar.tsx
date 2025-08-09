@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface SidebarProps {
   open: boolean;
@@ -28,6 +29,8 @@ const navigationItems = [
 
 export function Sidebar({ open, onOpenChange }: SidebarProps) {
   const location = useLocation();
+  const { logout, user } = useAuth();
+
 
   return (
     <>
@@ -88,21 +91,30 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
         </nav>
 
         {/* User Profile (when expanded) */}
-        {open && (
+        {open && user && (
           <div className="absolute bottom-4 left-4 right-4">
             <div className="bg-muted rounded-lg p-3 animate-fade-in">
               <div className="flex items-center space-x-3">
                 <div className="h-8 w-8 rounded-full bg-gradient-primary flex items-center justify-center">
-                  <span className="text-sm font-medium text-white">JD</span>
+                  <span className="text-sm font-medium text-white">
+                    {user.name?.charAt(0).toUpperCase()}
+                  </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">John Doe</p>
-                  <p className="text-xs text-muted-foreground truncate">Teacher</p>
+                  <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user.role}</p>
                 </div>
+                <button
+                  onClick={logout}
+                  className="ml-2 px-2 py-1 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+                >
+                  Logout
+                </button>
               </div>
             </div>
           </div>
         )}
+
       </div>
     </>
   );

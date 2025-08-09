@@ -4,31 +4,30 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff } from "lucide-react";
 
 export function SignUp() {
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
     email: "",
     password: "",
-    role: "student" // default to student
+    role: "student", // default to student
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const { signup, isLoading } = useAuth();
   const { toast } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    // Basic validation
-    if (!formData.fullName || !formData.email || !formData.password) {
+    if (!formData.name || !formData.email || !formData.password) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Please fill in all fields"
+        description: "Please fill in all fields",
       });
-      setIsLoading(false);
       return;
     }
 
@@ -36,33 +35,25 @@ export function SignUp() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Password must be at least 8 characters long"
+        description: "Password must be at least 8 characters long",
       });
-      setIsLoading(false);
       return;
     }
 
-    // TODO: Implement actual sign up logic
-    console.log("Sign up data:", formData);
-    
-    setTimeout(() => {
-      toast({
-        title: "Success!",
-        description: "Account created successfully"
-      });
-      setIsLoading(false);
-    }, 1000);
+    await signup(formData);
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-foreground">Create Account</h2>
-        <p className="text-muted-foreground mt-2">Join ClassHub to get started</p>
+        <p className="text-muted-foreground mt-2">
+          Join ClassHub to get started
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -72,8 +63,8 @@ export function SignUp() {
             id="fullName"
             type="text"
             placeholder="John Doe"
-            value={formData.fullName}
-            onChange={(e) => handleInputChange("fullName", e.target.value)}
+            value={formData.name}
+            onChange={(e) => handleInputChange("name", e.target.value)}
             className="transition-all duration-200 focus:ring-2 focus:ring-primary"
           />
         </div>
@@ -90,16 +81,23 @@ export function SignUp() {
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 relative">
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             placeholder="At least 8 characters"
             value={formData.password}
             onChange={(e) => handleInputChange("password", e.target.value)}
-            className="transition-all duration-200 focus:ring-2 focus:ring-primary"
+            className="transition-all duration-200 focus:ring-2 focus:ring-primary pr-10"
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-9 text-muted-foreground"
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
         </div>
 
         <div className="space-y-3">
@@ -111,11 +109,15 @@ export function SignUp() {
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="teacher" id="teacher" />
-              <Label htmlFor="teacher" className="font-medium">Teacher</Label>
+              <Label htmlFor="teacher" className="font-medium">
+                Teacher
+              </Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="student" id="student" />
-              <Label htmlFor="student" className="font-medium">Student</Label>
+              <Label htmlFor="student" className="font-medium">
+                Student
+              </Label>
             </div>
           </RadioGroup>
         </div>
@@ -134,8 +136,8 @@ export function SignUp() {
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link 
-            to="/login" 
+          <Link
+            to="/login"
             className="text-primary hover:underline font-medium transition-colors duration-200"
           >
             Sign in
