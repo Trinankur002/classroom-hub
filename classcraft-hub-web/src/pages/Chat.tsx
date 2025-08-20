@@ -138,7 +138,7 @@ export default function Chat() {
             {selectedClassroom && (
               <div className="flex gap-2">
                 <Button
-                  variant={chatType === 'class' ? 'default' : 'outline'}
+                  variant={chatType === 'class' ? 'default' : 'outline-solid'}
                   size="sm"
                   onClick={() => setChatType('class')}
                   className="flex-1 gap-1"
@@ -148,7 +148,7 @@ export default function Chat() {
                 </Button>
                 {userRole === 'student' && (
                   <Button
-                    variant={chatType === 'student' ? 'default' : 'outline'}
+                    variant={chatType === 'student' ? 'default' : 'outline-solid'}
                     size="sm"
                     onClick={() => setChatType('student')}
                     className="flex-1 gap-1"

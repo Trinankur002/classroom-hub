@@ -70,13 +70,13 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
                 className={cn(
                   "flex items-center rounded-lg p-3 transition-all duration-200 ease-smooth group",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-sm"
+                    ? "bg-primary text-primary-foreground shadow-xs"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   open ? "justify-start space-x-3" : "justify-center"
                 )}
               >
                 <item.icon className={cn(
-                  "h-5 w-5 flex-shrink-0 transition-colors duration-200",
+                  "h-5 w-5 shrink-0 transition-colors duration-200",
                   isActive ? "text-primary-foreground" : ""
                 )} />
                 <span className={cn(
