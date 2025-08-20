@@ -1,12 +1,25 @@
+// ProtectedRoute.tsx
+import { useAuth } from "@/hooks/AuthContext";
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 
-export const ProtectedRoute = () => {
+const ProtectedRoute = () => {
   const { isAuthenticated, isVerifying } = useAuth();
 
   if (isVerifying) {
-    return null; // Or a loading spinner
+    // show global loader while verifying
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <span className="text-lg font-medium">Checking authentication...</span>
+      </div>
+    );
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
 };
+
+export default ProtectedRoute;
+

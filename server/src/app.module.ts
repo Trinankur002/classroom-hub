@@ -22,7 +22,7 @@ import { ChatModule } from './chat/chat.module';
         type: 'postgres',
         url: configService.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: true, // Should be false in production
+        synchronize: true,
       }),
     }),
     AuthModule,
