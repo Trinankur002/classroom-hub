@@ -1,2 +1,3 @@
 classcraft-hub-web/.env
 web/.env
+*.env
