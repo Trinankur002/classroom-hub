@@ -2,6 +2,7 @@ import { Users, BookOpen, MessageCircle, TrendingUp } from "lucide-react";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ClassroomButton from "@/components/customComponent/ClassroomButton";
 
 export default function Dashboard() {
   // TODO: Get actual user role from auth context
@@ -85,9 +86,7 @@ export default function Dashboard() {
           </p>
         </div>
         
-        <Button variant="gradient" size="lg">
-          {userRole === "teacher" ? "Create Classroom" : "Join Classroom"}
-        </Button>
+        <ClassroomButton userRole={userRole} />
       </div>
 
       {/* Stats Grid */}
