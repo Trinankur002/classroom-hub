@@ -18,7 +18,7 @@ export class Classroom {
   name: string;
 
   @Column({ nullable: true })
-  subject: string;
+  description: string;
 
   @Column({ unique: true })
   @Index()

@@ -9,5 +9,5 @@ export class CreateClassroomDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  subject?: string;
+  description?: string;
 }

@@ -3,10 +3,21 @@ import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ClassroomButton from "@/components/customComponent/ClassroomButton";
+import { useAuth } from "@/hooks/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
-  // TODO: Get actual user role from auth context
-  const userRole = "teacher"; // Mock data
+  const navigate = useNavigate();
+  let userRole 
+
+  const user = localStorage.getItem("user");
+  if (!user) {
+    navigate("/");
+  }
+  if (user) {
+    userRole = JSON.parse(user).role.toLowerCase()
+  }
+
 
   const stats = {
     teacher: [

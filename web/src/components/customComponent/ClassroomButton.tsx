@@ -4,23 +4,24 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { set } from 'date-fns';
+import ClassroomService from '@/services/classroomService';
 
 interface Props { userRole: "teacher" | "student" }
 
 function ClassroomButton({ userRole }: Props) {
+
     const [open, setOpen] = useState(false)
 
     // Controlled form state
     const [classroomName, setClassroomName] = useState("")
-    const [subject, setSubject] = useState("")
+    const [description, setDescribtion] = useState("")
     const [joinCode, setJoinCode] = useState("")
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
 
-        if (userRole === "teacher") {
-            console.log("Creating classroom:", { classroomName, subject })
-            // TODO: call API -> createClassroom({ classroomName, subject })
+        if (userRole === "teacher") {            
+            ClassroomService.createClassroom(classroomName, description)
         } else {
             console.log("Joining classroom with code:", joinCode)
             // TODO: call API -> joinClassroom({ joinCode })
@@ -28,13 +29,13 @@ function ClassroomButton({ userRole }: Props) {
 
         setOpen(false) // close after saving
         setClassroomName("")
-        setSubject("")
+        setDescribtion("")
         setJoinCode("")
     }
 
     return (
         <>
-            <Button variant="gradient" size="lg" onClick={() => setOpen(true)}>
+            <Button variant="accent" size="lg" onClick={() => setOpen(true)}>
                 {userRole === "teacher" ? "Create Classroom" : "Join Classroom"}
             </Button>
 
@@ -67,12 +68,12 @@ function ClassroomButton({ userRole }: Props) {
                                 </div>
                                 <div className="mt-1"></div>
                                 <div className="grid gap-3">
-                                    <Label htmlFor="subject">Subject</Label>
+                                    <Label htmlFor="description">Describtion</Label>
                                     <Input
-                                        id="subject"
-                                        name="subject"
-                                        value={subject}
-                                        onChange={(e) => setSubject(e.target.value)}
+                                        id="description"
+                                        name="description"
+                                        value={description}
+                                        onChange={(e) => setDescribtion(e.target.value)}
                                     />
                                 </div>
                             </div>

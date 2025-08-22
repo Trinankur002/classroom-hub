@@ -22,7 +22,7 @@ export class ClassroomsService {
     teacher: User,
   ): Promise<Classroom> {
     const { nanoid } = await import('nanoid');
-    const joinCode = nanoid(8);
+    const joinCode = nanoid(10);
     const classroom = this.classroomsRepository.create({
 
       ...createClassroomDto,
@@ -59,17 +59,30 @@ export class ClassroomsService {
 
   async findAllForUser(user: User): Promise<Classroom[]> {
     if (user.role === Role.Teacher) {
-      return this.classroomsRepository.find({ where: { teacherId: user.id } });
+      return this.classroomsRepository.createQueryBuilder('classroom')
+        .leftJoinAndSelect('classroom.teacher', 'teacher')
+        .select([
+          'classroom.id',
+          'classroom.name',
+          'classroom.description',
+          'classroom.joinCode',
+          'teacher.id',
+          'teacher.name',
+        ])
+        .where('classroom.teacherId = :teacherId', { teacherId: user.id })
+        .getMany();
     }
 
     if (user.role === Role.Student) {
       const studentClassrooms = await this.studentClassroomsRepository.find({
         where: { studentId: user.id },
-        relations: ['classroom'],
+        relations: ['classroom', 'classroom.teacher'],
       });
-      return studentClassrooms.map((sc) => sc.classroom);
+
+      return studentClassrooms.map((sc) => sc.classroom) as Classroom[];
     }
 
     return [];
   }
+
 }

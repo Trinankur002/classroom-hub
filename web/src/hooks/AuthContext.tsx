@@ -44,9 +44,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
+          localStorage.setItem("user", JSON.stringify(userData));
           setIsAuthenticated(true);
         } else {
           localStorage.removeItem("token");
+          localStorage.removeItem("user");
           setUser(null);
           setIsAuthenticated(false);
         }
@@ -89,8 +91,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (userResponse.ok) {
         const userData = await userResponse.json();
         setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
       } else {
         setUser(null);
+        localStorage.removeItem("user");
       }
 
       toast({
@@ -140,8 +144,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (userResponse.ok) {
         const userData = await userResponse.json();
         setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
       } else {
         setUser(null);
+        localStorage.removeItem("user");
       }
 
       toast({
@@ -162,8 +168,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     localStorage.removeItem("token");
+    toast({
+      title: "Goodbye!",
+      description: "You've been signed out.",
+    });
+    localStorage.removeItem("user");
     setUser(null);
     setIsAuthenticated(false);
+    
     navigate("/login");
   };
 
