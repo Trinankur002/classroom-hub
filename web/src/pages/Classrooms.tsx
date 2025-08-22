@@ -35,7 +35,7 @@ export default function Classrooms() {
   }
   const userRole = user.role.toString().toLowerCase()
 
-  const [ classrooms, setClassrooms ] = useState<IClassroom[]>([])
+  const [classrooms, setClassrooms] = useState<IClassroom[]>([])
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -113,7 +113,7 @@ export default function Classrooms() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {classrooms.map((classroom) => (
+          {classrooms.map((classroom) => (
             <Card key={classroom.id} className="hover:shadow-hover transition-all duration-200 group">
               <CardHeader className="space-y-4">
                 <div className="flex items-start justify-between">
@@ -121,7 +121,7 @@ export default function Classrooms() {
                     <CardTitle className="text-lg group-hover:text-primary transition-colors">
                       {classroom.name}
                     </CardTitle>
-                    <Badge variant="secondary">{classroom.description}</Badge>
+                    <p className="text-muted-foreground">{classroom.description}</p>
                   </div>
                   <Button variant="ghost" size="sm">
                     <Settings className="h-4 w-4" />
@@ -143,32 +143,34 @@ export default function Classrooms() {
               </CardHeader>
 
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {classroom.description || "No description available."}
-                </p>
 
-                {/* <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-1">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{classroom.students.length} students</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{new Date(classroom.createdAt).toLocaleDateString()}</span>
+                {userRole === 'teacher' &&
+                  (<div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-1">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span>{classroom.studentCount} students</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span>{new Date(classroom.createdAt).toLocaleDateString()}</span>
+                      </div>
                     </div>
                   </div>
-                </div> */}
+                  )}
 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                        {classroom.teacher.name.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm text-muted-foreground">{classroom.teacher.name}</span>
-                  </div>
+
+                  {userRole === 'student' &&
+                    (<div className="flex items-center space-x-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                          {classroom.teacher.name.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm text-muted-foreground">{classroom.teacher.name}</span>
+                    </div>
+                    )}
 
                   <Link to={`/classrooms/${classroom.id}`}>
                     <Button variant="outline" size="sm" className="gap-1">
@@ -176,6 +178,7 @@ export default function Classrooms() {
                       View
                     </Button>
                   </Link>
+                  
                 </div>
               </CardContent>
             </Card>

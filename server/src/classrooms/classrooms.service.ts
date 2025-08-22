@@ -6,6 +6,7 @@ import { CreateClassroomDto } from './dto/create-classroom.dto';
 import { User } from '../users/entities/user.entity';
 import { StudentClassroom } from './entities/student-classroom.entity';
 import { Role } from '../users/entities/role.enum';
+import { IClassroom } from './classrooms.interface';
 
 
 @Injectable()
@@ -36,7 +37,13 @@ export class ClassroomsService {
     return this.classroomsRepository.findOne({ where: { joinCode } });
   }
 
-  async join(classroom: Classroom, student: User): Promise<StudentClassroom> {
+  async join(joinCode: string, student: User): Promise<StudentClassroom> {
+
+    const classroom = await this.classroomsRepository.findOne({ where: { joinCode } });
+    if (!classroom) {
+      throw new NotFoundException('Classroom not found.');
+    }
+
     if (student.role !== Role.Student) {
       throw new ConflictException('Only students can join a classroom.');
     }
@@ -54,18 +61,26 @@ export class ClassroomsService {
       studentId: student.id,
     });
 
-    return this.studentClassroomsRepository.save(studentClassroom);
+    const classroomEntity = await this.studentClassroomsRepository.save(studentClassroom);
+    classroom.studentCount++;
+    await this.classroomsRepository.save(classroom);
+    return classroomEntity;
+
   }
 
-  async findAllForUser(user: User): Promise<Classroom[]> {
+  async findAllForUser(user: User): Promise<IClassroom[]> {
     if (user.role === Role.Teacher) {
-      return this.classroomsRepository.createQueryBuilder('classroom')
+      return this.classroomsRepository
+        .createQueryBuilder('classroom')
         .leftJoinAndSelect('classroom.teacher', 'teacher')
         .select([
           'classroom.id',
           'classroom.name',
-          'classroom.description',
           'classroom.joinCode',
+          'classroom.createdAt',
+          'classroom.updatedAt',
+          'classroom.description',
+          'classroom.studentCount',
           'teacher.id',
           'teacher.name',
         ])
@@ -79,7 +94,23 @@ export class ClassroomsService {
         relations: ['classroom', 'classroom.teacher'],
       });
 
-      return studentClassrooms.map((sc) => sc.classroom) as Classroom[];
+      // Map the results to the IClassroom interface
+      return studentClassrooms.map((sc) => {
+        const classroom = sc.classroom;
+        return {
+          id: classroom.id,
+          name: classroom.name,
+          description: classroom.description,
+          joinCode: classroom.joinCode,
+          teacherId: classroom.teacherId,
+          teacher: {
+            id: classroom.teacher.id,
+            name: classroom.teacher.name,
+          },
+          createdAt: classroom.createdAt,
+          updatedAt: classroom.updatedAt,
+        };
+      });
     }
 
     return [];

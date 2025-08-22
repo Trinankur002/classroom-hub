@@ -6,6 +6,7 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
@@ -31,6 +32,12 @@ export class Classroom {
   @JoinColumn({ name: 'teacherId' })
   teacher: User;
 
+  @Column({ default: 0 })
+  studentCount: number;
+
   @CreateDateColumn()
   createdAt: Date;
+  
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

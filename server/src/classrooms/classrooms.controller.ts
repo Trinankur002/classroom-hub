@@ -36,17 +36,15 @@ export class ClassroomsController {
 
   @Post('join/:joinCode')
   async join(@Param('joinCode') joinCode: string, @Request() req) {
-    const classroom = await this.classroomsService.findByJoinCode(joinCode);
-    if (!classroom) {
-      throw new NotFoundException('Classroom not found.');
-    }
-    return this.classroomsService.join(classroom, req.user);
+    // const classroom = await this.classroomsService.findByJoinCode(joinCode);
+    // if (!classroom) {
+    //   throw new NotFoundException('Classroom not found.');
+    // }
+    return this.classroomsService.join(joinCode, req.user);
   }
 
   @Get()
   findAll(@Request() req) {
     return this.classroomsService.findAllForUser(req.user);
   }
-
-  
 }

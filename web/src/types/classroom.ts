@@ -16,6 +16,10 @@ export interface IClassroom {
     description: string;
     joinCode: string;
     teacherId: string;
-    teacher: User;
+    teacher: IPartialTeacher;
+    studentCount?: number;
     createdAt: Date;
+    updatedAt: Date;
 }
+
+export type IPartialTeacher = Pick<User, 'id' | 'name'>;
