@@ -37,7 +37,7 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document);
 
   await app.listen(3000);
-  appLogger.log('🚀 Server running at http://localhost:3000');
+  appLogger.log('🚀 Server running at http://localhost:3000/api');
   appLogger.log('📜 Swagger at http://localhost:3000/api-docs');
 }
 bootstrap();
