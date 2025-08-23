@@ -21,6 +21,7 @@ import { AuthProvider } from "./hooks/AuthContext";
 import { useThemeStore } from "./lib/store";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PublicRoute from "./components/auth/PublicRoute";
+import Class from "./pages/Class";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
                 <Route index element={<Navigate to="/dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="classrooms" element={<Classrooms />} />
+                <Route path="classrooms/:id" element={<Class />} />
                 <Route path="projects" element={<Projects />} />
                 <Route path="chat" element={<Chat />} />
                 <Route path="settings" element={<Settings />} />

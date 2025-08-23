@@ -3,34 +3,55 @@ import { Button } from '../ui/button';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
-import { set } from 'date-fns';
 import ClassroomService from '@/services/classroomService';
+import { useToast } from '@/hooks/use-toast';
+import { Classroom } from '@/types/classroom';
 
-interface Props { userRole: "teacher" | "student" }
+interface Props {
+    userRole: "teacher" | "student";
+    onClassroomChange?: () => void;
+}
 
-function ClassroomButton({ userRole }: Props) {
+function ClassroomButton({ userRole, onClassroomChange }: Props) {
+    const { toast } = useToast();
 
     const [open, setOpen] = useState(false)
 
     // Controlled form state
     const [classroomName, setClassroomName] = useState("")
-    const [description, setDescribtion] = useState("")
+    const [description, setDescription] = useState("")
     const [joinCode, setJoinCode] = useState("")
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault()
 
-        if (userRole === "teacher") {            
-            ClassroomService.createClassroom(classroomName, description)
-        } else {
-            console.log("Joining classroom with code:", joinCode)
-            // TODO: call API -> joinClassroom({ joinCode })
+        try {
+            if (userRole === "teacher") {
+                await ClassroomService.createClassroom(classroomName, description)
+            } else {
+                console.log("Joining classroom with code:", joinCode)
+                // TODO: call API -> joinClassroom({ joinCode })
+            }
+            onClassroomChange?.();
+            setOpen(false) // close after saving
+            setClassroomName("")
+            setDescription("")
+            setJoinCode("")
+        } catch (error) {
+            console.error("Failed to create/join classroom:", error);
+            setOpen(false)
+            let toastTitle = ""
+            if (userRole) {
+                toastTitle = 'Failed to Create Classroom'
+            } else {
+                toastTitle = 'Failed to Join Classroom'
+            }
+            // Show toast
+            toast({
+                variant: "destructive",
+                title: toastTitle,
+            });
         }
-
-        setOpen(false) // close after saving
-        setClassroomName("")
-        setDescribtion("")
-        setJoinCode("")
     }
 
     return (
@@ -68,12 +89,12 @@ function ClassroomButton({ userRole }: Props) {
                                 </div>
                                 <div className="mt-1"></div>
                                 <div className="grid gap-3">
-                                    <Label htmlFor="description">Describtion</Label>
+                                    <Label htmlFor="description">Description</Label>
                                     <Input
                                         id="description"
                                         name="description"
                                         value={description}
-                                        onChange={(e) => setDescribtion(e.target.value)}
+                                        onChange={(e) => setDescription(e.target.value)}
                                     />
                                 </div>
                             </div>

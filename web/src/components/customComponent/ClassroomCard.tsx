@@ -20,7 +20,6 @@ interface Props {
 function ClassroomCard(props: Props) {
     const { toast } = useToast();
 
-
     const copyClassroomCode = (code: string) => {
         navigator.clipboard.writeText(code);
         toast({
@@ -32,7 +31,10 @@ function ClassroomCard(props: Props) {
     const { classroom, userRole } = props
 
     return (
-        <Card key={classroom.id} className="hover:shadow-hover transition-all duration-200 group">
+        <Card
+            key={classroom.id}
+            className="hover:shadow-hover transition-all duration-200 group flex flex-col min-h-[280px]"
+        >
             <CardHeader className="space-y-4">
                 <div className="flex items-start justify-between">
                     <div className="space-y-1">
@@ -60,10 +62,9 @@ function ClassroomCard(props: Props) {
                 )}
             </CardHeader>
 
-            <CardContent className="space-y-4">
-
-                {userRole === 'teacher' &&
-                    (<div className="flex items-center justify-between text-sm">
+            <CardContent className="flex flex-col flex-1">
+                {userRole === 'teacher' && (
+                    <div className="flex items-center justify-between text-sm mb-4">
                         <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-1">
                                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -75,31 +76,33 @@ function ClassroomCard(props: Props) {
                             </div>
                         </div>
                     </div>
-                    )}
+                )}
 
-                <div className="flex items-center justify-between">
+                {userRole === 'student' && (
+                    <div className="flex items-center space-x-2 mb-4">
+                        <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                                {classroom.teacher.name.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm text-muted-foreground">{classroom.teacher.name}</span>
+                    </div>
+                )}
 
-                    {userRole === 'student' &&
-                        (<div className="flex items-center space-x-2">
-                            <Avatar className="h-6 w-6">
-                                <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                                    {classroom.teacher.name.slice(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm text-muted-foreground">{classroom.teacher.name}</span>
-                        </div>
-                        )}
+                {/* Spacer pushes button to bottom */}
+                <div className="flex-1" />
 
+                <div className="flex justify-end">
                     <Link to={`/classrooms/${classroom.id}`}>
                         <Button variant="outline" size="sm" className="gap-1">
                             <ExternalLink className="h-3 w-3" />
                             View
                         </Button>
                     </Link>
-
                 </div>
             </CardContent>
         </Card>
+
     )
 }
 

@@ -9,14 +9,16 @@ import { useNavigate } from "react-router-dom";
 // import { useClassroomStore, useAuthStore } from "@/lib/store";
 import ClassroomButton from "@/components/customComponent/ClassroomButton";
 import ClassroomCard from "@/components/customComponent/ClassroomCard";
-import { useToast } from "@/hooks/use-toast";
 import ClassroomService from '@/services/classroomService';
 import { IClassroom } from "@/types/classroom";
+import { toast } from "@/hooks/use-toast";
+import ClassroomCardSkeleton from "@/components/customComponent/ClassroomCardSkeleton";
 
 
 export default function Classrooms() {
 
   const navigate = useNavigate();
+  const [isloading, setIsLoading] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
   if (!user) {
@@ -25,14 +27,27 @@ export default function Classrooms() {
   const userRole = user.role.toString().toLowerCase()
 
   const [classrooms, setClassrooms] = useState<IClassroom[]>([])
-  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    const load = async () => {
-      const data = await ClassroomService.getAllClassrooms();
+  const load = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await ClassroomService.getAllClassrooms();
       setClassrooms(data);
-    };
+      if (error) {
+        toast({
+          title: "Failed to load classrooms",
+          description: error,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  useEffect(() => {
     load();
   }, []);
 
@@ -50,7 +65,7 @@ export default function Classrooms() {
           </p>
         </div>
 
-        <ClassroomButton userRole={userRole} />
+        <ClassroomButton userRole={userRole} onClassroomChange={load} />
       </div>
 
       {/* Search */}
@@ -65,7 +80,7 @@ export default function Classrooms() {
       </div>
 
       {/* Classrooms Grid */}
-      {classrooms.length === 0 ? (
+      {!isloading && classrooms.length === 0 ? (
         <Card className="p-12 text-center">
           <div className="space-y-4">
             <BookOpen className="h-12 w-12 text-muted-foreground mx-auto" />
@@ -81,8 +96,11 @@ export default function Classrooms() {
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {classrooms.map((classroom) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {isloading && (Array.from({ length: 6 }).map((_, i) => (
+              <ClassroomCardSkeleton key={i} />
+            )))}
+            {!isloading && classrooms.map((classroom) => (
             <ClassroomCard key={classroom.id} classroom={classroom} userRole={userRole} />
           ))}
         </div>

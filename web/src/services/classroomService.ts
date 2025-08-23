@@ -1,5 +1,6 @@
 import { IClassroom } from "@/types/classroom";
 import api from "./api";
+import { AxiosResponse } from "axios";
 
 class ClassroomService {
 
@@ -13,17 +14,19 @@ class ClassroomService {
         }
     }
 
-    async getAllClassrooms(): Promise<IClassroom[]> {
+    async getAllClassrooms(): Promise<{ data: IClassroom[]; error?: string }> {
         try {
-            // http://localhost:3000/api/classrooms
-
-            const response = await api.get('/classrooms');
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching classrooms:', error);
-            throw error;
+            const response: AxiosResponse<any, any> = await api.get('/classrooms');
+            return { data: response.data };
+        } catch (error: any) {
+            console.error("Error fetching classrooms:", error?.response?.data || error.message);
+            return {
+                data: [],
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+            };
         }
     }
+
 }
 
 export default new ClassroomService()
