@@ -1,13 +1,18 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Classroom } from './entities/classroom.entity';
 import { CreateClassroomDto } from './dto/create-classroom.dto';
 import { User } from '../users/entities/user.entity';
 import { StudentClassroom } from './entities/student-classroom.entity';
 import { Role } from '../users/entities/role.enum';
 import { IClassroom } from './classrooms.interface';
-
+import { ClassroomAnnouncement } from './entities/classroom-announcement.entity';
+import { CreateAnnouncementDto } from './dto/create-announcement.dto'; // Import CreateAnnouncementDto
+import { FileEntity } from '../fileServices/file.entity'; // Import FileEntity
+import { FileService } from '../fileServices/file.service'; // Import FileService
+import { getBucket } from 'src/fileServices/gcs.config';
+import { v4 as uuid } from 'uuid';
 
 @Injectable()
 export class ClassroomsService {
@@ -16,7 +21,10 @@ export class ClassroomsService {
     private classroomsRepository: Repository<Classroom>,
     @InjectRepository(StudentClassroom)
     private studentClassroomsRepository: Repository<StudentClassroom>,
-  ) {}
+    @InjectRepository(ClassroomAnnouncement)
+    private classroomAnnouncementsRepository: Repository<ClassroomAnnouncement>,
+    private fileService: FileService, // Inject FileService
+  ) { }
 
   async create(
     createClassroomDto: CreateClassroomDto,
@@ -114,6 +122,234 @@ export class ClassroomsService {
     }
 
     return [];
+  }
+
+  async getClassRoomdetails(classroomId: string, user: User): Promise<IClassroom> {
+    if (user.role === Role.Teacher) {
+      const classroom = await this.classroomsRepository
+        .createQueryBuilder('classroom')
+        .leftJoinAndSelect('classroom.teacher', 'teacher')
+        .select([
+          'classroom.id',
+          'classroom.name',
+          'classroom.joinCode',
+          'classroom.createdAt',
+          'classroom.updatedAt',
+          'classroom.description',
+          'classroom.studentCount',
+          'classroom.teacherId',
+          'teacher.id',
+          'teacher.name',
+        ])
+        .where('classroom.id = :classroomId', { classroomId })
+        .andWhere('classroom.teacherId = :teacherId', { teacherId: user.id })
+        .getOne();
+
+      if (!classroom) {
+        throw new NotFoundException(`Classroom with id ${classroomId} not found`);
+      }
+
+      return {
+        id: classroom.id,
+        name: classroom.name,
+        description: classroom.description,
+        joinCode: classroom.joinCode,
+        teacherId: classroom.teacherId,
+        teacher: {
+          id: classroom.teacher.id,
+          name: classroom.teacher.name,
+        },
+        studentCount: classroom.studentCount,
+        createdAt: classroom.createdAt,
+        updatedAt: classroom.updatedAt,
+      };
+    }
+
+    if (user.role === Role.Student) {
+      const studentClassroom = await this.studentClassroomsRepository.findOne({
+        where: { classroomId, studentId: user.id },
+        relations: ['classroom', 'classroom.teacher'],
+      });
+
+      if (!studentClassroom) {
+        throw new NotFoundException(
+          `Classroom with id ${classroomId} not found for this student`,
+        );
+      }
+
+      const classroom = studentClassroom.classroom;
+
+      return {
+        id: classroom.id,
+        name: classroom.name,
+        description: classroom.description,
+        joinCode: classroom.joinCode,
+        teacherId: classroom.teacherId,
+        teacher: {
+          id: classroom.teacher.id,
+          name: classroom.teacher.name,
+        },
+        studentCount: classroom.studentCount,
+        createdAt: classroom.createdAt,
+        updatedAt: classroom.updatedAt,
+      };
+    }
+
+    throw new NotFoundException(`Classroom with id ${classroomId} not found`);
+  }
+
+  async createAnnouncement(
+    data: CreateAnnouncementDto,
+    user: User,
+  ): Promise<ClassroomAnnouncement> {
+    return this.classroomAnnouncementsRepository.manager.transaction(
+      async (manager) => {
+        // 1. Validate classroom existence and teacher ownership
+        const classroom = await manager.findOne(Classroom, {
+          where: { id: data.classroomId, teacherId: user.id },
+        });
+
+        if (!classroom) {
+          throw new NotFoundException(
+            `Classroom with ID "${data.classroomId}" not found or you are not the teacher.`,
+          );
+        }
+
+        // Ensure only teachers can create announcements
+        if (user.role !== Role.Teacher) {
+          throw new ForbiddenException('Only teachers can create announcements.');
+        }
+
+        // 2. Create and save the announcement shell to get an ID
+        const announcement = manager.create(ClassroomAnnouncement, {
+          name: data.name,
+          description: data.description,
+          classroomId: data.classroomId,
+          teacherId: user.id,
+        });
+        const savedAnnouncement = await manager.save(announcement);
+
+        // 3. Associate files if provided
+        if (data.filesIds?.length) {
+          await manager.update(
+            FileEntity,
+            { id: In(data.filesIds) },
+            { announcementId: savedAnnouncement.id },
+          );
+        }
+
+        // 4. Reload the announcement with relations
+        const finalAnnouncement = await manager.findOne(ClassroomAnnouncement, {
+          where: { id: savedAnnouncement.id },
+          relations: ['files', 'teacher'],
+        });
+
+        if (!finalAnnouncement) {
+          throw new NotFoundException(
+            `Announcement with ID "${savedAnnouncement.id}" could not be found after creation.`,
+          );
+        }
+
+        return finalAnnouncement;
+      },
+    );
+  }
+
+  async createAnnouncementWithFiles(
+    data: CreateAnnouncementDto,
+    files: Express.Multer.File[],
+    user: User,
+  ): Promise<ClassroomAnnouncement> {
+    return this.classroomAnnouncementsRepository.manager.transaction(async (manager) => {
+      // 1. Validate classroom ownership
+      const classroom = await manager.findOne(Classroom, {
+        where: { id: data.classroomId, teacherId: user.id },
+      });
+      if (!classroom) {
+        throw new NotFoundException(`Classroom not found or unauthorized`);
+      }
+      if (user.role !== Role.Teacher) {
+        throw new ForbiddenException('Only teachers can create announcements.');
+      }
+
+      // 2. Save announcement
+      const announcement = manager.create(ClassroomAnnouncement, {
+        name: data.name,
+        description: data.description,
+        classroomId: data.classroomId,
+        teacherId: user.id,
+      });
+      const savedAnnouncement = await manager.save(announcement);
+
+      // 3. Upload files + save metadata
+      if (files?.length) {
+        for (const file of files) {
+          const fileKey = `${uuid()}-${file.originalname}`;
+          const gcsBucket = getBucket();
+          const blob = gcsBucket.file(fileKey);
+
+          await blob.save(file.buffer, {
+            contentType: file.mimetype,
+            resumable: false,
+          });
+
+          const [url] = await blob.getSignedUrl({
+            action: "read",
+            expires: Date.now() + 365 * 24 * 60 * 60 * 1000,
+          });
+
+          await manager.save(FileEntity, {
+            name: file.originalname,
+            role: user.role,
+            userId: user.id,
+            key: fileKey,
+            url,
+            size: file.size,
+            mimetype: file.mimetype,
+            announcementId: savedAnnouncement.id,
+          });
+        }
+      }
+
+      // 4. Reload announcement with relations
+      const finalAnnouncement = await manager.findOne(ClassroomAnnouncement, {
+        where: { id: savedAnnouncement.id },
+        relations: ["files", "teacher"],
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          classroomId: true,
+          teacherId: true,
+          teacher: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            avatarUrl: true,
+            createdAt: true,
+          },
+          files: {   // 👈 explicitly include file fields
+            id: true,
+            name: true,
+            key: true,
+            url: true,
+            size: true,
+            mimetype: true,
+            createdAt: true,
+          },
+        },
+      });
+
+
+      if (!finalAnnouncement) {
+        throw new NotFoundException(
+          `Announcement with ID "${savedAnnouncement.id}" could not be found after creation.`,
+        );
+      }
+
+      return finalAnnouncement;
+    });
   }
 
 }

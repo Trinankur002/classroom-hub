@@ -3,10 +3,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Classroom } from './entities/classroom.entity';
 import { StudentClassroom } from './entities/student-classroom.entity';
 import { ClassroomsService } from './classrooms.service';
-import { ClassroomsController } from './classrooms.controller';
+import { ClassroomsController } from './classrooms.controller'; // Import ClassroomAnnouncement
+import { ClassroomAnnouncement } from './entities/classroom-announcement.entity';
+import { FileModule } from '../fileServices/file.module'; // Import FileModule
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Classroom, StudentClassroom])],
+  imports: [
+    TypeOrmModule.forFeature([Classroom, StudentClassroom, ClassroomAnnouncement]), // Add ClassroomAnnouncement
+    FileModule, // Import FileModule to make FileService available
+  ],
   providers: [ClassroomsService],
   controllers: [ClassroomsController],
 })

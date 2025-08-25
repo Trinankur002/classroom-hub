@@ -5,8 +5,11 @@ import { AppModule } from './app.module';
 import { AppLogger } from './logger/logger.service';
 import { AllExceptionsFilter } from './logger/all-exceptions.filter';
 import { LoggerMiddleware } from './logger/logger.middleware';
+import * as dotenv from 'dotenv';
 
 async function bootstrap() {
+  dotenv.config();
+
   const appLogger = new AppLogger();
 
   const app = await NestFactory.create(AppModule);

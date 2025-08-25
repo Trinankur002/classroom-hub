@@ -9,6 +9,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
 import { ChatModule } from './chat/chat.module';
+import { FileModule } from './fileServices/file.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ChatModule } from './chat/chat.module';
     ProjectsModule,
     TasksModule,
     ChatModule,
+    FileModule
   ],
 
   controllers: [AppController],

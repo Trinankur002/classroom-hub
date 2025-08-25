@@ -1,3 +1,4 @@
 classcraft-hub-web/.env
 web/.env
 *.env
+server/gcp-key.json

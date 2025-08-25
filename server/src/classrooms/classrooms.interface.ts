@@ -1,3 +1,4 @@
+import { FileEntity } from "src/fileServices/file.entity";
 import { User } from "src/users/entities/user.entity";
 
 export type IPartialTeacher = Pick<User, 'id' | 'name'>;
@@ -12,4 +13,23 @@ export interface IClassroom {
     studentCount?: number;
     createdAt: Date;
     updatedAt: Date;
+}
+
+export interface IClassroomAnnouncement {
+    id: string;
+    name: string;
+    description: string;
+    teacherId: string;
+    teacher: IPartialTeacher;
+    fileIds?: [string];
+    files: FileEntity[];
+    comments: IClassroomComment[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface IClassroomComment {
+    content: string;
+    time: Date;
+    sender: User;
 }
