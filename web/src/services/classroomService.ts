@@ -27,6 +27,19 @@ class ClassroomService {
         }
     }
 
+    async getClassroomById(id: string): Promise<{ data: IClassroom; error?: string }> {
+        try {
+            const response = await api.get(`/classrooms/class/${id}`);
+            return {data: response.data};
+        } catch (error) {
+            console.error(`Error fetching classroom with ID ${id}:`, error);
+            return {
+                data: {} as IClassroom,
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+            };
+        }
+    }
+
 }
 
 export default new ClassroomService()

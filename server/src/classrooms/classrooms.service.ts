@@ -259,6 +259,109 @@ export class ClassroomsService {
     );
   }
 
+  // async createAnnouncementWithFiles(
+  //   data: CreateAnnouncementDto,
+  //   files: Express.Multer.File[],
+  //   user: User,
+  // ): Promise<ClassroomAnnouncement> {
+  //   return this.classroomAnnouncementsRepository.manager.transaction(async (manager) => {
+  //     // 1. Validate classroom ownership
+  //     const classroom = await manager.findOne(Classroom, {
+  //       where: { id: data.classroomId, teacherId: user.id },
+  //     });
+  //     if (!classroom) {
+  //       throw new NotFoundException(`Classroom not found or unauthorized`);
+  //     }
+  //     if (user.role !== Role.Teacher) {
+  //       throw new ForbiddenException('Only teachers can create announcements.');
+  //     }
+
+  //     // 2. Save announcement
+  //     const announcement = manager.create(ClassroomAnnouncement, {
+  //       name: data.name,
+  //       description: data.description,
+  //       classroomId: data.classroomId,
+  //       teacherId: user.id,
+  //     });
+  //     if (data.isAssignment) {
+  //       announcement.isAssignment = true;
+  //       announcement.dueDate = data.dueDate;
+  //     }
+  //     const savedAnnouncement = await manager.save(announcement);
+
+  //     // 3. Upload files + save metadata
+  //     if (files?.length) {
+  //       for (const file of files) {
+  //         const fileKey = `${uuid()}-${file.originalname}`;
+  //         const gcsBucket = getBucket();
+  //         const blob = gcsBucket.file(fileKey);
+
+  //         await blob.save(file.buffer, {
+  //           contentType: file.mimetype,
+  //           resumable: false,
+  //         });
+
+  //         const [url] = await blob.getSignedUrl({
+  //           action: "read",
+  //           expires: Date.now() + 365 * 24 * 60 * 60 * 1000,
+  //         });
+
+  //         await manager.save(FileEntity, {
+  //           name: file.originalname,
+  //           role: user.role,
+  //           userId: user.id,
+  //           key: fileKey,
+  //           url,
+  //           size: file.size,
+  //           mimetype: file.mimetype,
+  //           announcementId: savedAnnouncement.id,
+  //         });
+  //       }
+  //     }
+
+  //     // 4. Reload announcement with relations
+  //     const finalAnnouncement = await manager.findOne(ClassroomAnnouncement, {
+  //       where: { id: savedAnnouncement.id },
+  //       relations: ["files", "teacher"],
+  //       select: {
+  //         id: true,
+  //         name: true,
+  //         description: true,
+  //         classroomId: true,
+  //         teacherId: true,
+  //         isAssignment: true,
+  //         dueDate: true,
+  //         teacher: {
+  //           id: true,
+  //           name: true,
+  //           email: true,
+  //           role: true,
+  //           avatarUrl: true,
+  //           createdAt: true,
+  //         },
+  //         files: {   // 👈 explicitly include file fields
+  //           id: true,
+  //           name: true,
+  //           key: true,
+  //           url: true,
+  //           size: true,
+  //           mimetype: true,
+  //           createdAt: true,
+  //         },
+  //       },
+  //     });
+
+
+  //     if (!finalAnnouncement) {
+  //       throw new NotFoundException(
+  //         `Announcement with ID "${savedAnnouncement.id}" could not be found after creation.`,
+  //       );
+  //     }
+
+  //     return finalAnnouncement;
+  //   });
+  // }
+
   async createAnnouncementWithFiles(
     data: CreateAnnouncementDto,
     files: Express.Multer.File[],
@@ -269,9 +372,11 @@ export class ClassroomsService {
       const classroom = await manager.findOne(Classroom, {
         where: { id: data.classroomId, teacherId: user.id },
       });
+
       if (!classroom) {
         throw new NotFoundException(`Classroom not found or unauthorized`);
       }
+
       if (user.role !== Role.Teacher) {
         throw new ForbiddenException('Only teachers can create announcements.');
       }
@@ -289,34 +394,36 @@ export class ClassroomsService {
       }
       const savedAnnouncement = await manager.save(announcement);
 
-      // 3. Upload files + save metadata
+      // 3. Upload files + save metadata (parallelized)
       if (files?.length) {
-        for (const file of files) {
-          const fileKey = `${uuid()}-${file.originalname}`;
-          const gcsBucket = getBucket();
-          const blob = gcsBucket.file(fileKey);
+        await Promise.all(
+          files.map(async (file) => {
+            const fileKey = `${uuid()}-${file.originalname}`;
+            const gcsBucket = getBucket();
+            const blob = gcsBucket.file(fileKey);
 
-          await blob.save(file.buffer, {
-            contentType: file.mimetype,
-            resumable: false,
-          });
+            await blob.save(file.buffer, {
+              contentType: file.mimetype,
+              resumable: false,
+            });
 
-          const [url] = await blob.getSignedUrl({
-            action: "read",
-            expires: Date.now() + 365 * 24 * 60 * 60 * 1000,
-          });
+            const [url] = await blob.getSignedUrl({
+              action: "read",
+              expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
+            });
 
-          await manager.save(FileEntity, {
-            name: file.originalname,
-            role: user.role,
-            userId: user.id,
-            key: fileKey,
-            url,
-            size: file.size,
-            mimetype: file.mimetype,
-            announcementId: savedAnnouncement.id,
-          });
-        }
+            await manager.save(FileEntity, {
+              name: file.originalname,
+              role: user.role,
+              userId: user.id,
+              key: fileKey,
+              url,
+              size: file.size,
+              mimetype: file.mimetype,
+              announcementId: savedAnnouncement.id,
+            });
+          }),
+        );
       }
 
       // 4. Reload announcement with relations
@@ -331,6 +438,8 @@ export class ClassroomsService {
           teacherId: true,
           isAssignment: true,
           dueDate: true,
+          createdAt: true,
+          updatedAt: true,
           teacher: {
             id: true,
             name: true,
@@ -339,7 +448,7 @@ export class ClassroomsService {
             avatarUrl: true,
             createdAt: true,
           },
-          files: {   // 👈 explicitly include file fields
+          files: {
             id: true,
             name: true,
             key: true,
@@ -351,7 +460,6 @@ export class ClassroomsService {
         },
       });
 
-
       if (!finalAnnouncement) {
         throw new NotFoundException(
           `Announcement with ID "${savedAnnouncement.id}" could not be found after creation.`,
@@ -362,11 +470,12 @@ export class ClassroomsService {
     });
   }
 
+
   async getAnnouncements(classroomId: string, user: User): Promise<ClassroomAnnouncement[]> {
 
     let announcements: ClassroomAnnouncement[]
     try {
-       announcements = await this.classroomAnnouncementsRepository.find({
+      announcements = await this.classroomAnnouncementsRepository.find({
         where: { classroomId },
         relations: ['files', 'teacher'],
         select: {
@@ -376,7 +485,9 @@ export class ClassroomsService {
           classroomId: true,
           teacherId: true,
           isAssignment: true,
-          dueDate: true,  
+          dueDate: true,
+          createdAt: true,
+          updatedAt: true,
           teacher: {
             id: true,
             name: true,
@@ -399,7 +510,7 @@ export class ClassroomsService {
     } catch (error) {
       throw new NotFoundException(`Anouncements for classroom with id ${classroomId} not found because of ${error}`);
     }
-    
+
     if (announcements.length === 0) {
       return []
     }

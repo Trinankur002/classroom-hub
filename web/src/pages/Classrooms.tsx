@@ -41,6 +41,8 @@ export default function Classrooms() {
           variant: "destructive",
         });
       }
+    } catch (error) {
+      console.log(error);
     } finally {
       setIsLoading(false);
     }

@@ -4,7 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Projects from "./Projects";
 import ClassDetails from "./ClassDetails";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { IClassroom } from "@/types/classroom";
+import ClassroomService from '@/services/classroomService';
+import { toast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import Doubts from "./Doubts";
 
 export default function Class() {
     const navigate = useNavigate();
@@ -14,8 +19,33 @@ export default function Class() {
     }
     const userRole = user.role.toString().toLowerCase()
     const { id } = useParams<{ id: string }>();
+    const [isloading, setIsLoading] = useState(false);
+    const [classroom, setClassroom] = useState<IClassroom>();
 
-    const [activeTab, setActiveTab] = useState("class");
+    const load = async () => {
+        setIsLoading(true);
+        try {
+            const { data, error } = await ClassroomService.getClassroomById(id)
+            setClassroom(data);
+            if (error) {
+                toast({
+                    title: "Failed to load classrooms",
+                    description: error,
+                    variant: "destructive",
+                });
+            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    useEffect(() => {
+        load();
+    }, []);
+
+    const [activeTab, setActiveTab] = useState("updates");
 
     return (
         <div>
@@ -25,19 +55,28 @@ export default function Class() {
                         <ArrowLeft className="h-3 w-3" />
                     </Button>
                 </Link>
-                <h1 className="text-xl font-bold">Classroom ID: {id}</h1>
-                {/* fetch data using this id */}
+                {!isloading && classroom ? (
+                    <h1 className="text-xl font-bold truncate max-w-[200px] sm:max-w-xs md:max-w-sm lg:max-w-md">
+                        {classroom.name}
+                    </h1>
+                ) :
+                    <Skeleton className="h-7 w-48" />
+                }
             </div>
 
-            <div className="w-full max-w-7xl mx-auto space-y-6">
+            <div className="w-full px-4 space-y-6">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full p-5">
-                    <TabsList className={`w-full grid ${userRole === 'teacher' ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                        <TabsTrigger value="class">Class</TabsTrigger>
-                        <TabsTrigger value="projects">Projects</TabsTrigger>
-                        {userRole === 'teacher' && <TabsTrigger value="students">Students</TabsTrigger>}
+                    <TabsList className="w-full flex overflow-x-auto gap-2">
+                        <TabsTrigger className="flex-1 min-w-[120px]" value="updates">Updates</TabsTrigger>
+                        <TabsTrigger className="flex-1 min-w-[120px]" value="assignments">Assignments</TabsTrigger>
+                        <TabsTrigger className="flex-1 min-w-[120px]" value="doubts">Doubts</TabsTrigger>
+                        {userRole === 'teacher' && (
+                            <TabsTrigger className="flex-1 min-w-[120px]" value="students">Students</TabsTrigger>
+                        )}
                     </TabsList>
-                    <TabsContent value="class"><ClassDetails /></TabsContent>
-                    <TabsContent value="projects"><Projects /></TabsContent>
+                    <TabsContent value="updates">{classroom && <ClassDetails classroom={classroom} />}</TabsContent>
+                    <TabsContent value="assignments"><Projects /></TabsContent>
+                    <TabsContent value="doubts"><Doubts/></TabsContent>
                     {userRole === 'teacher' && <TabsContent value="students">List of students</TabsContent>}
                 </Tabs>
             </div>
