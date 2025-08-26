@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Projects from "./Projects";
 import ClassDetails from "./ClassDetails";
@@ -10,6 +10,7 @@ import ClassroomService from '@/services/classroomService';
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import Doubts from "./Doubts";
+import AnnouncementButton from "@/components/customComponent/AnnouncementButton";
 
 export default function Class() {
     const navigate = useNavigate();
@@ -17,7 +18,7 @@ export default function Class() {
     if (!user) {
         navigate("/");
     }
-    const userRole = user.role.toString().toLowerCase()
+    const userRole = user.role.toString().toLowerCase();
     const { id } = useParams<{ id: string }>();
     const [isloading, setIsLoading] = useState(false);
     const [classroom, setClassroom] = useState<IClassroom>();
@@ -25,7 +26,7 @@ export default function Class() {
     const load = async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await ClassroomService.getClassroomById(id)
+            const { data, error } = await ClassroomService.getClassroomById(id);
             setClassroom(data);
             if (error) {
                 toast({
@@ -39,7 +40,7 @@ export default function Class() {
         } finally {
             setIsLoading(false);
         }
-    }
+    };
 
     useEffect(() => {
         load();
@@ -49,19 +50,33 @@ export default function Class() {
 
     return (
         <div>
-            <div className="p-4 flex flex-row items-center space-x-6">
-                <Link to={`/classrooms`}>
-                    <Button variant="outline" size="sm" className="gap-1">
-                        <ArrowLeft className="h-3 w-3" />
-                    </Button>
-                </Link>
-                {!isloading && classroom ? (
-                    <h1 className="text-xl font-bold truncate max-w-[200px] sm:max-w-xs md:max-w-sm lg:max-w-md">
-                        {classroom.name}
-                    </h1>
-                ) :
-                    <Skeleton className="h-7 w-48" />
-                }
+            <div className="p-4 flex items-center justify-between">
+                {/* Left section: Back button + classroom name */}
+                <div className="flex items-center space-x-6">
+                    <Link to={`/classrooms`}>
+                        <Button variant="outline" size="sm" className="gap-1">
+                            <ArrowLeft className="h-3 w-3" />
+                        </Button>
+                    </Link>
+                    {!isloading && classroom ? (
+                        <h1 className="text-xl font-bold truncate max-w-[200px] sm:max-w-xs md:max-w-sm lg:max-w-md">
+                            {classroom.name}
+                        </h1>
+                    ) : (
+                        <Skeleton className="h-7 w-48" />
+                    )}
+                </div>
+
+                {/* Right section: Announcement Button (desktop only) */}
+                {!isloading && classroom && userRole === "teacher" && (
+                    <div className="hidden sm:block">
+                        <AnnouncementButton
+                            userRole={userRole}
+                            classromId={classroom.id}
+                            onAnnouncementChange={load}
+                        />
+                    </div>
+                )}
             </div>
 
             <div className="w-full px-4 space-y-6">
@@ -74,12 +89,43 @@ export default function Class() {
                             <TabsTrigger className="flex-1 min-w-[120px]" value="students">Students</TabsTrigger>
                         )}
                     </TabsList>
-                    <TabsContent value="updates">{classroom && <ClassDetails classroom={classroom} />}</TabsContent>
+                    <TabsContent value="updates">{classroom &&
+                        <div>
+                            <ClassDetails classroom={classroom} />
+                        </div>
+                    }</TabsContent>
                     <TabsContent value="assignments"><Projects /></TabsContent>
-                    <TabsContent value="doubts"><Doubts/></TabsContent>
+                    <TabsContent value="doubts"><Doubts /></TabsContent>
                     {userRole === 'teacher' && <TabsContent value="students">List of students</TabsContent>}
                 </Tabs>
             </div>
+
+            {/* Mobile FAB */}
+            {!isloading && classroom && userRole === "teacher" && (
+                <div className="fixed bottom-20 right-6 sm:hidden">
+                    {/* Hidden full button so modal logic stays mounted */}
+                    <div className="hidden">
+                        <AnnouncementButton
+                            userRole={userRole}
+                            classromId={classroom.id}
+                            onAnnouncementChange={load}
+                        />
+                    </div>
+
+                    {/* Floating circular FAB */}
+                    <Button
+                        variant="accent"
+                        onClick={() => {
+                            const btn = Array.from(document.querySelectorAll("button"))
+                                .find((el) => el.textContent?.includes("Create Announcement")) as HTMLButtonElement | undefined;
+                            btn?.click();
+                        }}
+                        className="h-14 w-14 rounded-full shadow-lg flex items-center justify-center"
+                    >
+                        <Plus className="h-6 w-6 text-white" />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

@@ -1,12 +1,17 @@
 import { Card } from "@/components/ui/card";
 import { IClassroomAnnouncement } from "@/types/classroomAnnouncement";
 import FilePreview from "./FilePreview";
+import { format } from "date-fns";
 
 interface Props {
     announcement: IClassroomAnnouncement;
 }
 
 export default function AnnouncementCard({ announcement }: Props) {
+    const formattedDueDate = announcement.dueDate
+        ? format(new Date(announcement.dueDate), "MMM dd, yyyy h:mm a") // <-- AM/PM format
+        : "No due date";
+
     return (
         <Card className="p-4 space-y-3">
             {/* Header */}
@@ -15,14 +20,12 @@ export default function AnnouncementCard({ announcement }: Props) {
                 <p className="text-sm text-muted-foreground">{announcement.description}</p>
             </div>
 
-            {/* Files */}
             <FilePreview files={announcement.files} />
 
-            {/* Footer (extra info) */}
             <div className="text-xs text-muted-foreground flex justify-between">
                 <span>By {announcement.teacher.name}</span>
                 {announcement.isAssignment && (
-                    <span>Due: {announcement.dueDate ?? "No due date"}</span>
+                    <span>Due: {formattedDueDate}</span>
                 )}
             </div>
         </Card>
