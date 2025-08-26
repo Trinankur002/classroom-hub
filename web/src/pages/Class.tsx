@@ -4,7 +4,7 @@ import { ArrowLeft, Plus } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Projects from "./Projects";
 import ClassDetails from "./ClassDetails";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { IClassroom } from "@/types/classroom";
 import ClassroomService from '@/services/classroomService';
 import { toast } from "@/hooks/use-toast";
@@ -22,30 +22,34 @@ export default function Class() {
     const { id } = useParams<{ id: string }>();
     const [isloading, setIsLoading] = useState(false);
     const [classroom, setClassroom] = useState<IClassroom>();
+    const [refreshKey, setRefreshKey] = useState(0);
 
-    const load = async () => {
+    const loadClassroom = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, error } = await ClassroomService.getClassroomById(id);
-            setClassroom(data);
-            if (error) {
-                toast({
-                    title: "Failed to load classrooms",
-                    description: error,
-                    variant: "destructive",
-                });
+            if (id) {
+                const { data, error } = await ClassroomService.getClassroomById(id);
+                setClassroom(data);
+                if (error) {
+                    toast({
+                        title: "Failed to load classroom",
+                        description: error,
+                        variant: "destructive",
+                    });
+                }
             }
         } catch (error) {
             console.log(error);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [id]);
 
     useEffect(() => {
-        load();
-    }, []);
+        loadClassroom();
+    }, [loadClassroom]);
 
+    const handleAnnouncementChange = () => setRefreshKey(k => k + 1);
     const [activeTab, setActiveTab] = useState("updates");
 
     return (
@@ -73,7 +77,7 @@ export default function Class() {
                         <AnnouncementButton
                             userRole={userRole}
                             classromId={classroom.id}
-                            onAnnouncementChange={load}
+                            onAnnouncementChange={handleAnnouncementChange}
                         />
                     </div>
                 )}
@@ -91,7 +95,7 @@ export default function Class() {
                     </TabsList>
                     <TabsContent value="updates">{classroom &&
                         <div>
-                            <ClassDetails classroom={classroom} />
+                            <ClassDetails classroom={classroom} key={refreshKey} />
                         </div>
                     }</TabsContent>
                     <TabsContent value="assignments"><Projects /></TabsContent>
@@ -108,7 +112,7 @@ export default function Class() {
                         <AnnouncementButton
                             userRole={userRole}
                             classromId={classroom.id}
-                            onAnnouncementChange={load}
+                            onAnnouncementChange={handleAnnouncementChange}
                         />
                     </div>
 
