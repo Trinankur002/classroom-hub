@@ -91,6 +91,8 @@ export class ClassroomsController {
         name: { type: "string" },
         description: { type: "string" },
         classroomId: { type: "string", format: "uuid" },
+        isAssignment: { type: "boolean" },
+        dueDate: { type: "string", format: "date-time" },
         files: {
           type: "array",
           items: { type: "string", format: "binary" },
@@ -106,4 +108,12 @@ export class ClassroomsController {
     return this.classroomsService.createAnnouncementWithFiles(body, files, req.user);
   }
 
+  @Get('announcements/:classroomId')
+  @ApiParam({ name: 'classroomId', description: 'Classroom ID (UUID)' })
+  async getAnnouncements(
+    @Param('classroomId') classroomId: string,
+    @Request() req,
+  ): Promise<ClassroomAnnouncement[]> {
+    return this.classroomsService.getAnnouncements(classroomId, req.user);
+  }
 }

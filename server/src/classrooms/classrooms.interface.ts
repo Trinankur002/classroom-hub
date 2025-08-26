@@ -24,6 +24,8 @@ export interface IClassroomAnnouncement {
     fileIds?: [string];
     files: FileEntity[];
     comments: IClassroomComment[];
+    isAssignment: boolean;
+    dueDate: Date;
     createdAt: Date;
     updatedAt: Date;
 }

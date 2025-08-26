@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsUUID, IsNotEmpty, IsArray, ArrayNotEmpty } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsUUID, IsNotEmpty, IsArray, ArrayNotEmpty, IsDateString } from 'class-validator';
 
 export class CreateAnnouncementDto {
     @ApiProperty({ description: 'Name of the announcement', example: 'Welcome to the new semester!' })
@@ -32,4 +33,20 @@ export class CreateAnnouncementDto {
     @IsUUID('all', { each: true })
     @IsOptional()
     filesIds?: string[];
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    isAssignment: boolean
+
+    @ApiProperty({
+        description: 'The time of the comment in ISO 8601 format.',
+        example: '2025-08-25T10:11:20.000Z',
+        type: String,
+        format: 'date-time',
+        required: false
+    })
+    // @IsDateString()
+    @IsOptional()
+    @Type(() => Date)
+    dueDate: Date
 }

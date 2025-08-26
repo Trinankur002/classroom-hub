@@ -45,6 +45,12 @@ export class ClassroomAnnouncement {
     @Column({ type: 'jsonb', nullable: true })
     comments: IClassroomComment[];
 
+    @Column({default : false})
+    isAssignment: boolean
+
+    @Column({ nullable: true })
+    dueDate: Date
+
     @CreateDateColumn()
     createdAt: Date;
 

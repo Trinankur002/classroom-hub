@@ -227,6 +227,10 @@ export class ClassroomsService {
           classroomId: data.classroomId,
           teacherId: user.id,
         });
+        if (data.isAssignment) {
+          announcement.isAssignment = true;
+          announcement.dueDate = data.dueDate;
+        }
         const savedAnnouncement = await manager.save(announcement);
 
         // 3. Associate files if provided
@@ -279,6 +283,10 @@ export class ClassroomsService {
         classroomId: data.classroomId,
         teacherId: user.id,
       });
+      if (data.isAssignment) {
+        announcement.isAssignment = true;
+        announcement.dueDate = data.dueDate;
+      }
       const savedAnnouncement = await manager.save(announcement);
 
       // 3. Upload files + save metadata
@@ -321,6 +329,8 @@ export class ClassroomsService {
           description: true,
           classroomId: true,
           teacherId: true,
+          isAssignment: true,
+          dueDate: true,
           teacher: {
             id: true,
             name: true,
@@ -350,6 +360,51 @@ export class ClassroomsService {
 
       return finalAnnouncement;
     });
+  }
+
+  async getAnnouncements(classroomId: string, user: User): Promise<ClassroomAnnouncement[]> {
+
+    let announcements: ClassroomAnnouncement[]
+    try {
+       announcements = await this.classroomAnnouncementsRepository.find({
+        where: { classroomId },
+        relations: ['files', 'teacher'],
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          classroomId: true,
+          teacherId: true,
+          isAssignment: true,
+          dueDate: true,  
+          teacher: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            avatarUrl: true,
+            createdAt: true,
+          },
+          files: {
+            id: true,
+            name: true,
+            key: true,
+            url: true,
+            size: true,
+            mimetype: true,
+            createdAt: true,
+          },
+        },
+      });
+    } catch (error) {
+      throw new NotFoundException(`Anouncements for classroom with id ${classroomId} not found because of ${error}`);
+    }
+    
+    if (announcements.length === 0) {
+      return []
+    }
+    return announcements;
+
   }
 
 }

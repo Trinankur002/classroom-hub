@@ -30,7 +30,7 @@ export default function Class() {
             </div>
 
             <div className="w-full max-w-7xl mx-auto space-y-6">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full p-5">
                     <TabsList className={`w-full grid ${userRole === 'teacher' ? 'grid-cols-3' : 'grid-cols-2'}`}>
                         <TabsTrigger value="class">Class</TabsTrigger>
                         <TabsTrigger value="projects">Projects</TabsTrigger>

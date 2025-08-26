@@ -42,7 +42,7 @@ export class CreateCommentDto {
         type: String,
         format: 'date-time'
     })
-    @IsDateString()
+    // @IsDateString()
     @IsNotEmpty()
     @Type(() => Date)
     time: Date;
