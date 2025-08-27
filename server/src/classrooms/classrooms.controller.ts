@@ -20,6 +20,7 @@ import { CreateAnnouncementDto } from './dto/create-announcement.dto'; // Import
 import { ClassroomAnnouncement } from './entities/classroom-announcement.entity'; // Import ClassroomAnnouncement for ApiResponse type
 import { IClassroom } from './classrooms.interface';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { CreateCommentDto } from './dto/create-comment.dto';
 
 @Controller('classrooms')
 @UseGuards(JwtAuthGuard)
@@ -116,4 +117,39 @@ export class ClassroomsController {
   ): Promise<ClassroomAnnouncement[]> {
     return this.classroomsService.getAnnouncements(classroomId, req.user);
   }
+
+  @Get('announcement/one/:announcementId')
+  @ApiOperation({ summary: 'Get an announcement by ID' })
+  @ApiParam({ name: 'announcementId', description: 'Announcement ID (UUID)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Announcement details returned successfully',
+    type: ClassroomAnnouncement,
+  })
+  @ApiResponse({ status: 404, description: 'Announcement not found' })
+  async getAnnouncement(
+    @Param('announcementId') announcementId: string,
+    @Request() req: any,
+  ) {
+    return this.classroomsService.getAnnouncement(announcementId, req.user);
+  }
+
+  @Post('announcements/comment')
+  @ApiOperation({ summary: 'Add a comment to an announcement' })
+  @ApiBody({ type: CreateCommentDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Comment added successfully',
+    type: ClassroomAnnouncement,
+  })
+  async addCommentToAnouncement(
+    @Body() createCommentDto: CreateCommentDto,
+    @Request() req: any,
+  ) {
+    return this.classroomsService.addCommentToAnouncement(
+      createCommentDto,
+      req.user,
+    );
+  }
+
 }

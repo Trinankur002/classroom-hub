@@ -6,13 +6,15 @@ import { CreateClassroomDto } from './dto/create-classroom.dto';
 import { User } from '../users/entities/user.entity';
 import { StudentClassroom } from './entities/student-classroom.entity';
 import { Role } from '../users/entities/role.enum';
-import { IClassroom } from './classrooms.interface';
+import { IClassroom, IClassroomComment } from './classrooms.interface';
 import { ClassroomAnnouncement } from './entities/classroom-announcement.entity';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto'; // Import CreateAnnouncementDto
 import { FileEntity } from '../fileServices/file.entity'; // Import FileEntity
 import { FileService } from '../fileServices/file.service'; // Import FileService
 import { getBucket } from 'src/fileServices/gcs.config';
 import { v4 as uuid } from 'uuid';
+import { CreateCommentDto } from './dto/create-comment.dto';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class ClassroomsService {
@@ -24,6 +26,7 @@ export class ClassroomsService {
     @InjectRepository(ClassroomAnnouncement)
     private classroomAnnouncementsRepository: Repository<ClassroomAnnouncement>,
     private fileService: FileService, // Inject FileService
+    private userService: UsersService, // Inject UserService
   ) { }
 
   async create(
@@ -470,7 +473,6 @@ export class ClassroomsService {
     });
   }
 
-
   async getAnnouncements(classroomId: string, user: User): Promise<ClassroomAnnouncement[]> {
 
     let announcements: ClassroomAnnouncement[]
@@ -516,6 +518,105 @@ export class ClassroomsService {
     }
     return announcements;
 
+  }
+
+  async getAnnouncement(announcementId: string, user: User): Promise<ClassroomAnnouncement> {
+    const announcement = await this.classroomAnnouncementsRepository.findOne({
+      where: { id: announcementId },
+      relations: ['files', 'teacher'],
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        classroomId: true,
+        teacherId: true,
+        isAssignment: true,
+        dueDate: true,
+        comments: true,
+        createdAt: true,
+        updatedAt: true,
+        teacher: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          avatarUrl: true,
+          createdAt: true,
+        },
+        files: {
+          id: true,
+          name: true,
+          key: true,
+          url: true,
+          size: true,
+          mimetype: true,
+          createdAt: true,
+        },
+      },
+    });
+
+    if (!announcement) {
+      throw new NotFoundException(`Announcement with id ${announcementId} not found`);
+    }
+
+    return announcement;
+  }
+
+  async addCommentToAnouncement(data: CreateCommentDto, user: User): Promise<ClassroomAnnouncement> {
+    // 1. Authorization: Fetch announcement and classroom to ensure user access
+    const announcement = await this.classroomAnnouncementsRepository.findOne({
+      where: { id: data.announcementId },
+      relations: ['classroom'],
+    });
+    if (!announcement) {
+      throw new NotFoundException(`Announcement with id ${data.announcementId} not found`);
+    }
+
+    // Check if the user is the teacher or a student in the classroom
+    if (user.role === Role.Student) {
+      // For a student, check if they are enrolled in the classroom
+      const isStudentInClass = await this.studentClassroomsRepository.findOne({
+        where: {
+          classroomId: announcement.classroomId,
+          studentId: user.id,
+        },
+      });
+
+      if (!isStudentInClass) {
+        throw new ForbiddenException(`You are not authorized to comment on this announcement.`);
+      }
+    } else if (user.role === Role.Teacher) {
+      if (announcement.classroom.teacherId !== user.id) {
+        throw new ForbiddenException(`You are not authorized to comment on this announcement.`);
+      }
+    } else {
+      throw new ForbiddenException(`You are not authorized to comment on this announcement.`);
+    }
+
+    // 2. Retrieve mentioned user if applicable
+    let mentionedUser: User | null = null;
+    if (data.mentionedUserId) {
+      mentionedUser = await this.userService.findById(data.mentionedUserId);
+      if (!mentionedUser) {
+        throw new NotFoundException(`User with id ${data.mentionedUserId} not found`);
+      }
+    }
+    const newComment: IClassroomComment = {
+      content: data.content,
+      sender: user,
+      time: new Date(data.time),
+    };
+
+    if (mentionedUser) {
+      newComment.mentionedUser = mentionedUser;
+    }
+    if (!announcement.comments) {
+      announcement.comments = [];
+    }
+
+    announcement.comments.push(newComment);
+    const savedAnnouncement = await this.classroomAnnouncementsRepository.save(announcement);
+    return savedAnnouncement;
   }
 
 }

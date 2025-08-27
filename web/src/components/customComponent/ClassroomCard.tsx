@@ -94,9 +94,9 @@ function ClassroomCard(props: Props) {
 
                 <div className="flex justify-end">
                     <Link to={`/classrooms/${classroom.id}`}>
-                        <Button variant="outline" size="sm" className="gap-1">
-                            <ExternalLink className="h-3 w-3" />
+                        <Button variant="outline" size="default">
                             View
+                            <ExternalLink className="h-3 w-3" />
                         </Button>
                     </Link>
                 </div>

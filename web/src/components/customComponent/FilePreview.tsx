@@ -14,37 +14,36 @@ export default function FilePreview({ files }: FilePreviewProps) {
                     key={index}
                     className="rounded-xl border bg-card shadow-sm overflow-hidden flex flex-col"
                 >
-                    {/* Preview */}
-                    <div className="h-24 w-full flex items-center justify-center bg-muted">
-                        {file.mimetype.startsWith("image/") ? (
-                            <img
-                                src={file.url}
-                                alt={file.name}
-                                className="object-cover h-full w-full"
-                            />
-                        ) : file.mimetype === "application/pdf" ? (
-                            <iframe
-                                src={`${file.url}#toolbar=0&navpanes=0&scrollbar=0`}
-                                title={file.name}
-                                className="w-full h-full"
-                            />
-                        ) : (
-                            <FileText className="w-8 h-8 text-muted-foreground" />
-                        )}
-                    </div>
+                    <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                    >
+                        {/* Preview */}
+                        <div className="h-24 w-full flex items-center justify-center bg-muted">
+                            {file.mimetype.startsWith("image/") ? (
+                                <img
+                                    src={file.url}
+                                    alt={file.name}
+                                    className="object-cover h-full w-full"
+                                />
+                            ) : file.mimetype === "application/pdf" ? (
+                                <iframe
+                                    src={`${file.url}#toolbar=0&navpanes=0&scrollbar=0`}
+                                    title={file.name}
+                                    className="w-full h-full"
+                                />
+                            ) : (
+                                <FileText className="w-8 h-8 text-muted-foreground" />
+                            )}
+                        </div>
 
-                    {/* Info */}
-                    <div className="px-2 py-1 flex items-center justify-between">
-                        <p className="text-xs truncate max-w-[70%]">{file.name}</p>
-                        <a
-                            href={file.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-500 hover:underline"
-                        >
-                            Open
-                        </a>
-                    </div>
+                        {/* Info */}
+                        <div className="px-2 py-1 flex items-center justify-between">
+                            <p className="text-xs truncate max-w-[70%]">{file.name}</p>
+                        </div>
+                    </a>
                 </div>
             ))}
         </div>

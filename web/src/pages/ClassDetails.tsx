@@ -11,9 +11,10 @@ import AnnouncementCardSkeleton from '@/components/customComponent/AnnouncementC
 
 interface Props {
     classroom: IClassroom;
+    onViewAnnouncement?: (a: IClassroomAnnouncement) => void;
 }
 
-function ClassDetails({ classroom }: Props) {
+function ClassDetails({ classroom ,onViewAnnouncement}: Props) {
     const { id, name, description, joinCode, teacherId, teacher, studentCount, createdAt, updatedAt } = classroom
     const navigate = useNavigate();
     const [isloading, setIsLoading] = useState(false);
@@ -49,41 +50,7 @@ function ClassDetails({ classroom }: Props) {
     }, [])
 
     return (
-        <div>
-            <div className="h-3"></div>
-
-            {!isloading && announcements && announcements.length == 0 &&
-                <Card className="p-12 text-center my-6">
-                    <div className="space-y-4">
-                        <BookOpen className="h-12 w-12 text-muted-foreground mx-auto" />
-                        <div>
-                            <h3 className="text-lg font-semibold text-foreground">No Updates Here</h3>
-                            <p className="text-muted-foreground">
-                                {userRole === 'teacher'
-                                    ? "Create your first update or assign work to students."
-                                    : "No updates for now. Check back later!"
-                                }
-                            </p>
-                        </div>
-                    </div>
-                </Card>
-            }
-
-            {isloading && 
-                <AnnouncementCardSkeleton />
-            }
-
-            {!isloading && announcements && announcements.length > 0 && (
-                <div className="space-y-4">
-                    {announcements
-                        .slice() // clone array to avoid mutating state
-                        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-                        .map((a) => (
-                            <AnnouncementCard key={a.id} announcement={a} />
-                        ))}
-                </div>
-            )}
-        </div>
+        <h1>Class Details</h1>
     )
 }
 

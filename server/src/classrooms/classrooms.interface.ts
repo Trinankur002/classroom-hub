@@ -34,4 +34,5 @@ export interface IClassroomComment {
     content: string;
     time: Date;
     sender: User;
+    mentionedUser?: User;
 }
