@@ -14,6 +14,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import ClassroomAnnouncementService from '@/services/classroomAnnouncementService';
 import { toast } from "@/hooks/use-toast";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface Props {
     announcementId: string;
@@ -277,46 +278,47 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                                 className="min-h-[80px] resize-none"
                                                 disabled={isSubmittingComment}
                                             />
-
-                                            {/* User Suggestions Dropdown */}
-                                            {showUserSuggestions && classroomUsers.length > 0 && (
-                                                <Card className="absolute top-full left-0 right-0 mt-1 z-10 max-h-40 overflow-y-auto">
-                                                    <div className="p-2">
-                                                        <p className="text-xs text-muted-foreground mb-2">Mention someone:</p>
-                                                        {classroomUsers.map((classroomUser) => (
-                                                            <button
-                                                                key={classroomUser.id}
-                                                                onClick={() => handleUserMention(classroomUser)}
-                                                                className="w-full flex items-center gap-2 p-2 hover:bg-accent rounded-md text-left"
-                                                            >
-                                                                <Avatar className="h-6 w-6">
-                                                                    <AvatarImage src={classroomUser.avatarUrl || undefined} alt={classroomUser.name} />
-                                                                    <AvatarFallback className="text-xs">{getInitials(classroomUser.name)}</AvatarFallback>
-                                                                </Avatar>
-                                                                <div>
-                                                                    <p className="text-sm font-medium">{classroomUser.name}</p>
-                                                                    <p className="text-xs text-muted-foreground">{classroomUser.role}</p>
-                                                                </div>
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </Card>
-                                            )}
                                         </div>
 
                                         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-
-                                            {/* Mention Button and Tag */}
+                                            {/* Mention Button and Tag*/}
                                             <div className="flex flex-wrap items-center gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => setShowUserSuggestions(!showUserSuggestions)}
-                                                    className="text-muted-foreground hover:text-foreground"
-                                                >
-                                                    <AtSign className="h-4 w-4" />
-                                                    <span className="text-xs ml-1">Mention</span>
-                                                </Button>
+                                                {/* User Suggestions Dropdown */}
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-muted-foreground hover:text-foreground"
+                                                        >
+                                                            <AtSign className="h-4 w-4" />
+                                                            <span className="text-xs ml-1">Mention</span>
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="w-64" align="start">
+                                                        <DropdownMenuLabel>Mention someone:</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        <div className="max-h-40 overflow-y-auto">
+                                                            {classroomUsers.map((classroomUser) => (
+                                                                <DropdownMenuItem
+                                                                    key={classroomUser.id}
+                                                                    onSelect={() => handleUserMention(classroomUser)}
+                                                                    className="cursor-pointer"
+                                                                >
+                                                                    <Avatar className="h-6 w-6 mr-2">
+                                                                        <AvatarImage src={classroomUser.avatarUrl || undefined} alt={classroomUser.name} />
+                                                                        <AvatarFallback className="text-xs">{getInitials(classroomUser.name)}</AvatarFallback>
+                                                                    </Avatar>
+                                                                    <div>
+                                                                        <p className="text-sm font-medium">{classroomUser.name}</p>
+                                                                        <p className="text-xs text-muted-foreground">{classroomUser.role}</p>
+                                                                    </div>
+                                                                </DropdownMenuItem>
+                                                            ))}
+                                                        </div>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+
                                                 {mentionedUser && (
                                                     <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded-md">
                                                         <span className="text-xs">Mentioning:</span>
@@ -327,7 +329,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                                             onClick={() => setMentionedUser(null)}
                                                             className="text-xs hover:text-foreground ml-1 h-4 w-4"
                                                         >
-                                                            <X className="align-self-lg-center"/>
+                                                            <X className="align-self-lg-center" />
                                                         </Button>
                                                     </div>
                                                 )}
@@ -346,11 +348,11 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                                     ) : (
                                                         <Send className="h-4 w-4" />
                                                     )}
-                                                    {/* The "Send" text is now hidden on small screens */}
-                                                    <span className="ml-2 hidden sm:inline">Send</span>
+                                                    <span className="ml-2">Send</span>
                                                 </Button>
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
                             </Card>
