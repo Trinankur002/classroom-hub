@@ -131,7 +131,7 @@ export default function Class() {
                             <div className="w-1"></div>
                             <div>Updates</div>
                         </TabsTrigger>
-                        <TabsTrigger className="flex-1 min-w-[120px]" value="announcements">Announcements</TabsTrigger>
+                        <TabsTrigger className="flex-1 min-w-[120px]" value="announcements">Stream</TabsTrigger>
                         <TabsTrigger className="flex-1 min-w-[120px]" value="doubts">Doubts</TabsTrigger>
                         {userRole === 'teacher' && (
                             <TabsTrigger className="flex-1 min-w-[120px]" value="students">Students</TabsTrigger>
@@ -146,7 +146,7 @@ export default function Class() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="updates">All Updates</SelectItem>
-                                <SelectItem value="announcements">Announcements</SelectItem>
+                                <SelectItem value="announcements">Stream</SelectItem>
                                 <SelectItem value="doubts">Doubts</SelectItem>
                                 {userRole === 'teacher' && <SelectItem value="students">Students</SelectItem>}
                             </SelectContent>

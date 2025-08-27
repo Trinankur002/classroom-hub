@@ -23,7 +23,7 @@ interface SidebarProps {
 const navigationItems = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Classrooms", href: "/classrooms", icon: Users },
-  { name: "Projects", href: "/projects", icon: BookOpen },
+  { name: "All Assignments", href: "/allassignments", icon: BookOpen },
   { name: "Chat", href: "/chat", icon: MessageCircle },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

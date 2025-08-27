@@ -8,8 +8,10 @@ import { toast } from '@/hooks/use-toast';
 import AnnouncementCard from "@/components/customComponent/AnnouncementCard";
 import AnnouncementCardSkeleton from "@/components/customComponent/AnnouncementCardSkeleton";
 import { Card } from "@/components/ui/card";
-import { BookOpen } from "lucide-react";
-
+import { BookOpen, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Props {
     selectedAnnouncement: IClassroomAnnouncement | null;
@@ -22,6 +24,8 @@ export default function Announcements({ selectedAnnouncement, onBack, classroom,
     const { id, name, description, joinCode, teacherId, teacher, studentCount, createdAt, updatedAt } = classroom
     const [isloading, setIsLoading] = useState(false);
     const [announcements, setAnnouncements] = useState<IClassroomAnnouncement[]>();
+    const [filter, setFilter] = useState<"all" | "assignments" | "announcements">("all");
+    const [isPopoverOpen, setIsPopoverOpen] = useState(false); // Add this state
 
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user"));
@@ -57,9 +61,75 @@ export default function Announcements({ selectedAnnouncement, onBack, classroom,
         return <AnnouncementDetails announcementId={selectedAnnouncement.id} classroomId={id} onBack={onBack} />;
     }
 
+    const filteredAnnouncements = announcements?.filter(a => {
+        if (filter === "assignments") {
+            return a.isAssignment;
+        }
+        if (filter === "announcements") {
+            return !a.isAssignment;
+        }
+        return true;
+    }) || [];
+
+    const handleFilterChange = (newFilter: "all" | "assignments" | "announcements") => {
+        setFilter(newFilter);
+        setIsPopoverOpen(false); // Close the popover after selection
+    };
+
     return (
         <div>
             <div className="h-3"></div>
+
+            {/* Filter Dropdown for medium and large screens */}
+            <div className="hidden md:flex justify-end my-4">
+                <Select onValueChange={handleFilterChange}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="assignments">Assignments</SelectItem>
+                        <SelectItem value="announcements">Announcements</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
+            {/* Filter Popover for small screens */}
+            <div className="md:hidden flex justify-end my-4">
+                <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">
+                            <Filter className="mr-2 h-4 w-4" />
+                            Filter
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-48 p-0">
+                        <div className="grid gap-1 p-1">
+                            <Button
+                                variant={filter === "all" ? "accent" : "ghost"}
+                                onClick={() => handleFilterChange("all")}
+                                className="justify-start"
+                            >
+                                All
+                            </Button>
+                            <Button
+                                variant={filter === "assignments" ? "accent" : "ghost"}
+                                onClick={() => handleFilterChange("assignments")}
+                                className="justify-start"
+                            >
+                                Assignments
+                            </Button>
+                            <Button
+                                variant={filter === "announcements" ? "accent" : "ghost"}
+                                onClick={() => handleFilterChange("announcements")}
+                                className="justify-start"
+                            >
+                                Announcements
+                            </Button>
+                        </div>
+                    </PopoverContent>
+                </Popover>
+            </div>
 
             {!isloading && announcements && announcements.length == 0 &&
                 <Card className="p-12 text-center my-6">
@@ -78,14 +148,13 @@ export default function Announcements({ selectedAnnouncement, onBack, classroom,
                 </Card>
             }
 
-            {isloading && 
+            {isloading &&
                 <AnnouncementCardSkeleton />
             }
 
-            {!isloading && announcements && announcements.length > 0 && (
+            {!isloading && filteredAnnouncements.length > 0 && (
                 <div className="space-y-4">
-                    {announcements
-                        .slice() // clone array to avoid mutating state
+                    {filteredAnnouncements
                         .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
                         .map((a) => (
                             <AnnouncementCard
