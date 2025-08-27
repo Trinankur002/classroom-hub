@@ -92,7 +92,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                     variant: "destructive",
                 });
             } else if (data) {
-                setAnnouncement(data);
+                setAnnouncement(prev => prev ? { ...prev, comments: data.comments } : data);
                 setCommentText("");
                 setMentionedUser(null);
                 setShowUserSuggestions(false);
