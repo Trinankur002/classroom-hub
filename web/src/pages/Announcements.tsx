@@ -54,7 +54,7 @@ export default function Announcements({ selectedAnnouncement, onBack, classroom,
     }, [])
 
     if (selectedAnnouncement) {
-        return <AnnouncementDetails announcementId={selectedAnnouncement.id} onBack={onBack} />;
+        return <AnnouncementDetails announcementId={selectedAnnouncement.id} classroomId={id} onBack={onBack} />;
     }
 
     return (
