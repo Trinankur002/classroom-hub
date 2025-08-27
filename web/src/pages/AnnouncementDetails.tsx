@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import FilePreview from "@/components/customComponent/FilePreview";
 import { IClassroomAnnouncement, ICreateComment } from "@/types/classroomAnnouncement";
 import { IClassroomUser } from "@/types/user";
-import { CalendarDays, Send, AtSign, MessageCircle } from "lucide-react";
+import { CalendarDays, Send, AtSign, MessageCircle, X } from "lucide-react";
 import { format } from "date-fns";
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
@@ -304,8 +304,10 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                             )}
                                         </div>
 
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
+                                        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+
+                                            {/* Mention Button and Tag */}
+                                            <div className="flex flex-wrap items-center gap-2">
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -313,21 +315,25 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                                     className="text-muted-foreground hover:text-foreground"
                                                 >
                                                     <AtSign className="h-4 w-4" />
-                                                    <span className="text-xs">Mention</span>
+                                                    <span className="text-xs ml-1">Mention</span>
                                                 </Button>
                                                 {mentionedUser && (
-                                                    <div className="flex items-center gap-1 px-2 py-1 bg-accent rounded-md">
+                                                    <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded-md">
                                                         <span className="text-xs">Mentioning:</span>
                                                         <span className="text-xs font-medium">{mentionedUser.name}</span>
-                                                        <button
+                                                        <Button
+                                                            variant="destructive"
+                                                            size="icon"
                                                             onClick={() => setMentionedUser(null)}
-                                                            className="text-xs text-muted-foreground hover:text-foreground ml-1"
+                                                            className="text-xs hover:text-foreground ml-1 h-4 w-4"
                                                         >
-                                                            ×
-                                                        </button>
+                                                            <X className="align-self-lg-center"/>
+                                                        </Button>
                                                     </div>
                                                 )}
                                             </div>
+
+                                            {/* Send Button and Hint */}
                                             <div className="flex items-center gap-2">
                                                 <span className="text-xs text-muted-foreground hidden sm:inline">Ctrl+Enter to send</span>
                                                 <Button
@@ -340,7 +346,8 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                                     ) : (
                                                         <Send className="h-4 w-4" />
                                                     )}
-                                                    <span>Send</span>
+                                                    {/* The "Send" text is now hidden on small screens */}
+                                                    <span className="ml-2 hidden sm:inline">Send</span>
                                                 </Button>
                                             </div>
                                         </div>
