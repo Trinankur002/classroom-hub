@@ -54,6 +54,19 @@ class ClassroomAnnouncementService {
             };
         }
     }
+
+    async getOneAnnouncement(announcementId: string): Promise<{ data: IClassroomAnnouncement; error?: string }>{
+        try {
+            const response = await api.get(`/classrooms/announcement/one/${announcementId}`)
+            return {data: response.data};
+        } catch (error) {
+            console.error('Error Fetching Announcements:', error);
+            return {
+                data: {} as IClassroomAnnouncement,
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+            };
+        }
+    }
 }
 export default new ClassroomAnnouncementService();
 

@@ -9,7 +9,15 @@ export interface IClassroomAnnouncement {
     teacherId: string;
     teacher: User;
     files: IClassroomFile[];
+    comments: IClassroomComment[];
     isAssignment: boolean;
     dueDate: string | null;
     updatedAt: string,
+}
+
+export interface IClassroomComment {
+    content: string;
+    time: Date;
+    sender: User;
+    mentionedUser?: User;
 }
