@@ -1,8 +1,6 @@
 import {
     Card,
-    CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
@@ -28,22 +26,23 @@ export default function AnnouncementCard({ announcement, onView }: Props) {
             <CardHeader>
                 <CardTitle>{announcement.name}</CardTitle>
                 <CardDescription>
-                    <div className="flex justify-between items-center">
-                        {announcement.description} 
-                        <Badge variant={announcement.isAssignment ? "default" : "secondary"}>
-                            {announcement.isAssignment ? "Assignment" : "Announcement"}
-                        </Badge>
+                    <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2">
+                        <p>{announcement.description}</p>
+
+                        {announcement.isAssignment && <Badge variant='default'>
+                            {"Assignment"}
+                        </Badge>}
                     </div>
                     <FilePreview files={announcement.files}
-                        className="grid grid-cols-6 sm:grid-cols-4 lg:grid-cols-5 gap-3 mt-3"
+                        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 mt-3"
                         previewClassName="h-12"
-                        fileInfoClassName=""/>
+                        fileInfoClassName="" />
                     {announcement.isAssignment &&
                         <div className="mt-3 text-lg">
                             <span>Due: {formattedDueDate}</span>
                         </div>
                     }
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <div className="flex justify-between items-center text-xs text-muted-foreground mt-2">
                         <span>By {announcement.teacher.name}</span>
                         <div className="flex items-center gap-2">
                             {

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added Select imports
 import { ArrowLeft, Plus } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Projects from "./Projects";
@@ -59,6 +60,14 @@ export default function Class() {
     const handleAnnouncementChange = () => setRefreshKey(k => k + 1);
     const [activeTab, setActiveTab] = useState("updates");
 
+    const handleTabChange = (newTab: string) => {
+        if (newTab) {
+            setActiveTab(newTab);
+            setRefreshKey(k => k + 1);
+            setSelectedAnnouncement(null);
+        }
+    };
+
     return (
         <div>
             <div className="p-4 flex items-center justify-between">
@@ -114,12 +123,9 @@ export default function Class() {
             </div>
 
             <div className="w-full px-4 space-y-6">
-                <Tabs value={activeTab} onValueChange={(newTab) => {
-                    setActiveTab(newTab);
-                    setRefreshKey(k => k + 1);
-                    setSelectedAnnouncement(null);
-                }} className="w-full p-5">
-                    <TabsList className="w-full flex overflow-x-auto gap-2">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full p-5">
+                    {/* Desktop Tabs */}
+                    <TabsList className="w-full hidden sm:flex overflow-x-auto gap-2">
                         <TabsTrigger className="flex-1 min-w-[120px]" value="updates">
                             <div>All</div>
                             <div className="w-1"></div>
@@ -131,6 +137,22 @@ export default function Class() {
                             <TabsTrigger className="flex-1 min-w-[120px]" value="students">Students</TabsTrigger>
                         )}
                     </TabsList>
+
+                    {/* Mobile Dropdown */}
+                    <div className="sm:hidden w-full mb-4">
+                        <Select value={activeTab} onValueChange={handleTabChange}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a view" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="updates">All Updates</SelectItem>
+                                <SelectItem value="announcements">Announcements</SelectItem>
+                                <SelectItem value="doubts">Doubts</SelectItem>
+                                {userRole === 'teacher' && <SelectItem value="students">Students</SelectItem>}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     <TabsContent value="updates">
                         {classroom && (
                             <ClassDetails
