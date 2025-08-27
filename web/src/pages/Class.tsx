@@ -182,7 +182,7 @@ export default function Class() {
                                 .find((el) => el.textContent?.includes("Create Announcement")) as HTMLButtonElement | undefined;
                             btn?.click();
                         }}
-                        className="h-14 w-14 rounded-full shadow-lg flex items-center justify-center"
+                        className="h-12 w-12 rounded-full shadow-lg flex items-center justify-center"
                     >
                         <Plus className="h-6 w-6 text-white" />
                     </Button>

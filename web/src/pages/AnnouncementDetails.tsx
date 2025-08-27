@@ -32,7 +32,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
     const [mentionedUser, setMentionedUser] = useState<IClassroomUser | null>(null);
     const [cursorPosition, setCursorPosition] = useState(0);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    
+
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "null");
     if (!user) {
@@ -73,7 +73,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
 
     const handleCommentSubmit = async () => {
         if (!commentText.trim()) return;
-        
+
         setIsSubmittingComment(true);
         try {
             const commentData: ICreateComment = {
@@ -84,7 +84,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
             };
 
             const { data, error } = await ClassroomAnnouncementService.addCommentToAnnouncement(commentData);
-            
+
             if (error) {
                 toast({
                     title: "Failed to add comment",
@@ -179,36 +179,43 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
 
             {!isLoading && announcement && (
                 <div>
+                    <div className="h-2"></div>
+
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10">
-                                <AvatarImage src={announcement.teacher?.avatarUrl} alt={announcement.teacher?.name} />
-                                <AvatarFallback>{getInitials(announcement.teacher?.name)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="text-sm font-medium leading-none">{announcement.teacher?.name}</p>
-                                {formattedUpdatedAt && (
-                                    <p className="text-xs text-muted-foreground">Updated {formattedUpdatedAt}</p>
-                                )}
+                        <div>
+                            <h1 className="mt-3 text-2xl sm:text-2xl font-semibold">{announcement.name}</h1>
+                            {announcement.description && (
+                                <p className="text-xl sm:text-base text-muted-foreground mt-1 whitespace-pre-wrap">{announcement.description}</p>
+                            )}
+                            <Separator className="my-4" />
+
+                            <div className="flex items-center gap-3 my-4">
+                                {/* <Avatar className="h-10 w-10">
+                                    <AvatarImage src={announcement.teacher?.avatarUrl} alt={announcement.teacher?.name} />
+                                    <AvatarFallback>{getInitials(announcement.teacher?.name)}</AvatarFallback>
+                                </Avatar> */}
+
+                                <div className="space-y-1 mt-1">
+                                    <p className="text-md font-medium leading-none">{announcement.teacher?.name}</p>
+                                    {formattedUpdatedAt && (
+                                        <p className="text-xs text-muted-foreground">Updated {formattedUpdatedAt}</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+
+                        <div className="flex flex-col items-end gap-6">
                             <Badge variant={announcement.isAssignment ? "default" : "secondary"}>
                                 {announcement.isAssignment ? "Assignment" : "Announcement"}
                             </Badge>
                             {announcement.isAssignment && formattedDueDate && (
-                                <div className="flex items-center text-xs text-muted-foreground gap-1">
-                                    <CalendarDays className="h-3 w-3" />
+                                <div className="flex items-center text-xl text-muted-foreground gap-1">
+                                    <CalendarDays className="h-6 w-6" />
                                     <span>Due {formattedDueDate}</span>
                                 </div>
                             )}
                         </div>
                     </div>
-
-                    <h1 className="mt-3 text-xl sm:text-2xl font-semibold">{announcement.name}</h1>
-                    {announcement.description && (
-                        <p className="text-sm sm:text-base text-muted-foreground mt-1 whitespace-pre-wrap">{announcement.description}</p>
-                    )}
 
                     <Separator className="my-4" />
                     <FilePreview files={announcement.files} />
@@ -226,21 +233,24 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                         {announcement.comments && announcement.comments.length > 0 ? (
                             <div className="space-y-3">
                                 {announcement.comments.map((c, idx) => (
-                                    <div key={idx} className="flex gap-3">
+                                    <div key={idx} className="flex gap-3 align-items-center ">
                                         <Avatar className="h-8 w-8">
                                             <AvatarImage src={c.sender?.avatarUrl} alt={c.sender?.name} />
                                             <AvatarFallback>{getInitials(c.sender?.name)}</AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-medium">{c.sender?.name}</span>
+                                                <span className="text-sm font-light">{c.sender?.name}</span>
                                                 <span className="text-xs text-muted-foreground">
                                                     {format(new Date(c.time as any), "MMM dd, yyyy h:mm a")}
                                                 </span>
                                             </div>
-                                            <p className="text-sm">
+                                            <p className="flex gap-2 text-sm">
                                                 {c.content}
-                                                {c.mentionedUser ? ` @${c.mentionedUser.name}` : ""}
+                                                <p>
+                                                   {c.mentionedUser ? ` @${c.mentionedUser.name}` : ""} 
+                                                </p>
+                                                
                                             </p>
                                         </div>
                                     </div>
@@ -264,10 +274,10 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                         <div className="relative">
                             <Card className="p-4">
                                 <div className="flex gap-3">
-                                    <Avatar className="h-8 w-8">
+                                    {/* <Avatar className="h-8 w-8">
                                         <AvatarImage src={user?.avatarUrl} alt={user?.name} />
                                         <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
-                                    </Avatar>
+                                    </Avatar> */}
                                     <div className="flex-1 space-y-3">
                                         <div className="relative">
                                             <Textarea
@@ -279,7 +289,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                                 className="min-h-[80px] resize-none"
                                                 disabled={isSubmittingComment}
                                             />
-                                            
+
                                             {/* User Suggestions Dropdown */}
                                             {showUserSuggestions && classroomUsers.length > 0 && (
                                                 <Card className="absolute top-full left-0 right-0 mt-1 z-10 max-h-40 overflow-y-auto">
