@@ -190,11 +190,6 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                             <Separator className="my-4" />
 
                             <div className="flex items-center gap-3 my-4">
-                                {/* <Avatar className="h-10 w-10">
-                                    <AvatarImage src={announcement.teacher?.avatarUrl} alt={announcement.teacher?.name} />
-                                    <AvatarFallback>{getInitials(announcement.teacher?.name)}</AvatarFallback>
-                                </Avatar> */}
-
                                 <div className="space-y-1 mt-1">
                                     <p className="text-md font-medium leading-none">{announcement.teacher?.name}</p>
                                     {formattedUpdatedAt && (
@@ -274,10 +269,6 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                         <div className="relative">
                             <Card className="p-4">
                                 <div className="flex gap-3">
-                                    {/* <Avatar className="h-8 w-8">
-                                        <AvatarImage src={user?.avatarUrl} alt={user?.name} />
-                                        <AvatarFallback>{getInitials(user?.name)}</AvatarFallback>
-                                    </Avatar> */}
                                     <div className="flex-1 space-y-3">
                                         <div className="relative">
                                             <Textarea
@@ -341,7 +332,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-xs text-muted-foreground">Ctrl+Enter to send</span>
+                                                <span className="text-xs text-muted-foreground hidden sm:inline">Ctrl+Enter to send</span>
                                                 <Button
                                                     onClick={handleCommentSubmit}
                                                     disabled={!commentText.trim() || isSubmittingComment}
