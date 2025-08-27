@@ -1,5 +1,6 @@
-import { IClassroomAnnouncement } from "@/types/classroomAnnouncement";
+import { IClassroomAnnouncement, ICreateComment } from "@/types/classroomAnnouncement";
 import api from "./api";
+import { IClassroomUser } from "@/types/user";
 
 class ClassroomAnnouncementService {
     async getAll(classroomId: string): Promise<{ data: IClassroomAnnouncement[]; error?: string }> {
@@ -67,6 +68,31 @@ class ClassroomAnnouncementService {
             };
         }
     }
+
+    async addCommentToAnnouncement(data: ICreateComment): Promise<{ data?: IClassroomAnnouncement; error?: string }> { 
+        try {
+            // By default, axios will send the data as 'application/json', which is what the backend expects.
+            const response = await api.post(`/classrooms/announcements/comment`, data);
+            return { data: response.data };
+        } catch (error: any) {
+            console.error('Error adding comment:', error);
+            return {
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+            };
+        }
+    }
+
+    async getAllClassroomUsers(classroomId: string): Promise<{ data: IClassroomUser[]; error?: string }> {
+        try {
+            const response = await api.get(`/classrooms/${classroomId}/users`);
+            return { data: response.data };
+        } catch (error: any) {
+            console.error('Error Fetching Announcements:', error);
+            return {
+                data: [],
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+            };
+        }
+    }
 }
 export default new ClassroomAnnouncementService();
-

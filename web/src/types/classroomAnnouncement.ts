@@ -21,3 +21,10 @@ export interface IClassroomComment {
     sender: User;
     mentionedUser?: User;
 }
+
+export interface ICreateComment{
+    announcementId: string;
+    content: string;
+    time: Date
+    mentionedUserId ?: string;
+}

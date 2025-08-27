@@ -6,7 +6,7 @@ import { CreateClassroomDto } from './dto/create-classroom.dto';
 import { User } from '../users/entities/user.entity';
 import { StudentClassroom } from './entities/student-classroom.entity';
 import { Role } from '../users/entities/role.enum';
-import { IClassroom, IClassroomComment } from './classrooms.interface';
+import { IClassroom, IClassroomComment, IClassroomUser } from './classrooms.interface';
 import { ClassroomAnnouncement } from './entities/classroom-announcement.entity';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto'; // Import CreateAnnouncementDto
 import { FileEntity } from '../fileServices/file.entity'; // Import FileEntity
@@ -619,4 +619,70 @@ export class ClassroomsService {
     return savedAnnouncement;
   }
 
+  async getAllClassroomUsers(
+    classroomId: string,
+    currentUser: User,
+  ): Promise<IClassroomUser[]> {
+    // Find the classroom and its teacher
+    const classroom = await this.classroomsRepository.findOne({
+      where: { id: classroomId },
+      relations: ['teacher'],
+    });
+
+    if (!classroom) {
+      throw new NotFoundException(`Classroom with id ${classroomId} not found`);
+    }
+
+    // Authorization: Only allow the teacher or an enrolled student to see the list of users.
+    const isTeacher = classroom.teacherId === currentUser.id;
+    const isStudentInClass = await this.studentClassroomsRepository.findOne({
+      where: { classroomId, studentId: currentUser.id },
+    });
+
+    if (!isTeacher && !isStudentInClass) {
+      throw new ForbiddenException(
+        'You are not authorized to view the users of this classroom.',
+      );
+    }
+
+    const teacher = classroom.teacher;
+
+    // Find all students in the classroom
+    const studentClassrooms = await this.studentClassroomsRepository.find({
+      where: { classroomId },
+      relations: ['student'],
+    });
+
+    const students = studentClassrooms.map((sc) => sc.student);
+
+    const users: IClassroomUser[] = [];
+
+    // Add the teacher to the list
+    if (teacher) {
+      users.push({
+        id: teacher.id,
+        name: teacher.name,
+        email: teacher.email,
+        role: 'Teacher',
+        avatarUrl: teacher.avatarUrl,
+        createdAt: teacher.createdAt,
+      });
+    }
+
+    // Add all students to the list
+    students.forEach((student) => {
+      if (student) {
+        users.push({
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          role: 'Student',
+          avatarUrl: student.avatarUrl,
+          createdAt: student.createdAt,
+        });
+      }
+    });
+
+    return users;
+  }
 }

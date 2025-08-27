@@ -9,6 +9,7 @@ import {
   ForbiddenException,
   UseInterceptors,
   UploadedFiles,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, getSchemaPath } from '@nestjs/swagger';
 import { ClassroomsService } from './classrooms.service';
@@ -18,7 +19,7 @@ import { Role } from '../users/entities/role.enum';
 import { ClassroomResponseDto } from './dto/classroom-response.dto';
 import { CreateAnnouncementDto } from './dto/create-announcement.dto'; // Import CreateAnnouncementDto
 import { ClassroomAnnouncement } from './entities/classroom-announcement.entity'; // Import ClassroomAnnouncement for ApiResponse type
-import { IClassroom } from './classrooms.interface';
+import { IClassroom, IClassroomUser } from './classrooms.interface';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateCommentDto } from './dto/create-comment.dto';
 
@@ -41,10 +42,10 @@ export class ClassroomsController {
 
   @Post('join/:joinCode')
   async join(@Param('joinCode') joinCode: string, @Request() req) {
-    // const classroom = await this.classroomsService.findByJoinCode(joinCode);
-    // if (!classroom) {
-    //   throw new NotFoundException('Classroom not found.');
-    // }
+    const classroom = await this.classroomsService.findByJoinCode(joinCode);
+    if (!classroom) {
+      throw new NotFoundException('Classroom not found.');
+    }
     return this.classroomsService.join(joinCode, req.user);
   }
 
@@ -150,6 +151,22 @@ export class ClassroomsController {
       createCommentDto,
       req.user,
     );
+  }
+
+  @Get(':id/users')
+  @ApiOperation({ summary: 'Get all users in a classroom' })
+  @ApiParam({ name: 'id', description: 'Classroom ID (UUID)' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of classroom users returned successfully'
+  })
+  @ApiResponse({ status: 404, description: 'Classroom not found' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async getAllClassroomUsers(
+    @Param('id') classroomId: string,
+    @Request() req,
+  ): Promise<IClassroomUser[]> {
+    return this.classroomsService.getAllClassroomUsers(classroomId, req.user);
   }
 
 }
