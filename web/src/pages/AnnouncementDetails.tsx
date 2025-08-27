@@ -30,7 +30,6 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
     const [classroomUsers, setClassroomUsers] = useState<IClassroomUser[]>([]);
     const [showUserSuggestions, setShowUserSuggestions] = useState(false);
     const [mentionedUser, setMentionedUser] = useState<IClassroomUser | null>(null);
-    const [cursorPosition, setCursorPosition] = useState(0);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const navigate = useNavigate();
@@ -144,11 +143,11 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
     const getInitials = (n?: string) => (n ? n.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase() : "U");
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 px-4 sm:px-6 md:px-8 py-4">
 
             {isLoading && (
                 <div className="rounded-xl border bg-card shadow-sm p-6 space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <Skeleton className="h-10 w-10 rounded-full" />
                             <div className="space-y-2">
@@ -156,7 +155,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                 <Skeleton className="h-3 w-28" />
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
                             <Skeleton className="h-5 w-24 rounded-md" />
                             <Skeleton className="h-4 w-36 rounded-md" />
                         </div>
@@ -166,12 +165,12 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                     <Skeleton className="h-4 w-11/12" />
                     <Skeleton className="h-4 w-10/12" />
 
-                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3 pt-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3 pt-2">
                         <Skeleton className="h-24 w-full rounded-lg" />
                         <Skeleton className="h-24 w-full rounded-lg" />
                         <Skeleton className="h-24 w-full rounded-lg" />
-                        <Skeleton className="h-24 w-full rounded-lg" />
-                        <Skeleton className="h-24 w-full rounded-lg" />
+                        <Skeleton className="h-24 w-full rounded-lg hidden sm:block" />
+                        <Skeleton className="h-24 w-full rounded-lg hidden lg:block" />
                     </div>
                 </div>
             )}
@@ -181,14 +180,13 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                 <div>
                     <div className="h-2"></div>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between">
                         <div>
                             <h1 className="mt-3 text-2xl sm:text-2xl font-semibold">{announcement.name}</h1>
                             {announcement.description && (
-                                <p className="text-xl sm:text-base text-muted-foreground mt-1 whitespace-pre-wrap">{announcement.description}</p>
+                                <p className="text-sm sm:text-base text-muted-foreground mt-1 whitespace-pre-wrap">{announcement.description}</p>
                             )}
                             <Separator className="my-4" />
-
                             <div className="flex items-center gap-3 my-4">
                                 <div className="space-y-1 mt-1">
                                     <p className="text-md font-medium leading-none">{announcement.teacher?.name}</p>
@@ -198,14 +196,13 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                 </div>
                             </div>
                         </div>
-
-                        <div className="flex flex-col items-end gap-6">
+                        <div className="flex flex-col items-start sm:items-end gap-3 sm:gap-6 mt-4 sm:mt-0">
                             <Badge variant={announcement.isAssignment ? "default" : "secondary"}>
                                 {announcement.isAssignment ? "Assignment" : "Announcement"}
                             </Badge>
                             {announcement.isAssignment && formattedDueDate && (
-                                <div className="flex items-center text-xl text-muted-foreground gap-1">
-                                    <CalendarDays className="h-6 w-6" />
+                                <div className="flex items-center text-sm sm:text-xl text-muted-foreground gap-1">
+                                    <CalendarDays className="h-4 w-4 sm:h-6 sm:w-6" />
                                     <span>Due {formattedDueDate}</span>
                                 </div>
                             )}
@@ -243,9 +240,9 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                             <p className="flex gap-2 text-sm">
                                                 {c.content}
                                                 <p>
-                                                   {c.mentionedUser ? ` @${c.mentionedUser.name}` : ""} 
+                                                    {c.mentionedUser ? ` @${c.mentionedUser.name}` : ""}
                                                 </p>
-                                                
+
                                             </p>
                                         </div>
                                     </div>
