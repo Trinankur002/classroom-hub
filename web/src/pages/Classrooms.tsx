@@ -21,10 +21,8 @@ export default function Classrooms() {
   const [isloading, setIsLoading] = useState(false);
 
   const user = JSON.parse(localStorage.getItem("user"));
-  if (!user) {
-    navigate("/");
-  }
-  const userRole = user.role.toString().toLowerCase()
+
+
 
   const [classrooms, setClassrooms] = useState<IClassroom[]>([])
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,7 +31,8 @@ export default function Classrooms() {
     setIsLoading(true);
     try {
       const { data, error } = await ClassroomService.getAllClassrooms();
-      setClassrooms(data);
+      setClassrooms(data || []);
+
       if (error) {
         toast({
           title: "Failed to load classrooms",
@@ -50,10 +49,22 @@ export default function Classrooms() {
 
 
   useEffect(() => {
-    load();
+    if (!user) {
+      navigate("/");
+    } else {
+      load();
+    }
   }, []);
 
+  if (!user) {
+    return null;
+  }
+
+  const userRole = user.role.toString().toLowerCase();
+
   return (
+
+
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">

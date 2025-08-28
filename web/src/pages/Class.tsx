@@ -19,10 +19,8 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbS
 
 export default function Class() {
     const navigate = useNavigate();
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user) {
-        navigate("/");
-    }
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+
     const userRole = user.role.toString().toLowerCase();
     const { id } = useParams<{ id: string }>();
     const [isloading, setIsLoading] = useState(false);
@@ -37,7 +35,7 @@ export default function Class() {
         try {
             if (id) {
                 const { data, error } = await ClassroomService.getClassroomById(id);
-                setClassroom(data);
+                setClassroom(data || null);
                 if (error) {
                     toast({
                         title: "Failed to load classroom",
@@ -54,8 +52,16 @@ export default function Class() {
     }, [id]);
 
     useEffect(() => {
-        loadClassroom();
+        if (!user) {
+            navigate("/");
+        } else {
+            loadClassroom();
+        }
     }, [loadClassroom]);
+
+    if (!user) {
+        return null;
+    }
 
     const handleAnnouncementChange = () => setRefreshKey(k => k + 1);
     const [activeTab, setActiveTab] = useState("updates");

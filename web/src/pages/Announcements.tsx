@@ -23,22 +23,21 @@ interface Props {
 export default function Announcements({ selectedAnnouncement, onBack, classroom, onViewAnnouncement }: Props) {
     const { id, name, description, joinCode, teacherId, teacher, studentCount, createdAt, updatedAt } = classroom
     const [isloading, setIsLoading] = useState(false);
-    const [announcements, setAnnouncements] = useState<IClassroomAnnouncement[]>();
+    const [announcements, setAnnouncements] = useState<IClassroomAnnouncement[]>([]);
+
     const [filter, setFilter] = useState<"all" | "assignments" | "announcements">("all");
     const [isPopoverOpen, setIsPopoverOpen] = useState(false); // Add this state
 
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user"));
-    if (!user) {
-        navigate("/");
-    }
-    const userRole = user.role.toString().toLowerCase()
+
 
     const load = async () => {
         setIsLoading(true);
         try {
             const { data, error } = await ClassroomAnnouncementService.getAll(id)
-            setAnnouncements(data);
+            setAnnouncements(data || []);
+
             if (error) {
                 toast({
                     title: `Failed to load Details of Classroom ${name}`,
@@ -54,10 +53,21 @@ export default function Announcements({ selectedAnnouncement, onBack, classroom,
     }
 
     useEffect(() => {
-        load();
+        if (!user) {
+            navigate("/");
+        } else {
+            load();
+        }
     }, [])
 
+    if (!user) {
+        return null;
+    }
+
+    const userRole = user.role.toString().toLowerCase();
+
     if (selectedAnnouncement) {
+
         return <AnnouncementDetails announcementId={selectedAnnouncement.id} classroomId={id} onBack={onBack} />;
     }
 

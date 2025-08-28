@@ -26,7 +26,8 @@ interface Props {
 export default function AnnouncementDetails({ announcementId, classroomId, onBack }: Props) {
 
     const [isLoading, setIsLoading] = useState(false);
-    const [announcement, setAnnouncement] = useState<IClassroomAnnouncement>();
+    const [announcement, setAnnouncement] = useState<IClassroomAnnouncement | null>(null);
+
     const [commentText, setCommentText] = useState("");
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -37,15 +38,13 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
 
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "null");
-    if (!user) {
-        navigate("/");
-    }
 
     const load = async () => {
         setIsLoading(true);
         try {
             const { data, error } = await ClassroomAnnouncementService.getOneAnnouncement(announcementId)
-            setAnnouncement(data);
+            setAnnouncement(data || null);
+
             if (error) {
                 toast({
                     title: "Failed to load announcement details",
@@ -161,11 +160,20 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
     }
 
     useEffect(() => {
-        load();
-        loadClassroomUsers();
+        if (!user) {
+            navigate("/");
+        } else {
+            load();
+            loadClassroomUsers();
+        }
     }, [])
 
+    if (!user) {
+        return null;
+    }
+
     const formattedDueDate = announcement?.dueDate ? format(new Date(announcement.dueDate), "MMM dd, yyyy h:mm a") : null;
+
     const formattedUpdatedAt = announcement?.updatedAt ? format(new Date(announcement.updatedAt), "MMM dd, yyyy h:mm a") : null;
     const getInitials = (n?: string) => (n ? n.split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase() : "U");
 
