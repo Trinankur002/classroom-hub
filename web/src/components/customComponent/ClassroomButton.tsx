@@ -29,8 +29,7 @@ function ClassroomButton({ userRole, onClassroomChange }: Props) {
             if (userRole === "teacher") {
                 await ClassroomService.createClassroom(classroomName, description)
             } else {
-                console.log("Joining classroom with code:", joinCode)
-                // TODO: call API -> joinClassroom({ joinCode })
+                await ClassroomService.joinClassroom(joinCode)
             }
             onClassroomChange?.();
             setOpen(false) // close after saving
@@ -41,7 +40,7 @@ function ClassroomButton({ userRole, onClassroomChange }: Props) {
             console.error("Failed to create/join classroom:", error);
             setOpen(false)
             let toastTitle = ""
-            if (userRole) {
+            if (userRole==="teacher") {
                 toastTitle = 'Failed to Create Classroom'
             } else {
                 toastTitle = 'Failed to Join Classroom'

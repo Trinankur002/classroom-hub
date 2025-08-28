@@ -40,6 +40,16 @@ class ClassroomService {
         }
     }
 
+    async joinClassroom(code: string): Promise<any> {
+        try {
+            const response = await api.post(`/classrooms/join/${code}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error joining classroom:', error);
+            throw error;
+        }
+    }
+
 }
 
 export default new ClassroomService()
