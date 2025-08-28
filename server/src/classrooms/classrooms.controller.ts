@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFiles,
   NotFoundException,
+  Delete,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, getSchemaPath } from '@nestjs/swagger';
 import { ClassroomsService } from './classrooms.service';
@@ -28,7 +29,7 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 @ApiBearerAuth()
 export class ClassroomsController {
 
-  constructor(private classroomsService: ClassroomsService) {}
+  constructor(private classroomsService: ClassroomsService) { }
 
   @Post()
   @ApiBody({ type: CreateClassroomDto })
@@ -169,4 +170,17 @@ export class ClassroomsController {
     return this.classroomsService.getAllClassroomUsers(classroomId, req.user);
   }
 
+  @Delete('anouncement/:announcementId')
+  @ApiOperation({ summary: "Deletes an announcement by ID" })
+  @ApiParam({ name: "announcementId", description: "Announcement ID (UUID)", required: true, type: "string" })
+  @ApiResponse({ status: 200, description: "Announcement deleted successfully" })
+  @ApiResponse({ status: 403, description: "Forbidden" })
+  @ApiResponse({ status: 404, description: "File not found" })
+  async deleteFiles(
+    @Param('announcementId') announcementId: string,
+    @Request() req: any,
+  ) {
+    await this.classroomsService.deleteAnnouncement(announcementId, req.user);
+    return { message: 'Announcement deleted successfully' };
+  }
 }

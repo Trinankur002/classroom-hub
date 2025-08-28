@@ -111,4 +111,56 @@ export class FileService {
         return this.fileRepo.save(files);
     }
 
+    /**
+     * Deletes files from the database and Google Cloud Storage.
+     * It checks for user permissions before deletion.
+     * * @param fileIds - An array of file IDs to delete.
+     * @param user - The user requesting the deletion.
+     */
+    async deleteFiles(fileIds: string[], user: User): Promise<void> {
+        if (!fileIds || fileIds.length === 0) {
+            throw new BadRequestException("File IDs array cannot be empty.");
+        }
+
+        const filesToDelete = await this.fileRepo.findBy({ id: In(fileIds) });
+
+        if (filesToDelete.length !== fileIds.length) {
+            const notFoundIds = fileIds.filter(id => !filesToDelete.some(file => file.id === id));
+            this.logger.warn(`Attempted to delete non-existent files: ${notFoundIds.join(', ')}`);
+        }
+
+        const gcsBucket = getBucket();
+        const userRole = user.role;
+        const currentUserId = user.id;
+
+        // First, perform a batch permission check. If any file fails, throw an error.
+        for (const file of filesToDelete) {
+            if (userRole !== 'Teacher' && file.userId !== currentUserId) {
+                throw new ForbiddenException(`You do not have permission to delete file with ID: ${file.id}`);
+            }
+        }
+
+        const deletionPromises = filesToDelete.map(async (file) => {
+            try {
+                const blob = gcsBucket.file(file.key);
+                await blob.delete();
+                this.logger.debug(`✅ Successfully deleted file from GCS: ${file.key}`);
+
+                await this.fileRepo.delete(file.id);
+                this.logger.debug(`✅ Successfully deleted file metadata from DB: ${file.id}`);
+            } catch (err) {
+                this.logger.error(`❌ Failed to delete file ${file.id} from GCS or DB.`, err.stack || err.message);
+                throw err;
+            }
+        });
+
+        try {
+            await Promise.all(deletionPromises);
+            this.logger.log(`✅ Successfully deleted a batch of ${filesToDelete.length} files.`);
+        } catch (err) {
+            this.logger.error("❌ A batch deletion failed. Some files may not have been deleted.", err.stack || err.message);
+            throw new Error("Failed to delete all files due to an internal error.");
+        }
+        // this.logger.log(`files : ${fileIds}`)
+    }
 }

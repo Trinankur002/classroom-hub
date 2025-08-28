@@ -6,7 +6,9 @@ import {
     UploadedFile,
     Request,
     Get,
-    Param
+    Param,
+    Delete,
+    Body
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { JwtAuthGuard } from "src/auth/jwt-auth.guard";
@@ -20,6 +22,7 @@ import {
     ApiResponse,
     ApiTags,
 } from "@nestjs/swagger";
+import { FilesIds } from "./files.dto";
 
 @ApiTags("files")
 @ApiBearerAuth()
@@ -68,4 +71,16 @@ export class FileController {
     async getFile(@Param("id") id: string, @Request() req) {
         return this.fileService.getFile(id, req.user);
     }
+
+    // ✅ Delete files by ID
+    @Delete()
+    @ApiOperation({ summary: "Deletes a list of files" })
+    @ApiBody({ type: FilesIds })
+    @ApiResponse({ status: 200, description: "Files deleted successfully" })
+    @ApiResponse({ status: 403, description: "Forbidden" })
+    @ApiResponse({ status: 404, description: "File not found" })
+    async deleteFiles(@Body('fileIds') fileIds: string[], @Request() req) {
+        await this.fileService.deleteFiles(fileIds, req.user);
+        return { message: 'Files deleted successfully' };
+    }    
 }

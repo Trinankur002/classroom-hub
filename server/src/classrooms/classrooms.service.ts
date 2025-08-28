@@ -685,4 +685,30 @@ export class ClassroomsService {
 
     return users;
   }
+
+  async deleteAnnouncement(announcementId: string, user: User): Promise<void> {
+    const announcement = await this.classroomAnnouncementsRepository.findOne({
+      where: { id: announcementId },
+      relations: ['files'],
+    });
+
+    if (!announcement) {
+      throw new NotFoundException('Announcement not found.');
+    }
+
+    if (announcement.teacherId !== user.id && user.role !== Role.Teacher ) {
+      throw new ForbiddenException('You do not have permission to delete this announcement.');
+    }
+
+    const fileIds = announcement.files.map(file => file.id);
+    try {
+      if (fileIds.length > 0) {
+        await this.fileService.deleteFiles(fileIds, user);
+      }
+
+      await this.classroomAnnouncementsRepository.delete(announcement.id);
+    } catch (error) {
+      throw new Error(`Failed to delete announcement and its associated files because ${error}`);
+    }
+  }
 }

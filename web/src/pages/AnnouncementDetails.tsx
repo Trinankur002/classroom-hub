@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import FilePreview from "@/components/customComponent/FilePreview";
 import { IClassroomAnnouncement, ICreateComment } from "@/types/classroomAnnouncement";
 import { IClassroomUser } from "@/types/user";
@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import ClassroomAnnouncementService from '@/services/classroomAnnouncementService';
 import { toast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface Props {
     announcementId: string;
@@ -28,6 +29,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
     const [announcement, setAnnouncement] = useState<IClassroomAnnouncement>();
     const [commentText, setCommentText] = useState("");
     const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [classroomUsers, setClassroomUsers] = useState<IClassroomUser[]>([]);
     const [showUserSuggestions, setShowUserSuggestions] = useState(false);
     const [mentionedUser, setMentionedUser] = useState<IClassroomUser | null>(null);
@@ -133,6 +135,30 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
             handleCommentSubmit();
         }
     };
+
+    const deleteAnnouncement = async (id: string) => {
+        setIsDeleting(true);
+        try {
+            // Simulate API call for deletion
+            await ClassroomAnnouncementService.deleteAnnouncement(id);
+            console.log("Deleting announcement:", id);
+
+            toast({
+                title: "Announcement Deleted",
+                description: "The announcement has been successfully removed.",
+            });
+            onBack();
+        } catch (error) {
+            console.error("Error deleting announcement:", error);
+            toast({
+                title: "Deletion Failed",
+                description: "Could not delete the announcement. Please try again.",
+                variant: "destructive",
+            });
+        } finally {
+            setIsDeleting(false);
+        }
+    }
 
     useEffect(() => {
         load();
@@ -358,6 +384,42 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                             </Card>
                         </div>
                     </div>
+
+                    {/* Delete Announcement Section */}
+                    {user?.id === announcement?.teacher?.id && (
+                        <div className="mt-8 flex justify-end">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive">Delete Announcement</Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete this announcement and remove all associated data from our servers.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={() => deleteAnnouncement(announcementId)}
+                                            disabled={isDeleting}
+                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        >
+                                            {isDeleting ? (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                                    <span>Deleting...</span>
+                                                </div>
+                                            ) : (
+                                                "Delete"
+                                            )}
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

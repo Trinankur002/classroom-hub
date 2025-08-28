@@ -94,5 +94,17 @@ class ClassroomAnnouncementService {
             };
         }
     }
+
+    async deleteAnnouncement(announcementId: string) : Promise<{ data?: string ; error?: string }>{
+        try {
+            const response = await api.delete(`classrooms/anouncement/${announcementId}`);
+            return { data: response.data.message };
+        } catch (error) {
+            console.error('Error Deleting Announcements:', error);
+            return {
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+            };
+        }
+    }
 }
 export default new ClassroomAnnouncementService();
