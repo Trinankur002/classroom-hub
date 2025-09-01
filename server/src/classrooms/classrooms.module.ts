@@ -7,12 +7,14 @@ import { ClassroomsController } from './classrooms.controller'; // Import Classr
 import { ClassroomAnnouncement } from './entities/classroom-announcement.entity';
 import { FileModule } from '../fileServices/file.module'; // Import FileModule
 import { UsersModule } from 'src/users/users.module';
+import { AssignmentModule } from 'src/assignments/assignment.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Classroom, StudentClassroom, ClassroomAnnouncement]), // Add ClassroomAnnouncement
     FileModule, // Import FileModule to make FileService available
-    UsersModule
+    UsersModule,
+    AssignmentModule,
   ],
   providers: [ClassroomsService],
   controllers: [ClassroomsController],

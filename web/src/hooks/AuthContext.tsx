@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { useToast } from "./use-toast";
 import { useNavigate } from "react-router-dom";
+import AuthService from '@/services/authservice';
 
 interface AuthContextType {
   isLoading: boolean;
@@ -14,7 +15,6 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const verifyToken = async () => {
       const token = localStorage.getItem("token");
-      
+
       if (!token) {
         setIsAuthenticated(false);
         setUser(null);
@@ -35,25 +35,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       try {
-        const response = await fetch("/api/auth/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          localStorage.setItem("user", JSON.stringify(userData));
-          setIsAuthenticated(true);
-        } else {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          setUser(null);
-          setIsAuthenticated(false);
-        }
+        const userData = await AuthService.me();
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
+        setIsAuthenticated(true);
       } catch (error) {
+        console.error("Token verification failed", error);
         localStorage.removeItem("token");
+        localStorage.removeItem("user");
         setUser(null);
         setIsAuthenticated(false);
       } finally {
@@ -67,35 +56,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (data: any) => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to login");
-      }
-
-      const { access_token } = await response.json();
+      const { access_token } = await AuthService.login(data.email, data.password);
       localStorage.setItem("token", access_token);
       setIsAuthenticated(true);
 
-      // Fetch user data after login
-      const userResponse = await fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
-      });
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        setUser(userData);
-        localStorage.setItem("user", JSON.stringify(userData));
-      } else {
-        setUser(null);
-        localStorage.removeItem("user");
-      }
+      const userData = await AuthService.me();
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
 
       toast({
         title: "Welcome back!",
@@ -116,39 +83,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signup = async (data: any) => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to sign up");
-      }
-
-      const { access_token } = await response.json();
-      if (!access_token) {
-        throw new Error("Signup did not return an access token");
-      }
-
+      const { access_token } = await AuthService.signup(data);
       localStorage.setItem("token", access_token);
       setIsAuthenticated(true);
 
-      // Fetch user data after signup
-      const userResponse = await fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${access_token}`,
-        },
-      });
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        setUser(userData);
-        localStorage.setItem("user", JSON.stringify(userData));
-      } else {
-        setUser(null);
-        localStorage.removeItem("user");
-      }
+      const userData = await AuthService.me();
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
 
       toast({
         title: "Welcome!",
@@ -175,7 +116,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("user");
     setUser(null);
     setIsAuthenticated(false);
-    
     navigate("/login");
   };
 

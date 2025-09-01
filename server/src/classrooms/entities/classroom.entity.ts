@@ -7,8 +7,10 @@ import {
   JoinColumn,
   Index,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { StudentClassroom } from './student-classroom.entity';
 
 @Entity('classrooms')
 export class Classroom {
@@ -34,6 +36,9 @@ export class Classroom {
 
   @Column({ default: 0 })
   studentCount: number;
+
+  @OneToMany(() => StudentClassroom, (studentClassroom) => studentClassroom.classroom)
+  students: StudentClassroom[];
 
   @CreateDateColumn()
   createdAt: Date;

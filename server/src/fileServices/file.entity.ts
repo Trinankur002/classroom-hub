@@ -1,3 +1,4 @@
+import { Assignment } from "src/assignments/assignment.entity";
 import { Classroom } from "src/classrooms/entities/classroom.entity";
 import { ClassroomAnnouncement } from "src/classrooms/entities/classroom-announcement.entity";
 import { Role } from "src/users/entities/role.enum";
@@ -40,6 +41,12 @@ export class FileEntity {
     @ManyToOne(() => User)
     @JoinColumn({ name: 'userId' })
     user: User;
+
+    @Column({ type: 'uuid', nullable: true })
+    assignmentId: string;
+    @ManyToOne(() => Assignment, (assignment) => assignment.files, { onDelete: 'CASCADE' })
+    @JoinColumn({ name: 'assignmentId' })
+    assignment: Assignment;
 
     @Column({ nullable: true })
     url: string;

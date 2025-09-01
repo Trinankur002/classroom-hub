@@ -13,6 +13,7 @@ import { User } from '../../users/entities/user.entity';
 import { IClassroomComment } from '../classrooms.interface';
 import { Classroom } from './classroom.entity';
 import { FileEntity } from '../../fileServices/file.entity';
+import { Assignment } from 'src/assignments/assignment.entity';
 
 @Entity('classroom_announcements')
 export class ClassroomAnnouncement {
@@ -41,6 +42,9 @@ export class ClassroomAnnouncement {
 
     @OneToMany(() => FileEntity, (file) => file.announcement)
     files: FileEntity[];
+
+    // @OneToMany(() => Assignment, (assignment) => assignment.announcement)
+    // assignments: Assignment[];
 
     @Column({ type: 'jsonb', nullable: true })
     comments: IClassroomComment[];

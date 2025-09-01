@@ -21,9 +21,10 @@ interface Props {
     announcementId: string;
     classroomId: string;
     onBack: () => void;
+    onDeleteSuccess: () => void;
 }
 
-export default function AnnouncementDetails({ announcementId, classroomId, onBack }: Props) {
+export default function AnnouncementDetails({ announcementId, classroomId, onBack, onDeleteSuccess }: Props) {
 
     const [isLoading, setIsLoading] = useState(false);
     const [announcement, setAnnouncement] = useState<IClassroomAnnouncement | null>(null);
@@ -147,6 +148,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                 description: "The announcement has been successfully removed.",
             });
             onBack();
+            onDeleteSuccess();
         } catch (error) {
             console.error("Error deleting announcement:", error);
             toast({

@@ -10,6 +10,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
 import { ChatModule } from './chat/chat.module';
 import { FileModule } from './fileServices/file.module';
+import { AssignmentModule } from './assignments/assignment.module';
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { FileModule } from './fileServices/file.module';
     ProjectsModule,
     TasksModule,
     ChatModule,
-    FileModule
+    FileModule,
+    AssignmentModule,
   ],
 
   controllers: [AppController],
