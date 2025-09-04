@@ -35,6 +35,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
     const [isAssignment, setIsAssignment] = useState(false);
     const [dueDateTime, setDueDateTime] = useState<Date | undefined>(undefined);
     const [files, setFiles] = useState<File[]>([]);
+    const [isDragging, setIsDragging] = useState(false); // New state for drag-and-drop
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -106,6 +107,25 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
         }
     };
 
+    // New drag-and-drop event handlers
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files) {
+            setFiles((prev) => [...prev, ...Array.from(e.dataTransfer.files)]);
+        }
+    };
+
     return (
         <>
             {userRole === "teacher" && (
@@ -115,7 +135,12 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
             )}
 
             <Dialog open={open} onOpenChange={handleDialogClose}>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogContent
+                    className="max-w-lg max-h-[90vh] overflow-y-auto"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                >
                     <form onSubmit={handleSubmit}>
                         <DialogHeader>
                             <DialogTitle>Create Announcement</DialogTitle>
@@ -151,7 +176,9 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
                             {/* Files */}
                             <div className="grid gap-2">
                                 <Label>Files</Label>
-                                <div className="border rounded-lg p-4 text-center cursor-pointer border-dashed hover:border-solid transition-colors">
+                                <div className={`border rounded-lg p-4 text-center cursor-pointer border-dashed hover:border-solid transition-colors
+                                    ${isDragging ? "border-solid border-primary" : "hover:border-solid"
+                                    }`}>
                                     <Input
                                         id="files"
                                         type="file"

@@ -26,6 +26,7 @@ function AssignmentSubmitButton({ userRole, assignmentId, onAssignmentSubmit }: 
     const [open, setOpen] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
     const [loading, setLoading] = useState(false);
+    const [isDragging, setIsDragging] = useState(false); // New state for drag-and-drop
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -35,6 +36,25 @@ function AssignmentSubmitButton({ userRole, assignmentId, onAssignmentSubmit }: 
 
     const removeFile = (index: number) => {
         setFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    // New drag-and-drop event handlers
+    const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+    };
+
+    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files) {
+            setFiles((prev) => [...prev, ...Array.from(e.dataTransfer.files)]);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -94,8 +114,15 @@ function AssignmentSubmitButton({ userRole, assignmentId, onAssignmentSubmit }: 
                 </Button>
             )}
 
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="max-w-lg">
+            <Dialog
+                open={open}
+                onOpenChange={setOpen}
+            >
+                <DialogContent className="max-w-lg"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                >
                     <form onSubmit={handleSubmit}>
                         <DialogHeader>
                             <DialogTitle>Submit Assignment</DialogTitle>
@@ -108,7 +135,10 @@ function AssignmentSubmitButton({ userRole, assignmentId, onAssignmentSubmit }: 
                             {/* File input */}
                             <div className="grid gap-2">
                                 <Label>Files</Label>
-                                <div className="border rounded-lg p-4 text-center cursor-pointer border-dashed hover:border-solid transition-colors">
+                                <div
+                                    className={`border rounded-lg p-4 text-center cursor-pointer border-dashed transition-colors ${isDragging ? "border-solid border-primary" : "hover:border-solid"
+                                        }`}
+                                >
                                     <Input
                                         id="files"
                                         type="file"
