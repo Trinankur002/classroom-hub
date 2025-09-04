@@ -50,25 +50,27 @@ export class AssignmentsController {
   ) {
     return this.assignmentsService.submitAssignment(announcementid, (req as any).user, files);
   }
-
-  // @Patch(':id/mark-done')
-  // markAsDone(@Param('id') id: string, @Request() req) {
-  //   return this.assignmentsService.markAsDone(id, (req as any).user['userId']);
-  // }
-
-  // @Get('pending')
-  // getPendingAssignments(@Request() req) {
-  //   return this.assignmentsService.getPendingAssignments((req as any).user['userId']);
-  // }
-
-  // @Get('/announcement/:id')
-  // getAssignmentSubmissions(@Request() req, @Param('id') id: string) {
-  //   return this.assignmentsService.getAssignmentSubmissions(id);
-  // }
-
-  // @Get('/announcement/:id/status')
-  // getSubmissionStatus(@Param('id') id: string, @Request() req) {
-  //   return this.assignmentsService.getSubmissionStatus(id, (req as any).user['userId']);
-  // }
-
 }
+
+
+
+
+// @Patch(':id/mark-done')
+// markAsDone(@Param('id') id: string, @Request() req) {
+//   return this.assignmentsService.markAsDone(id, (req as any).user['userId']);
+// }
+
+// @Get('pending')
+// getPendingAssignments(@Request() req) {
+//   return this.assignmentsService.getPendingAssignments((req as any).user['userId']);
+// }
+
+// @Get('/announcement/:id')
+// getAssignmentSubmissions(@Request() req, @Param('id') id: string) {
+//   return this.assignmentsService.getAssignmentSubmissions(id);
+// }
+
+// @Get('/announcement/:id/status')
+// getSubmissionStatus(@Param('id') id: string, @Request() req) {
+//   return this.assignmentsService.getSubmissionStatus(id, (req as any).user['userId']);
+// }

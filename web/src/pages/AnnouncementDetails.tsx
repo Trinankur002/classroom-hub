@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import FilePreview from "@/components/customComponent/FilePreview";
 import { IClassroomAnnouncement, ICreateComment } from "@/types/classroomAnnouncement";
-import { IClassroomUser } from "@/types/user";
+import { IClassroomUser, User } from "@/types/user";
 import { CalendarDays, Send, AtSign, MessageCircle, X } from "lucide-react";
 import { format } from "date-fns";
 import { useEffect, useState, useRef } from "react";
@@ -16,6 +16,7 @@ import ClassroomAnnouncementService from '@/services/classroomAnnouncementServic
 import { toast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import AssignmentSubmitButton from "@/components/customComponent/AssignmentSubmitButton";
 
 interface Props {
     announcementId: string;
@@ -39,6 +40,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
 
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "null");
+    const userRole = user.role.toString().toLowerCase();
 
     const load = async () => {
         setIsLoading(true);
@@ -428,6 +430,13 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
+                        </div>
+                    )}
+
+                    {/* Submit assignment section */}
+                    {user && userRole === 'student' && announcement.isAssignment && (
+                        <div className="mt-8 flex justify-end" >
+                            <AssignmentSubmitButton userRole={userRole} assignmentId={announcementId}/>
                         </div>
                     )}
                 </div>
