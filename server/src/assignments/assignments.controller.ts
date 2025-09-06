@@ -56,33 +56,44 @@ export class AssignmentsController {
   @ApiParam({ name: 'announcementid' })
   getAllSubmitedAssignments(@Request() req, @Param('announcementid') announcementid: string) {
     if (req.user.role !== Role.Student) {
-      return this.assignmentsService.getAllSubmitedAssignments(announcementid, (req as any).user);
+      return this.assignmentsService.getAllSubmitedAssignmentsForAnnouncement(announcementid, (req as any).user);
     }
     else {
-      return this.assignmentsService.getAssignmentSumissionForStudent(announcementid, (req as any).user);
+      return this.assignmentsService.getAssignmentSubmissionForStudentForAnnouncement(announcementid, (req as any).user);
     }
   }
+
+  @Get('pending/student/:classroomid')
+  @ApiParam({ name: 'classroomid' })
+  getPendingForClassroomForStudent(@Request() req, @Param('classroomid') classroomid: string) {
+    return this.assignmentsService.getPendingForClassroomForStudent(classroomid, (req as any).user);
+  }
+
+  @Get('submitted/student/:classroomid')
+  @ApiParam({ name: 'classroomid' })
+  getSubmittedForClassroomForStudent(@Request() req, @Param('classroomid') classroomid: string) {
+    return this.assignmentsService.getSubmittedForClassroomForStudent(classroomid, (req as any).user);
+  }
+
+  @Get('all/pending/student')
+  getAllPendingAssignmentsForStudent(@Request() req) {
+    return this.assignmentsService.getAllPendingAssignmentsForStudent((req as any).user);
+  }
+
+  @Get('missed/student/:classroomid')
+  @ApiParam({ name: 'classroomid' })
+  getMissedForClassroomForStudent(@Request() req, @Param('classroomid') classroomid: string) {
+    return this.assignmentsService.getMissedForClassroomForStudent(classroomid, (req as any).user)
+  }
+
+  @Get('all/missed/student')
+  getAllMissedForStudent(@Request() req) {
+    return this.assignmentsService.getAllMissedForStudent((req as any).user)
+  }
+
+  @Get('all/studentlist/pending/:announcementid')
+  @ApiParam({ name: 'announcementid' })
+  getPendingStudentsForAnnouncement(@Request() req, @Param('announcementid') announcementid: string) {
+    return this.assignmentsService.getPendingStudentsForAnnouncement(announcementid, (req as any).user);
+  }
 }
-
-
-
-
-// @Patch(':id/mark-done')
-// markAsDone(@Param('id') id: string, @Request() req) {
-//   return this.assignmentsService.markAsDone(id, (req as any).user['userId']);
-// }
-
-// @Get('pending')
-// getPendingAssignments(@Request() req) {
-//   return this.assignmentsService.getPendingAssignments((req as any).user['userId']);
-// }
-
-// @Get('/announcement/:id')
-// getAssignmentSubmissions(@Request() req, @Param('id') id: string) {
-//   return this.assignmentsService.getAssignmentSubmissions(id);
-// }
-
-// @Get('/announcement/:id/status')
-// getSubmissionStatus(@Param('id') id: string, @Request() req) {
-//   return this.assignmentsService.getSubmissionStatus(id, (req as any).user['userId']);
-// }

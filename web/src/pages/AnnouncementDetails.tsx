@@ -10,7 +10,7 @@ import { IClassroomAnnouncement, ICreateComment } from "@/types/classroomAnnounc
 import { IClassroomUser, User } from "@/types/user";
 import { CalendarDays, Send, AtSign, MessageCircle, X } from "lucide-react";
 import { format } from "date-fns";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ClassroomAnnouncementService from '@/services/classroomAnnouncementService';
 import { toast } from "@/hooks/use-toast";
@@ -41,6 +41,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
     const [mentionedUser, setMentionedUser] = useState<IClassroomUser | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [assignments, setAssignments] = useState<IAssignment[]>([])
+    const [pendingStudents, setPendingStudents] = useState<User[]>([])
 
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -52,15 +53,13 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
             const { data, error } = await ClassroomAnnouncementService.getOneAnnouncement(announcementId)
             setAnnouncement(data || null);
 
-            if (error) {
-                toast({
-                    title: "Failed to load announcement details",
-                    description: error,
-                    variant: "destructive",
-                });
-            }
         } catch (error) {
             console.log(error);
+            toast({
+                title: "Failed to load announcement details",
+                description: error,
+                variant: "destructive",
+            });
         } finally {
             setIsLoading(false);
         }
@@ -180,15 +179,42 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
         }
     }
 
+    const getPendingStudents = useCallback(async (announcementId: string) => {
+        try {
+            if (!announcement || !announcement.isAssignment || userRole !== 'teacher') {
+                return;
+            }
+            const { data, error } = await AssignmentService.getPendingStudentsForAnnouncement(announcementId);
+            if (error) {
+                console.error("Failed to load list of the students who have not submitted the assignment yet", error);
+            } else {
+                setPendingStudents(data || []);
+            }
+        } catch (error) {
+            console.error("Error loading assignments:", error);
+            toast({
+                title: "Student list loading failed for this assignment",
+                description: "Failed to load list of the students who have not submitted the assignment yet",
+                variant: "destructive",
+            });
+        }
+    }, [announcement, userRole]);
+
     useEffect(() => {
         if (!user) {
             navigate("/");
         } else {
             load();
-            loadAssignments()
+            loadAssignments();
             loadClassroomUsers();
         }
-    }, [])
+    }, []);
+
+    useEffect(() => {
+        if (announcement) {
+            getPendingStudents(announcementId);
+        }
+    }, [announcement, announcementId, getPendingStudents]);
 
     if (!user) {
         return null;

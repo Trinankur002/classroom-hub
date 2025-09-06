@@ -9,9 +9,9 @@ export class User {
     name: string;
     email: string;
     password?: string;
-    role: Role;
-    avatarUrl: string;
-    createdAt: Date;
+    role?: Role;
+    avatarUrl?: string;
+    createdAt?: Date;
 }
 
 export interface IClassroomUser {
