@@ -9,6 +9,7 @@ import { Role } from "src/users/entities/role.enum";
 import { User } from "src/users/entities/user.entity";
 import { v4 as uuid } from 'uuid';
 import { getBucket } from "src/fileServices/gcs.config";
+import { instanceToPlain } from "class-transformer";
 
 
 @Injectable()
@@ -23,17 +24,12 @@ export class AssignmentService {
         private fileService: FileService,
     ) { }
 
-
-    // async createAssignment(announcement: ClassroomAnnouncement, studentId: string): Promise<Assignment> {
-    //     const newAssignment = this.assignmentRepository.create({
-    //         announcementId: announcement.id,
-    //         studentId,
-    //         isDone: false,
-    //     });
-    //     return this.assignmentRepository.save(newAssignment);
-    // }
-
     async submitAssignment(announcementid: string, user: User, files: Express.Multer.File[]) {
+        const existing = await this.getAssignmentSumissionForStudent(announcementid, user);
+        if (existing.length > 0) {
+            throw new HttpException('Assignment already submitted', HttpStatus.BAD_REQUEST);
+        }
+
         return await this.assignmentRepository.manager.transaction(async (manager) => {
             // ... (existing code for finding student and announcement) ...
 
@@ -98,64 +94,27 @@ export class AssignmentService {
         });
     }
 
-    // async markAsDone(assignmentId: string, studentId: string) {
-    //     const assignment = await this.assignmentRepository.findOne({ where: { id: assignmentId, studentId }, relations: ['announcement'] });
+    async getAllSubmitedAssignments(announcementid: string, user: User) {
+        if (user.role !== Role.Teacher) {
+            throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+        }
+        const data = await this.assignmentRepository.find({
+            where: {
+                announcementId: announcementid,
+            },
+            relations: ['files', 'student'],
+        });
+        return instanceToPlain(data);
+    }
 
-    //     if (!assignment) {
-    //         throw new HttpException('Assignment not found', HttpStatus.NOT_FOUND);
-    //     }
-
-    //     const now = new Date();
-    //     const dueDate = new Date(assignment.announcement.dueDate);
-    //     dueDate.setMinutes(dueDate.getMinutes() + 5);
-
-    //     if (now > dueDate) {
-    //         throw new HttpException('Assignment is past due date.', HttpStatus.BAD_REQUEST);
-    //     }
-
-    //     // assignment.isDone = true;
-    //     return this.assignmentRepository.save(assignment);
-    // }
-
-    // async getPendingAssignments(studentId: string) {
-
-    //     return this.assignmentRepository.find({
-    //         where: {
-    //             studentId,
-    //             // isDone: false,
-    //         },
-    //         relations: ['announcement', 'announcement.classroom'],
-    //     });
-    // }
-
-    // async getAssignmentSubmissions(announcementId: string) {
-    //     return this.assignmentRepository.find({
-    //         where: { announcementId },
-    //         relations: ['student', 'files'],
-    //     });
-    // }
-
-    // async getSubmissionStatus(announcementId: string, teacherId: string) {
-    //     // First, verify the teacher is part of the classroom for this announcement.
-    //     const announcement = await this.announcementRepository.findOne({
-    //         where: { id: announcementId, teacherId },
-    //         relations: ['classroom', 'classroom.students']
-    //     });
-
-    //     if (!announcement) {
-    //         throw new HttpException('Announcement not found or you are not the teacher.', HttpStatus.NOT_FOUND);
-    //     }
-
-    //     const totalStudents = announcement.classroom.students.length;
-
-    //     const [, submittedCount] = await this.assignmentRepository.findAndCount({
-    //         // where: { announcementId, isDone: true }
-    //     });
-
-    //     return {
-    //         submitted: submittedCount,
-    //         pending: totalStudents - submittedCount,
-    //         total: totalStudents,
-    //     };
-    // }
+    async getAssignmentSumissionForStudent(announcementid: string, user: User) { 
+        const data = await this.assignmentRepository.find({
+            where: {
+                announcementId: announcementid,
+                studentId: user.id,
+            },
+            relations: ['files'],
+        });
+        return instanceToPlain(data);
+    }
 }

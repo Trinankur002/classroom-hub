@@ -7,7 +7,7 @@ import { Toaster } from "./components/ui/toaster"; // shadcn/ui
 // Layouts & Pages
 import Dashboard from "./pages/Dashboard";
 import Classrooms from "./pages/Classrooms";
-import Projects from "./pages/Projects";
+import AllAssignments from "./pages/AllAssignments";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 
@@ -52,7 +52,7 @@ const App = () => (
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="classrooms" element={<Classrooms />} />
                 <Route path="classrooms/:id" element={<Class />} />
-                <Route path="allassignments" element={<Projects />} />
+                <Route path="allassignments" element={<AllAssignments />} />
                 <Route path="chat" element={<Chat />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

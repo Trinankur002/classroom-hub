@@ -19,6 +19,7 @@ import { AssignmentService } from './assignment.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AnyFilesInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiParam } from '@nestjs/swagger';
+import { Role } from 'src/users/entities/role.enum';
 
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
@@ -49,6 +50,17 @@ export class AssignmentsController {
     @Request() req,
   ) {
     return this.assignmentsService.submitAssignment(announcementid, (req as any).user, files);
+  }
+
+  @Get('allsubmited/:announcementid')
+  @ApiParam({ name: 'announcementid' })
+  getAllSubmitedAssignments(@Request() req, @Param('announcementid') announcementid: string) {
+    if (req.user.role !== Role.Student) {
+      return this.assignmentsService.getAllSubmitedAssignments(announcementid, (req as any).user);
+    }
+    else {
+      return this.assignmentsService.getAssignmentSumissionForStudent(announcementid, (req as any).user);
+    }
   }
 }
 

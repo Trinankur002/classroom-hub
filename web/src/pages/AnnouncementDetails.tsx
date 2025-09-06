@@ -17,6 +17,9 @@ import { toast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import AssignmentSubmitButton from "@/components/customComponent/AssignmentSubmitButton";
+import AssignmentService from "@/services/assignmentService";
+import { IAssignment } from "@/types/assignment";
+import Assignments from "@/components/customComponent/Assignments";
 
 interface Props {
     announcementId: string;
@@ -37,6 +40,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
     const [showUserSuggestions, setShowUserSuggestions] = useState(false);
     const [mentionedUser, setMentionedUser] = useState<IClassroomUser | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [assignments, setAssignments] = useState<IAssignment[]>([])
 
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -74,6 +78,19 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
             console.error("Error loading classroom users:", error);
         }
     };
+
+    const loadAssignments = async () => {
+        try {
+            const { data, error } = await AssignmentService.getAssignmentsForAnnouncement(announcementId);
+            if (error) {
+                console.error("Failed to load assignments", error);
+            } else {
+                setAssignments(data);
+            }
+        } catch (error) {
+            console.error("Error loading assignments:", error);
+        }
+    }
 
     const handleCommentSubmit = async () => {
         if (!commentText.trim()) return;
@@ -168,6 +185,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
             navigate("/");
         } else {
             load();
+            loadAssignments()
             loadClassroomUsers();
         }
     }, [])
@@ -434,11 +452,15 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                     )}
 
                     {/* Submit assignment section */}
-                    {user && userRole === 'student' && announcement.isAssignment && (
+                    {user && userRole === 'student' && !assignments.length && announcement.isAssignment && (
                         <div className="mt-8 flex justify-end" >
                             <AssignmentSubmitButton userRole={userRole} assignmentId={announcementId}/>
                         </div>
                     )}
+
+                    {/* Assignment Section */}
+                    <Assignments assignments={assignments} role={ userRole} />
+
                 </div>
             )}
         </div>

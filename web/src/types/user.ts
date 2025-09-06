@@ -8,7 +8,7 @@ export class User {
     id: string;
     name: string;
     email: string;
-    password: string;
+    password?: string;
     role: Role;
     avatarUrl: string;
     createdAt: Date;

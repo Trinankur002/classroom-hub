@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added Select imports
 import { ArrowLeft, Plus } from "lucide-react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import Projects from "./Projects";
+import Projects from "./AllAssignments";
 import ClassDetails from "./ClassDetails";
 import { useEffect, useState, useCallback } from "react";
 import { IClassroom } from "@/types/classroom";
