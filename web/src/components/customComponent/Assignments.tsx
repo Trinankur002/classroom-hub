@@ -64,22 +64,21 @@ function Assignments({ assignments, role, pendingStudentOpen, students }: Props)
                 <div className="hidden sm:block">
                     <h1 className="text-xl font-bold">Students still not submitted this assignment</h1>
                     <div className={`grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 py-4`}>
-                        {students.map((student) => (
-                            <Card key={student.id} className="w-full rounded-lg">
-                                <CardHeader className="flex flex-row items-center gap-4">
-                                    {role === 'teacher' && (
-                                        <Avatar className="h-10 w-10">
-                                            <AvatarImage src={student?.avatarUrl} alt={student?.name} />
-                                            <AvatarFallback>{student?.name?.[0]}</AvatarFallback>
-                                        </Avatar>
-                                    )}
-                                    <div>
-                                        {role === 'teacher' && (
-                                            <CardTitle className="text-lg">{student?.name}</CardTitle>
-                                        )}
-                                    </div>
-                                </CardHeader>
-                            </Card>
+                        {students.map((s) => (
+                            <div
+                                key={s.id}
+                                className="flex items-center gap-3 border rounded-lg p-3 bg-card"
+                            >
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={s.avatarUrl || undefined} alt={s.name} />
+                                    <AvatarFallback>{(s.name || "U")[0]}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <div className="font-medium">{s.name}</div>
+                                    <div className="text-xs text-muted-foreground">{s.email || s.role}</div>
+                                </div>
+                                {/* <Button size="sm" variant="ghost">Remind</Button> */}
+                            </div>
                         ))}
                     </div>
                 </div>

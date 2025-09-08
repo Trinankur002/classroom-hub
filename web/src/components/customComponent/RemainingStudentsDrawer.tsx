@@ -41,7 +41,7 @@ export default function RemainingStudentsDrawer({ open, onOpenChange, students }
                                             <div className="font-medium">{s.name}</div>
                                             <div className="text-xs text-muted-foreground">{s.email || s.role}</div>
                                         </div>
-                                        <Button size="sm" variant="ghost">Remind</Button>
+                                        {/* <Button size="sm" variant="ghost">Remind</Button> */}
                                     </div>
                                 ))}
                             </div>
