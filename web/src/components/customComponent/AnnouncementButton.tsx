@@ -18,6 +18,7 @@ import { Switch } from "../ui/switch";
 import { X } from "lucide-react";
 import { format } from "date-fns";
 import { DateTimePicker } from "./DateTimePicker"; // Adjust import path as needed
+import { Skeleton } from "../ui/skeleton";
 
 interface Props {
     userRole: "teacher" | "student";
@@ -36,6 +37,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
     const [dueDateTime, setDueDateTime] = useState<Date | undefined>(undefined);
     const [files, setFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false); // New state for drag-and-drop
+    const [formSubmitting, setFormSubmitting] = useState(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
@@ -49,6 +51,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        if (formSubmitting) return;
 
         try {
             if (userRole !== "teacher") {
@@ -58,6 +61,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
                 });
                 return;
             }
+            setFormSubmitting(true);
 
             await ClassroomAnnouncementService.createAnnouncementWithFiles(
                 {
@@ -89,6 +93,9 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
                 variant: "destructive",
                 title: "Failed to Create Announcement",
             });
+        }
+        finally {
+            setFormSubmitting(false);
         }
     };
 
@@ -239,12 +246,16 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
                             <DialogFooter className="gap-2 sm:gap-0 sm:justify-end">
                                 <DialogClose asChild>
                                     <Button variant="destructive" type="button" className="w-full sm:w-auto">
-                                        Cancel
+                                        {formSubmitting ? "Close" : "Cancel"}
                                     </Button>
                                 </DialogClose>
-                                <Button type="submit" className="w-full sm:w-auto">
-                                    Create
-                                </Button>
+                                {!formSubmitting &&
+                                    (<Button type="submit" className="w-full sm:w-auto">
+                                        Create
+                                    </Button>)}
+                                {formSubmitting && (
+                                    <Skeleton className="w-full sm:w-auto"/>
+                                )}
                             </DialogFooter>
                         </div>
                     </form>
