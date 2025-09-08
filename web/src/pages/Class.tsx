@@ -16,6 +16,7 @@ import AnnouncementDetails from "./AnnouncementDetails";
 import Announcements from "./Announcements";
 import { IClassroomAnnouncement } from "@/types/classroomAnnouncement";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Class() {
     const navigate = useNavigate();
@@ -73,6 +74,24 @@ export default function Class() {
             setSelectedAnnouncement(null);
         }
     };
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    // Scroll detection logic
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollThreshold = 50; // Pixels to scroll before it shrinks
+            if (window.scrollY > scrollThreshold) {
+                setIsScrolled(true);
+            } else {
+                setIsScrolled(false);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+
+        // Cleanup the event listener on component unmount
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     return (
         <div>
@@ -190,10 +209,9 @@ export default function Class() {
                 </Tabs>
             </div>
 
-            {/* Mobile FAB */}
+            {/* Mobile FAB with dynamic classes */}
             {!isloading && classroom && userRole === "teacher" && (
-                <div className="fixed bottom-20 right-6 sm:hidden">
-                    {/* Hidden full button so modal logic stays mounted */}
+                <div className="fixed bottom-20 right-6 sm:hidden z-50">
                     <div className="hidden">
                         <AnnouncementButton
                             userRole={userRole}
@@ -202,18 +220,24 @@ export default function Class() {
                         />
                     </div>
 
-                    {/* Floating circular FAB */}
                     <Button
                         variant="accent"
                         onClick={() => {
-                            const btn = Array.from(document.querySelectorAll("button"))
-                                .find((el) => el.textContent?.includes("Create Announcement")) as HTMLButtonElement | undefined;
+                            const btn = Array.from(document.querySelectorAll("button")).find((el) =>
+                                el.textContent?.includes("Create Announcement")
+                            ) as HTMLButtonElement | undefined;
                             btn?.click();
                         }}
-                        className="h-12 w-12 rounded-full shadow-lg flex items-center justify-center"
+                        className={`h-12 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-400 ease-in-out ${isScrolled ? 'w-12 px-0' : 'px-4 w-auto'}`}
                     >
-                        <Plus className="h-6 w-6 text-white" />
+                        <Plus className="h-6 w-6" />
+                        {!isScrolled && (
+                            <span className="ml-2 whitespace-nowrap ease-in-out duration-400 transition-all">
+                                Create Announcement
+                            </span>
+                        )}
                     </Button>
+
                 </div>
             )}
         </div>

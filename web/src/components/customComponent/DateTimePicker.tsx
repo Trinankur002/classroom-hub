@@ -239,7 +239,7 @@ export function DateTimePicker({
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-80 p-0" align="start">
-                            <div className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20">
+                            <div className="p-6">
                                 {/* Header */}
                                 <div className="text-center mb-6">
                                     <p className="text-sm text-muted-foreground mb-2">Select time</p>

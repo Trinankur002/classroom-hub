@@ -136,7 +136,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
 
             <Dialog open={open} onOpenChange={handleDialogClose}>
                 <DialogContent
-                    className="max-w-lg max-h-[90vh] overflow-y-auto"
+                    className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl"
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
@@ -235,14 +235,18 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
                             )}
                         </div>
 
-                        <DialogFooter>
-                            <DialogClose asChild>
-                                <Button variant="destructive" type="button">
-                                    Cancel
+                        <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t p-3 sm:p-0 sm:border-0">
+                            <DialogFooter className="gap-2 sm:gap-0 sm:justify-end">
+                                <DialogClose asChild>
+                                    <Button variant="destructive" type="button" className="w-full sm:w-auto">
+                                        Cancel
+                                    </Button>
+                                </DialogClose>
+                                <Button type="submit" className="w-full sm:w-auto">
+                                    Create
                                 </Button>
-                            </DialogClose>
-                            <Button type="submit">Create</Button>
-                        </DialogFooter>
+                            </DialogFooter>
+                        </div>
                     </form>
                 </DialogContent>
             </Dialog>
