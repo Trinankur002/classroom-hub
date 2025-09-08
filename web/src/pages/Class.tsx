@@ -136,7 +136,7 @@ export default function Class() {
 
 
                 {/* Right section: Announcement Button (desktop only) */}
-                {!isloading && classroom && userRole === "teacher" && (
+                {!isloading && classroom && userRole === "teacher" && (activeTab === "updates" || activeTab === "announcements") && (
                     <div className="hidden sm:block">
                         <AnnouncementButton
                             userRole={userRole}
@@ -209,8 +209,8 @@ export default function Class() {
                 </Tabs>
             </div>
 
-            {/* Mobile FAB with dynamic classes */}
-            {!isloading && classroom && userRole === "teacher" && (
+            {/*Create Announcement Button and Mobile FAB with dynamic classes */}
+            {!isloading && classroom && userRole === "teacher" && (activeTab === "updates" || activeTab === "announcements") &&(
                 <div className="fixed bottom-20 right-6 sm:hidden z-50">
                     <div className="hidden">
                         <AnnouncementButton
@@ -237,9 +237,9 @@ export default function Class() {
                             </span>
                         )}
                     </Button>
-
                 </div>
             )}
+            
         </div>
     );
 }
