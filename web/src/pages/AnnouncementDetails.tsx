@@ -20,6 +20,9 @@ import AssignmentSubmitButton from "@/components/customComponent/AssignmentSubmi
 import AssignmentService from "@/services/assignmentService";
 import { IAssignment } from "@/types/assignment";
 import Assignments from "@/components/customComponent/Assignments";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import RemainingStudentsDrawer from "@/components/customComponent/RemainingStudentsDrawer";
 
 interface Props {
     announcementId: string;
@@ -42,6 +45,9 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [assignments, setAssignments] = useState<IAssignment[]>([])
     const [pendingStudents, setPendingStudents] = useState<User[]>([])
+    const [assignmentLoading, setAssignmentLoading] = useState(true)
+    const [pendingopen, setPendingOpen] = useState(false);   // desktop switch
+    const [drawerOpen, setDrawerOpen] = useState(false);     // mobile sheet
 
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -80,6 +86,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
 
     const loadAssignments = async () => {
         try {
+            setAssignmentLoading(true);
             const { data, error } = await AssignmentService.getAssignmentsForAnnouncement(announcementId);
             if (error) {
                 console.error("Failed to load assignments", error);
@@ -88,6 +95,8 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
             }
         } catch (error) {
             console.error("Error loading assignments:", error);
+        } finally {
+            setAssignmentLoading(false);
         }
     }
 
@@ -215,6 +224,10 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
             getPendingStudents(announcementId);
         }
     }, [announcement, announcementId, getPendingStudents]);
+
+    useEffect(() => {
+        console.log("New state value:", pendingopen);
+    }, [pendingopen]);
 
     if (!user) {
         return null;
@@ -478,14 +491,64 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                     )}
 
                     {/* Submit assignment section */}
-                    {user && userRole === 'student' && !assignments.length && announcement.isAssignment && (
+                    {user && userRole === 'student' && !assignments.length && announcement.isAssignment && !assignmentLoading && (
                         <div className="mt-8 flex justify-end" >
-                            <AssignmentSubmitButton userRole={userRole} assignmentId={announcementId}/>
+                            <AssignmentSubmitButton userRole={userRole} assignmentId={announcementId} />
                         </div>
                     )}
 
                     {/* Assignment Section */}
-                    <Assignments assignments={assignments} role={ userRole} />
+                    <div className="mt-8 flex justify-end" ></div>
+
+                    <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+                        <h1 className="text-2xl font-bold">
+                            {userRole === 'teacher'
+                                ? 'Assignments submitted by students'
+                                : 'My Assignment'}
+                        </h1>
+
+                        {userRole === 'teacher' && pendingStudents.length > 0 && (
+                            <div className="flex items-center gap-3">
+                                {/* Desktop label + switch */}
+                                <div className="hidden sm:block text-right">
+                                    <Label className="text-base font-medium">Remaining Students</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Show students who have not submitted the assignment yet
+                                    </p>
+                                </div>
+
+                                <div className="hidden sm:flex items-center">
+                                    <Switch
+                                        checked={pendingopen}
+                                        onCheckedChange={(v) => setPendingOpen(v)}
+                                    />
+                                </div>
+
+                                {/* Mobile button */}
+                                <div className="sm:hidden">
+                                    <Button size="sm" variant="outline" onClick={() => setDrawerOpen(true)}>
+                                        Show Remaining Students
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+
+                    {/* Main assignments grid */}
+                    <Assignments
+                        assignments={assignments}
+                        role={userRole}
+                        pendingStudentOpen={pendingopen}
+                        students={pendingStudents}
+                    />
+
+                    {/* Mobile-only drawer */}
+                    <RemainingStudentsDrawer
+                        open={drawerOpen}
+                        onOpenChange={setDrawerOpen}
+                        students={pendingStudents}
+                    />
 
                 </div>
             )}
