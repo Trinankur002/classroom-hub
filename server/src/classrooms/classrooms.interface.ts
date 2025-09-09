@@ -43,5 +43,5 @@ export interface IClassroomUser {
     email: string;
     role: 'Teacher' | 'Student';
     avatarUrl?: string | null;
-    createdAt: Date;
+    createdAt?: Date;
 }

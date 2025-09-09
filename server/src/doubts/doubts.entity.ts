@@ -9,6 +9,9 @@ export class Doubts {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    @Column({ type: 'text', nullable: true })
+    doubtDescribtion?: string;
+
     @Column({ type: 'uuid', nullable: true })
     classroomId?: string;
 
