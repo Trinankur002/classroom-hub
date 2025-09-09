@@ -4,6 +4,7 @@ import { ClassroomAnnouncement } from "src/classrooms/entities/classroom-announc
 import { Role } from "src/users/entities/role.enum";
 import { User } from "src/users/entities/user.entity";
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Doubts } from "src/doubts/doubts.entity";
 
 @Entity('files')
 export class FileEntity {
@@ -47,6 +48,9 @@ export class FileEntity {
     @ManyToOne(() => Assignment, (assignment) => assignment.files, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'assignmentId' })
     assignment: Assignment;
+
+    @ManyToOne(() => Doubts, (doubt) => doubt.files, { onDelete: 'CASCADE' })
+    doubt: Doubts;
 
     @Column({ nullable: true })
     url: string;

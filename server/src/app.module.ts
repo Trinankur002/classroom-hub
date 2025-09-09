@@ -5,12 +5,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ClassroomsModule } from './classrooms/classrooms.module';
-import { ProjectsModule } from './projects/projects.module';
-import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
 import { ChatModule } from './chat/chat.module';
 import { FileModule } from './fileServices/file.module';
 import { AssignmentModule } from './assignments/assignment.module';
+import { DoubtsModule } from './doubts/doubts.module';
 
 @Module({
   imports: [
@@ -30,11 +29,10 @@ import { AssignmentModule } from './assignments/assignment.module';
     AuthModule,
     UsersModule,
     ClassroomsModule,
-    ProjectsModule,
-    TasksModule,
     ChatModule,
     FileModule,
     AssignmentModule,
+    DoubtsModule,
   ],
 
   controllers: [AppController],
