@@ -5,5 +5,5 @@ export interface IClassroomFile {
     key: string;
     size: number;
     mimetype: string;
-    createdAt: string;
+    createdAt: Date;
 }

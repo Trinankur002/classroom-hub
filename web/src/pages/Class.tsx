@@ -204,7 +204,7 @@ export default function Class() {
                         />
                     </TabsContent>
 
-                    <TabsContent value="doubts"><Doubts /></TabsContent>
+                    <TabsContent value="doubts"><Doubts classroomId={classroom?.id || ''} /></TabsContent>
                     {userRole === 'teacher' && <TabsContent value="students">List of students</TabsContent>}
                 </Tabs>
             </div>

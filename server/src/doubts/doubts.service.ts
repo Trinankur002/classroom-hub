@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from "@nestjs/common"
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { FindManyOptions, Repository } from "typeorm";
 import { Doubts } from "./doubts.entity";
 import { FileService } from "src/fileServices/file.service";
 import { ClassroomsService } from "src/classrooms/classrooms.service";
@@ -13,6 +13,8 @@ import { FileEntity } from "src/fileServices/file.entity";
 import { IDoubtClearMessages } from "./doubts.interface";
 import { Role } from "src/users/entities/role.enum";
 import { AddMessageDto } from "./dto/add-message.dto";
+import { IClassroomUser } from "src/classrooms/classrooms.interface";
+import { IClassroomFile } from "src/fileServices/file.interface";
 
 @Injectable()
 export class DoubtsService {
@@ -114,6 +116,7 @@ export class DoubtsService {
               role: true,
               avatarUrl: true,
             },
+            doubtDescribtion: true,
             messages: true,
             createdAt: true,
             updatedAt: true,
@@ -130,4 +133,214 @@ export class DoubtsService {
       });
   }
 
+  async createdoubtMessage(
+    data: AddMessageDto,
+    file: Express.Multer.File,
+    user: User,
+  ): Promise<Doubts> {
+    return this.doubtsRepository.manager.transaction(async (manager) => {
+      const doubt = await manager.findOne(Doubts, {
+        where: { id: data.doubtId },
+        relations: ['classroom', 'classroom.teacher'],
+      });
+
+      if (!doubt) {
+        throw new NotFoundException(`Doubt with ID "${data.doubtId}" not found.`);
+      }
+
+      // Authorization check
+      const isStudentOwner =
+        user.role === Role.Student && doubt.studentId === user.id;
+      const isClassroomTeacher =
+        user.role === Role.Teacher && doubt.classroom.teacher.id === user.id;
+
+      if (!isStudentOwner && !isClassroomTeacher) {
+        throw new ForbiddenException(
+          'You are not authorized to post a message to this doubt.',
+        );
+      }
+
+      let fileForMessage: IClassroomFile | undefined = undefined;
+
+      if (file) {
+        const fileKey = `${uuid()}-${file.originalname}`;
+        const gcsBucket = getBucket();
+        const blob = gcsBucket.file(fileKey);
+
+        await blob.save(file.buffer, {
+          contentType: file.mimetype,
+          resumable: false,
+        });
+
+        const [url] = await blob.getSignedUrl({
+          action: 'read',
+          expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
+        });
+
+        const newFileEntity = manager.create(FileEntity, {
+          name: file.originalname,
+          role: user.role,
+          userId: user.id,
+          key: fileKey,
+          url,
+          size: file.size,
+          mimetype: file.mimetype,
+          doubt: doubt,
+        });
+        const savedFile = await manager.save(newFileEntity);
+
+        fileForMessage = {
+          id: savedFile.id,
+          name: savedFile.name,
+          url: savedFile.url,
+          mimetype: savedFile.mimetype,
+          size: savedFile.size,
+          key: savedFile.key,
+          createdAt: savedFile.createdAt,
+        };
+      }
+
+      const sender: IClassroomUser = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role as 'Teacher' | 'Student',
+        avatarUrl: user.avatarUrl,
+      };
+
+      const newMessage: IDoubtClearMessages = {
+        message: data.message,
+        time: new Date(),
+        sender,
+        file: fileForMessage,
+      };
+
+      doubt.messages = [...(doubt.messages || []), newMessage];
+
+      await manager.save(doubt);
+
+      // Return the full doubt object, similar to createDoubtWithFiles
+      const finalDoubt = await manager.findOne(Doubts, {
+        where: { id: doubt.id },
+        select: {
+          id: true,
+          doubtDescribtion: true,
+          messages: true,
+        },
+      });
+
+      if (!finalDoubt) {
+        throw new NotFoundException(
+          `Doubt with ID "${doubt.id}" could not be found after update.`,
+        );
+      }
+
+      return finalDoubt;
+    });
+  }
+
+  async getDoubtsByClassroomId(classroomId: string, user: User, page?: number, limit?: number): Promise<Doubts[]> {
+    // Define a base query object
+    const queryOptions: FindManyOptions<Doubts> =  {
+      where: {
+        classroomId
+      },
+      order: {
+        updatedAt: 'DESC',
+      },
+      relations: {
+        student: true,
+      },
+      select: {
+        id: true,
+        classroomId: true,
+        studentId: true,
+        student: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          avatarUrl: true,
+        },
+        doubtDescribtion: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    };
+
+    // Only apply skip and take if both page and limit are provided
+    if (page && limit) {
+      queryOptions.skip = (page - 1) * limit;
+      queryOptions.take = limit;
+    }
+
+    // --- Student Role ---
+    if (user.role === Role.Student) {
+      return await this.doubtsRepository.find({
+        ...queryOptions,
+        where: {
+          ...queryOptions.where,
+          studentId: user.id,
+        },
+      });
+    }
+
+    // --- Teacher Role ---
+    if (user.role === Role.Teacher) {
+      return await this.doubtsRepository.find({
+        ...queryOptions,
+        where: {
+          ...queryOptions.where,
+          classroom: {
+            teacher: {
+              id: user.id,
+            },
+          },
+        },
+      });
+    }
+
+    return [];
+  }
+
+  async getDoubtMessages(doubtId: string, user: User): Promise<IDoubtClearMessages[]> {
+    if (user.role === Role.Student) {
+      const doubt = await this.doubtsRepository.findOne({
+        where: {
+          id: doubtId,
+          studentId: user.id,
+        },
+      });
+
+      if (doubt) {
+        if (doubt.messages) {
+          return doubt.messages
+        }
+        return []
+      }
+      throw new NotFoundException(`Doubt with ID "${doubtId}" not found.`);
+
+    }
+    if (user.role === Role.Teacher) {
+      const doubt = await this.doubtsRepository.findOne({
+        where: {
+          id: doubtId,
+          classroom: {
+            teacher: {
+              id: user.id,
+            },
+          },
+        }
+      })
+
+      if (doubt) {
+        if (doubt.messages) {
+          return doubt.messages
+        }
+        return []
+      }
+      throw new NotFoundException(`Doubt with ID "${doubtId}" not found.`);
+    }
+    return []
+  }
 }

@@ -23,7 +23,7 @@ class AssignmentService {
         }
     }
 
-    async getAssignmentsForAnnouncement(announcementId: string): Promise<{ data: IAssignment[]; error?: string }>{
+    async getAssignmentsForAnnouncement(announcementId: string): Promise<{ data: IAssignment[], error?: string }>{
         try {
             const response = await api.get(`/assignments/allsubmited/${announcementId}`);
             return { data: response.data };
@@ -36,7 +36,7 @@ class AssignmentService {
         }
     }
 
-    async getPendingForClassroomForStudent(classroomid: string): Promise<{ data?: IClassroomAnnouncement[]; error?: string }>{
+    async getPendingForClassroomForStudent(classroomid: string): Promise<{ data?: IClassroomAnnouncement[], error?: string }>{
         try {
             const response = await api.get(`/assignments/pending/student/${classroomid}`);
             return { data: response.data };
@@ -49,7 +49,7 @@ class AssignmentService {
         }
     }
 
-    async getSubmittedForClassroomForStudent(classroomid: string): Promise<{ data: IAssignment[]; error?: string }> {
+    async getSubmittedForClassroomForStudent(classroomid: string): Promise<{ data: IAssignment[], error?: string }> {
         try {
             const response = await api.get(`/assignments/submitted/student/${classroomid}`);
             return { data: response.data };
@@ -62,7 +62,7 @@ class AssignmentService {
         }
     }
 
-    async getAllPendingAssignmentsForStudent(): Promise<{ data?: IClassroomAnnouncement[]; error?: string }> {
+    async getAllPendingAssignmentsForStudent(): Promise<{ data?: IClassroomAnnouncement[], error?: string }> {
         try {
             const response = await api.get(`/assignments/all/pending/student`);
             return { data: response.data };
@@ -75,7 +75,7 @@ class AssignmentService {
         }
     }
 
-    async getMissedForClassroomForStudent(classroomid: string): Promise<{ data?: IClassroomAnnouncement[]; error?: string }>  {
+    async getMissedForClassroomForStudent(classroomid: string): Promise<{ data?: IClassroomAnnouncement[], error?: string }>  {
         try {
             const response = await api.get(`/assignments/missed/student/${classroomid}`);
             return { data: response.data };
@@ -88,7 +88,7 @@ class AssignmentService {
         }
     }
 
-    async getAllMissedForStudent(): Promise<{ data?: IClassroomAnnouncement[]; error?: string }> {
+    async getAllMissedForStudent(): Promise<{ data?: IClassroomAnnouncement[], error?: string }> {
         try {
             const response = await api.get(`/assignments/all/missed/student`);
             return { data: response.data };
@@ -101,7 +101,7 @@ class AssignmentService {
         }
     }
 
-    async getPendingStudentsForAnnouncement(announcementId: string): Promise<{ data?: User[]; error?: string }>  {
+    async getPendingStudentsForAnnouncement(announcementId: string): Promise<{ data?: User[], error?: string }>  {
         try {
             const response = await api.get(`/assignments/all/studentlist/pending/${announcementId}`);
             return { data: response.data };
