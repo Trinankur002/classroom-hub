@@ -95,7 +95,7 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
     };
 
     return (
-        <div className="flex flex-col h-[calc(90vh-4rem)] sm:h-[85vh] w-full bg-card">
+        <div className="flex flex-col h-[calc(83vh-4rem)] w-full bg-card rounded-xl">
 
             {/* Header */}
             <div className="flex justify-between border-b">
@@ -135,9 +135,9 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
 
 
             {/* Messages (scrollable) */}
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+            <div className="flex-1 overflow-y-auto p-4 min-h-0">
                 {isLoading ? (
-                    <div className="text-center text-muted-foreground mt-8">
+                    <div className="flex h-full items-center justify-center text-center text-muted-foreground">
                         Loading messages...
                     </div>
                 ) : messages.length === 0 ? (
@@ -145,28 +145,19 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
                         No messages yet.
                     </div>
                 ) : (
-                    <div className="space-y-3 sm:space-y-4">
+                    <div className="space-y-4">
                         {messages.map((msg, index) => (
                             <div
                                 key={index}
-                                className={`flex items-end gap-2 ${msg.sender?.id !== user.id ? "justify-start" : "justify-end"
-                                    }`}
+                                className={`flex items-end gap-2 ${msg.sender?.id !== user.id ? "justify-start" : "justify-end"}`}
                             >
-                                <div
-                                    className={`rounded-lg px-3 py-2 max-w-[85%] sm:max-w-[70%] ${msg.sender?.id !== user.id
-                                        ? "bg-muted text-muted-foreground"
-                                        : "bg-primary text-primary-foreground"
-                                        }`}
-                                >
-                                    <p className="text-sm break-words">{msg.message}</p>
+                                <div className={`rounded-lg px-4 py-2 max-w-[80%] ${msg.sender?.id !== user.id ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"}`}>
+                                    <p className="text-sm">{msg.message}</p>
                                     {msg.file && (
                                         <FilePreview files={[msg.file]} />
                                     )}
                                     <p className="text-[10px] text-right opacity-70 mt-1">
-                                        {new Date(msg.time).toLocaleTimeString([], {
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                        })}
+                                        {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </p>
                                 </div>
                             </div>
@@ -177,16 +168,11 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
             </div>
 
             {/* Input Bar (fixed, not inside scrollable) */}
-            <div className="border-t p-2 bg-card flex-shrink-0">
+            <div className="border-t p-2 flex-shrink-0 bg-card rounded-b-xl">
                 {file && (
                     <div className="px-2 py-1 text-xs text-muted-foreground flex justify-between items-center">
-                        <span className="truncate">{file.name}</span>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => setFile(null)}
-                        >
+                        <span>Selected: {file.name}</span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setFile(null)}>
                             <X className="h-4 w-4" />
                         </Button>
                     </div>
@@ -198,25 +184,22 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
                         onChange={handleFileChange}
                         className="hidden"
                     />
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={handleFileSelect}
-                    >
+                    <Button type="button" variant="outline" size="icon" onClick={handleFileSelect}>
                         <Paperclip className="h-5 w-5" />
                     </Button>
                     <Input
                         type="text"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        onKeyDown={handleInputKeyDown}
                         placeholder="Type a message or attach a file"
                         className="flex-1"
                         autoComplete="off"
                     />
-                    <Button type="submit" size="icon">
-                        <Send className="h-4 w-4" />
+                    <Button
+                        type="submit"
+                        size="sm"
+                    >Send
+                        <Send className="h-5 w-5" />
                     </Button>
                 </form>
             </div>

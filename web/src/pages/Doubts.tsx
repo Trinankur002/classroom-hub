@@ -53,7 +53,7 @@ function Doubts({ classroomId }: Props) {
             {/* Left pane: List of doubts */}
             {/* On mobile, this pane is hidden when a doubt is selected */}
             <div
-                className={`${selectedDoubt ? 'hidden sm:flex sm:w-80' : 'flex w-full'} flex-shrink-0 border-r flex-col`}
+                className={`${selectedDoubt ? 'hidden sm:flex sm:w-80' : 'flex w-full'} flex-shrink-0 flex-col`}
             >
                 <div className="flex-1 overflow-y-auto p-4">
                     {isLoading && <h1 className="text-center">Loading...</h1>}
