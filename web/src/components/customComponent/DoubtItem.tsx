@@ -13,8 +13,6 @@ const DoubtItem: React.FC<DoubtItemProps> = ({ doubt, onClick, isSelected }) => 
         if (onClick) {
             onClick();
         }
-        // If you still want route navigation fallback, implement it here.
-        // Otherwise we deliberately avoid navigating so parent manages selection.
     };
 
     return (

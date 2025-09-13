@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useRef } from "react";
-import { ArrowLeft, Send, Paperclip, X } from "lucide-react";
+import { ArrowLeft, Send, Paperclip, X, RefreshCcw } from "lucide-react";
 import { IDoubt, IDoubtClearMessages } from "@/types/doubts";
 import DoubtService from "@/services/doubtService";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import FilePreview from "./FilePreview";
 
 interface Props {
     doubt: IDoubt;
@@ -28,7 +29,6 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
         try {
             setIsLoading(true);
             const { data, error } = await DoubtService.getDoubtMessages(doubt.id);
-            if (error) throw error;
             setMessages(data || []);
         } catch (err) {
             toast({
@@ -86,29 +86,55 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
         }
     };
 
+    const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            // This will trigger the form's onSubmit handler
+            e.currentTarget.form?.requestSubmit();
+        }
+    };
+
     return (
-        <div className="flex flex-col h-[calc(100vh-4rem)] sm:h-[85vh] w-full bg-card">
+        <div className="flex flex-col h-[calc(90vh-4rem)] sm:h-[85vh] w-full bg-card">
+
             {/* Header */}
-            <div className="flex items-center px-4 py-3 border-b flex-shrink-0">
-                {onClose && (
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="sm:hidden mr-2"
-                        onClick={onClose}
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                )}
-                <div className="min-w-0">
-                    <p className="font-semibold truncate">{doubt?.student?.name || "Student"}</p>
-                    <p className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-xs">
-                        {doubt?.doubtDescribtion}
-                    </p>
+            <div className="flex justify-between border-b">
+                <div className="flex items-center px-4 py-3 border-b flex-shrink-0">
+
+                    {onClose && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="sm:hidden mr-2"
+                            onClick={onClose}
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                        </Button>
+                    )}
+                    <div className="min-w-0">
+                        <p className="font-semibold truncate">
+                            {doubt?.student?.name || "Student"}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate max-w-[200px] sm:max-w-xs">
+                            {doubt?.doubtDescribtion}
+                        </p>
+                    </div>
                 </div>
+                <div className=" p-3 sm:p-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => fetchMessages()}
+                    >
+                        <RefreshCcw className="h-5 w-5"/>
+                    </Button>
+                </div>
+
             </div>
 
-            {/* Messages */}
+
+            {/* Messages (scrollable) */}
             <div className="flex-1 overflow-y-auto p-3 sm:p-4">
                 {isLoading ? (
                     <div className="text-center text-muted-foreground mt-8">
@@ -128,17 +154,13 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
                             >
                                 <div
                                     className={`rounded-lg px-3 py-2 max-w-[85%] sm:max-w-[70%] ${msg.sender?.id !== user.id
-                                            ? "bg-muted text-muted-foreground"
-                                            : "bg-primary text-primary-foreground"
+                                        ? "bg-muted text-muted-foreground"
+                                        : "bg-primary text-primary-foreground"
                                         }`}
                                 >
                                     <p className="text-sm break-words">{msg.message}</p>
                                     {msg.file && (
-                                        <img
-                                            src={msg.file.url}
-                                            alt="Attached file"
-                                            className="mt-2 rounded-md max-w-full h-auto"
-                                        />
+                                        <FilePreview files={[msg.file]} />
                                     )}
                                     <p className="text-[10px] text-right opacity-70 mt-1">
                                         {new Date(msg.time).toLocaleTimeString([], {
@@ -154,8 +176,8 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
                 )}
             </div>
 
-            {/* Input */}
-            <div className="border-t p-2 flex-shrink-0">
+            {/* Input Bar (fixed, not inside scrollable) */}
+            <div className="border-t p-2 bg-card flex-shrink-0">
                 {file && (
                     <div className="px-2 py-1 text-xs text-muted-foreground flex justify-between items-center">
                         <span className="truncate">{file.name}</span>
@@ -178,7 +200,7 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
                     />
                     <Button
                         type="button"
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
                         onClick={handleFileSelect}
                     >
@@ -188,6 +210,7 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
                         type="text"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
+                        onKeyDown={handleInputKeyDown}
                         placeholder="Type a message or attach a file"
                         className="flex-1"
                         autoComplete="off"
@@ -199,6 +222,7 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
             </div>
         </div>
     );
+
 
 }
 export default DoubtChat;

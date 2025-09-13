@@ -37,7 +37,7 @@ class DoubtService {
     async getDoubtMessages(doubtId: string): Promise<{ data: IDoubtClearMessages[], error?: string }> {
         try {
             const response = await api.get(`/doubts/messages/${doubtId}`);
-            return response.data;
+            return {data: response.data as IDoubtClearMessages[]};
         } catch (error) {
             console.error('Error Fetching Messages for Doubt:', error);
             return {
