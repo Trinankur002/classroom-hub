@@ -15,9 +15,9 @@ interface Props {
 function Doubts({ classroomId }: Props) {
     const user = JSON.parse(localStorage.getItem("user") || "null");
     const userRole = user?.role?.toString().toLowerCase();
-
-    const [doubts, setDoubts] = useState<IDoubt[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [doubts, setDoubts] = useState<IDoubt[]>([]);
+
     const [selectedDoubt, setSelectedDoubt] = useState<IDoubt | null>(null);
 
     const loadDoubts = async () => {

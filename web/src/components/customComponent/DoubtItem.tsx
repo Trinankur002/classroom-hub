@@ -22,11 +22,20 @@ const DoubtItem: React.FC<DoubtItemProps> = ({ doubt, onClick, isSelected }) => 
         >
             <CardContent className="flex items-center space-x-4 p-4">
                 <div className="flex-shrink-0">
-                    <div className="h-12 w-12 rounded-full flex items-center justify-center bg-muted/40">
-                        <span className="text-lg font-bold ">
-                            {doubt.student?.name?.charAt(0) || 'T'}
-                        </span>
-                    </div>
+                    {!doubt.student?.avatarUrl &&
+                        <div className="h-12 w-12 rounded-full flex items-center justify-center bg-muted/40">
+                            <span className="text-lg font-bold ">
+                                {doubt.student?.name?.charAt(0) || 'T'}
+                            </span>
+                        </div>
+                    }
+                    {doubt.student?.avatarUrl && (
+                        <img
+                            src={doubt.student?.avatarUrl}
+                            alt={`${doubt.student?.name}'s avatar`}
+                            className="h-10 w-10 rounded-full object-cover"
+                        />
+                    )}
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className="text-lg font-semibold truncate">

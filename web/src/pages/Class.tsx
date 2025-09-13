@@ -17,6 +17,7 @@ import Announcements from "./Announcements";
 import { IClassroomAnnouncement } from "@/types/classroomAnnouncement";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
 import { motion, AnimatePresence } from "framer-motion";
+import StudentsList from "./StudentsList";
 
 export default function Class() {
     const navigate = useNavigate();
@@ -207,7 +208,13 @@ export default function Class() {
                     <TabsContent value="doubts" className="flex-1 flex flex-col">
                         <Doubts classroomId={classroom?.id || ''} />
                     </TabsContent>
-                    {userRole === 'teacher' && <TabsContent value="students">List of students</TabsContent>}
+                    {userRole === 'teacher' && <TabsContent value="students">
+                        <StudentsList
+                            classroomId={classroom?.id || ''}
+                            key={refreshKey}
+                            onBack={() => setSelectedAnnouncement(null)}
+                        />
+                    </TabsContent>}
                 </Tabs>
             </div>
 

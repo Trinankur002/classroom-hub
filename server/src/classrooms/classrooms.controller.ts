@@ -11,8 +11,9 @@ import {
   UploadedFiles,
   NotFoundException,
   Delete,
+  Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, getSchemaPath } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, getSchemaPath } from '@nestjs/swagger';
 import { ClassroomsService } from './classrooms.service';
 import { CreateClassroomDto } from './dto/create-classroom.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -183,4 +184,46 @@ export class ClassroomsController {
     await this.classroomsService.deleteAnnouncement(announcementId, req.user);
     return { message: 'Announcement deleted successfully' };
   }
+
+  @Delete('student/:studentId')
+  @ApiOperation({ summary: 'Remove a student from a classroom' })
+  @ApiQuery({ name: 'classroomId', description: 'Classroom ID (UUID)' })
+  @ApiParam({ name: 'studentId', description: 'Student ID (UUID)' })
+  @ApiResponse({ status: 200, description: 'Student removed from classroom successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async removeStudentFromClassroom(
+    @Param('studentId') studentId: string,
+    @Query('classroomId') classroomId: string,
+    @Request() req: any,
+  ) {
+
+    if (req.user.role !== Role.Teacher) {
+      throw new ForbiddenException('Only teachers can remove students from a classroom.');
+    }
+    await this.classroomsService.removeStudentFromClassroom(classroomId, studentId, req.user);
+    return { message: 'Student removed from classroom successfully' };
+  }
+
+  @Delete('student/leave/:classroomId')
+  @ApiParam({ name: 'classroomId', description: 'Classroom ID (UUID)' })
+  @ApiOperation({ summary: 'Leave a classroom' })
+  async leaveClassroom(
+    @Param('classroomId') classroomId: string,
+    @Request() req: any,
+    ) {
+    await this.classroomsService.leaveClassroom(classroomId, req.user);
+    return { message: 'Left classroom successfully' };
+  }
+
+  @Delete('delete/:classroomId') 
+  @ApiParam({ name: 'classroomId', description: 'Classroom ID (UUID)' })
+  @ApiOperation({ summary: 'Delete a classroom' })
+  async deleteClassRoom(
+    @Param('classroomId') classroomId: string,
+    @Request() req: any,
+  ) {
+    await this.classroomsService.deleteClassroom(classroomId, req.user);
+    return { message: 'Classroom deleted successfully' };
+  }
+
 }

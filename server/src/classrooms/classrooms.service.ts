@@ -15,6 +15,7 @@ import { getBucket } from 'src/fileServices/gcs.config';
 import { v4 as uuid } from 'uuid';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UsersService } from 'src/users/users.service';
+import { Transactional } from 'typeorm-transactional-cls-hooked';
 
 @Injectable()
 export class ClassroomsService {
@@ -686,6 +687,7 @@ export class ClassroomsService {
     return users;
   }
 
+  @Transactional()
   async deleteAnnouncement(announcementId: string, user: User): Promise<void> {
     const announcement = await this.classroomAnnouncementsRepository.findOne({
       where: { id: announcementId },
@@ -696,19 +698,69 @@ export class ClassroomsService {
       throw new NotFoundException('Announcement not found.');
     }
 
-    if (announcement.teacherId !== user.id && user.role !== Role.Teacher ) {
+    if (announcement.teacherId !== user.id && user.role !== Role.Teacher) {
       throw new ForbiddenException('You do not have permission to delete this announcement.');
     }
 
     const fileIds = announcement.files.map(file => file.id);
-    try {
-      if (fileIds.length > 0) {
-        await this.fileService.deleteFiles(fileIds, user);
-      }
-
-      await this.classroomAnnouncementsRepository.delete(announcement.id);
-    } catch (error) {
-      throw new Error(`Failed to delete announcement and its associated files because ${error}`);
+    if (fileIds.length > 0) {
+      await this.fileService.deleteFiles(fileIds, user);
     }
+
+    await this.classroomAnnouncementsRepository.delete(announcement.id);
+  }
+
+  @Transactional()
+  async removeStudentFromClassroom(
+    classroomId: string,
+    studentId: string,
+    user: User,
+  ): Promise<void> {
+    const classroom = await this.classroomsRepository.findOne({ where: { id: classroomId } });
+    if (!classroom) {
+      throw new NotFoundException('Classroom not found.');
+    }
+    const existing = await this.studentClassroomsRepository.findOne({
+      where: { classroomId: classroom.id, studentId: studentId },
+    });
+
+    if (!existing) {
+      throw new ConflictException('Student is not in this classroom.');
+    }
+
+    await this.studentClassroomsRepository.delete({
+      classroomId: classroom.id,
+      studentId: studentId,
+    });
+
+    // Decrement the count after a successful deletion
+    classroom.studentCount--;
+    await this.classroomsRepository.save(classroom);
+  }
+
+  async leaveClassroom(classroomId: string, user: User): Promise<void> { 
+    if (user.role !== Role.Student) {
+      throw new ForbiddenException('You are not a Student');
+    }
+    await this.removeStudentFromClassroom(classroomId, user.id, user)
+  }
+    
+  // Add the database transaction decorator to your method
+  @Transactional()
+  async deleteClassroom(classroomId: string, user: User): Promise<void> {
+    if (user.role !== Role.Teacher) {
+      throw new ForbiddenException('You are not a Teacher');
+    }
+    const classroom = await this.classroomsRepository.findOne({
+      where: { id: classroomId, teacherId: user.id },
+    });
+
+    if (!classroom) {
+      throw new NotFoundException('Classroom not found or you are not the teacher.');
+    }
+    await this.classroomAnnouncementsRepository.delete({ classroomId: classroom.id });
+    await this.studentClassroomsRepository.delete({ classroomId: classroom.id });
+    await this.classroomsRepository.delete(classroomId);
+
   }
 }
