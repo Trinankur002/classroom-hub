@@ -3,9 +3,10 @@ import React, { useEffect, useState } from 'react';
 import DoubtService from '@/services/doubtService';
 import { toast } from '@/hooks/use-toast';
 import { BookOpen } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import DoubtItem from '@/components/customComponent/DoubtItem';
 import DoubtChat from '@/components/customComponent/DoubtChat';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface Props {
     classroomId: string;
@@ -56,7 +57,26 @@ function Doubts({ classroomId }: Props) {
                 className={`${selectedDoubt ? 'hidden sm:flex sm:w-80' : 'flex w-full'} flex-shrink-0 flex-col`}
             >
                 <div className="flex-1 overflow-y-auto p-4">
-                    {isLoading && <h1 className="text-center">Loading...</h1>}
+                    {isLoading && (
+                        <div className="space-y-4">
+                            {Array.from({ length: 5 }).map((_, index) => (
+                                <Card className="cursor-not-allowed">
+                                    <CardContent className="flex items-center space-x-4 p-4">
+                                        <div className="flex-shrink-0">
+                                            <Skeleton className="h-12 w-12 rounded-full" />
+                                        </div>
+                                        <div className="flex-1 min-w-0 space-y-2">
+                                            <Skeleton className="h-5 w-2/3" />
+                                            <Skeleton className="h-4 w-full" />
+                                        </div>
+                                        <div className="text-right text-xs text-muted-foreground">
+                                            <Skeleton className="h-3 w-16" />
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    )}
                     {!isLoading && doubts.length === 0 ? (
                         <Card className="p-12 text-center">
                             <div className="space-y-4">

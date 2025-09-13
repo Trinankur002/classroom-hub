@@ -7,6 +7,7 @@ import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import FilePreview from "./FilePreview";
+import { Skeleton } from "../ui/skeleton";
 
 interface Props {
     doubt: IDoubt;
@@ -127,7 +128,7 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
                         size="icon"
                         onClick={() => fetchMessages()}
                     >
-                        <RefreshCcw className="h-5 w-5"/>
+                        <RefreshCcw className="h-5 w-5" />
                     </Button>
                 </div>
 
@@ -137,8 +138,27 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
             {/* Messages (scrollable) */}
             <div className="flex-1 overflow-y-auto p-4 min-h-0">
                 {isLoading ? (
-                    <div className="flex h-full items-center justify-center text-center text-muted-foreground">
-                        Loading messages...
+                    <div className="space-y-4">
+                        {/* Generate a few skeleton messages to show the loading state */}
+                        {Array.from({ length: 5 }).map((_, index) => (
+                            <div
+                                key={index}
+                                className={`flex items-end gap-2 ${index % 2 === 0 ? 'justify-start' : 'justify-end'}`}
+                            >
+                                <div className={`rounded-lg px-4 py-2 max-w-[80%] `}>
+                                    <Skeleton className={`h-4 ${index % 2 === 0 ? 'w-48' : 'w-64'}`} />
+                                    <Skeleton className={`h-4 mt-2 ${index % 2 === 0 ? 'w-56' : 'w-32'}`} />
+                                    {index === 2 && (
+                                        <div className="mt-2">
+                                            <Skeleton className="h-8 w-40" />
+                                        </div>
+                                    )}
+                                    <div className="flex justify-end">
+                                        <Skeleton className="h-3 w-16 mt-1" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 ) : messages.length === 0 ? (
                     <div className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
@@ -154,7 +174,10 @@ function DoubtChat({ doubt, onClose, onDoubtUpdated }: Props) {
                                 <div className={`rounded-lg px-4 py-2 max-w-[80%] ${msg.sender?.id !== user.id ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground"}`}>
                                     <p className="text-sm">{msg.message}</p>
                                     {msg.file && (
-                                        <FilePreview files={[msg.file]} />
+                                        <FilePreview files={[msg.file]}
+                                            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 mt-3"
+                                            previewClassName="h-12"
+                                            fileInfoClassName="text-xs" />
                                     )}
                                     <p className="text-[10px] text-right opacity-70 mt-1">
                                         {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
