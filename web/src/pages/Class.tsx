@@ -204,13 +204,15 @@ export default function Class() {
                         />
                     </TabsContent>
 
-                    <TabsContent value="doubts"><Doubts classroomId={classroom?.id || ''} /></TabsContent>
+                    <TabsContent value="doubts" className="flex-1 flex flex-col">
+                        <Doubts classroomId={classroom?.id || ''} />
+                    </TabsContent>
                     {userRole === 'teacher' && <TabsContent value="students">List of students</TabsContent>}
                 </Tabs>
             </div>
 
             {/*Create Announcement Button and Mobile FAB with dynamic classes */}
-            {!isloading && classroom && userRole === "teacher" && (activeTab === "updates" || activeTab === "announcements") &&(
+            {!isloading && classroom && userRole === "teacher" && (activeTab === "updates" || activeTab === "announcements") && (
                 <div className="fixed bottom-20 right-6 sm:hidden z-50">
                     <div className="hidden">
                         <AnnouncementButton
@@ -239,7 +241,7 @@ export default function Class() {
                     </Button>
                 </div>
             )}
-            
+
         </div>
     );
 }
