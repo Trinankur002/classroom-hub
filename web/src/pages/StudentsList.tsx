@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import ClassroomAnnouncementService from '@/services/classroomAnnouncementService';
+import ClassroomService from '@/services/classroomService';
 import { IClassroomUser } from '@/types/user';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Props {
     classroomId: string;
@@ -20,6 +22,7 @@ function StudentsList(props: Props) {
 
     const [classroomUsers, setClassroomUsers] = useState<IClassroomUser[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [userToRemove, setUserToRemove] = useState<IClassroomUser | null>(null);
 
     const loadClassroomUsers = async () => {
         try {
@@ -40,6 +43,35 @@ function StudentsList(props: Props) {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleRemoveStudent = async () => {
+        if (userToRemove) {
+            try {
+                const { data, error } = await ClassroomService.removeStudentFromClassroom(userToRemove.id, classroomId);
+                if (data) {
+                    toast({
+                        title: `Removed ${userToRemove.name} from this classroom`,
+                        description: "Success",
+                        variant: 'default',
+                    })
+                }
+                if (error) { 
+                    console.error("Failed to delete classroom student:", error);
+                    toast({
+                        title: "Failed to delete classroom student",
+                        description: "Something went wrong",
+                        variant: "destructive",
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to delete classroom student:", error);
+            } finally {
+                setUserToRemove(null); // Clear the state
+                loadClassroomUsers();
+            }
+        }
+
     };
 
     useEffect(() => {
@@ -76,48 +108,96 @@ function StudentsList(props: Props) {
             )}
             {!isLoading && studentsList.length > 0 && (
                 <div>
-                    {studentsList.map((user) => (
-                        <Card key={user.id} className="p-4 mb-4">
-                            {/* Container for the user info and button on larger screens */}
+                    {studentsList.map((student) => (
+                        <Card key={student.id} className="p-4 mb-4">
                             <div className="flex items-center justify-between sm:mb-0">
                                 <div className="flex items-center space-x-4">
                                     {/* User Avatar */}
-                                    {user.avatarUrl && (
+                                    {student.avatarUrl && (
                                         <img
-                                            src={user.avatarUrl}
-                                            alt={`${user.name}'s avatar`}
+                                            src={student.avatarUrl}
+                                            alt={`${student.name}'s avatar`}
                                             className="h-10 w-10 rounded-full object-cover"
                                         />
                                     )}
-                                    {!user.avatarUrl && (
+                                    {!student.avatarUrl && (
                                         <div className="h-12 w-12 rounded-full flex items-center justify-center bg-muted/40">
                                             <span className="text-lg font-bold">
-                                                {user.name?.charAt(0) || 'T'}
+                                                {student.name?.charAt(0) || 'T'}
                                             </span>
                                         </div>
                                     )}
                                     <div>
-                                        <p className="font-semibold">{user.name}</p>
-                                        <p className="text-sm text-gray-500">{user.email}</p>
+                                        <p className="font-semibold">{student.name}</p>
+                                        <p className="text-sm text-gray-500">{student.email}</p>
                                     </div>
                                 </div>
 
-                                {/* This div is visible on screens larger than 'sm' */}
+                                {/* Desktop remove button wrapped in AlertDialog */}
                                 <div className="hidden sm:block">
-                                    <Button variant="destructive">Remove</Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" onClick={() => setUserToRemove(student)}>
+                                                Remove
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action cannot be undone. This will permanently remove **{student.name}** from this classroom.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={handleRemoveStudent}
+                                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                >
+                                                    Continue
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             </div>
-
-                            {/* Card Footer for small screens */}
+                            {/* Mobile remove button wrapped in AlertDialog */}
                             <div className="mt-4 sm:hidden">
                                 <div className="flex justify-end">
-                                    <Button variant="destructive">Remove</Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="destructive" onClick={() => setUserToRemove(student)}>
+                                                Remove
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    This action cannot be undone. This will permanently remove **{student.name}** from this classroom.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction asChild>
+                                                    <Button onClick={handleRemoveStudent}
+                                                        variant="destructive"
+                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                    >
+                                                        Continue
+                                                    </Button>
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             </div>
                         </Card>
                     ))}
                 </div>
             )}
+
+
             {!isLoading && studentsList.length === 0 && (
                 <Card className="p-12 text-center">
                     <div className="space-y-4">
