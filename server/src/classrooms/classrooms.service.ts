@@ -687,7 +687,6 @@ export class ClassroomsService {
     return users;
   }
 
-  @Transactional()
   async deleteAnnouncement(announcementId: string, user: User): Promise<void> {
     const announcement = await this.classroomAnnouncementsRepository.findOne({
       where: { id: announcementId },
@@ -710,7 +709,6 @@ export class ClassroomsService {
     await this.classroomAnnouncementsRepository.delete(announcement.id);
   }
 
-  @Transactional()
   async removeStudentFromClassroom(
     classroomId: string,
     studentId: string,
@@ -746,7 +744,6 @@ export class ClassroomsService {
   }
     
   // Add the database transaction decorator to your method
-  @Transactional()
   async deleteClassroom(classroomId: string, user: User): Promise<void> {
     if (user.role !== Role.Teacher) {
       throw new ForbiddenException('You are not a Teacher');

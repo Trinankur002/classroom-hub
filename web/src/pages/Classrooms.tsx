@@ -22,8 +22,6 @@ export default function Classrooms() {
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-
-
   const [classrooms, setClassrooms] = useState<IClassroom[]>([])
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -47,6 +45,9 @@ export default function Classrooms() {
     }
   };
 
+  const onLeaveClassroom = () => {
+    load();
+  }
 
   useEffect(() => {
     if (!user) {
@@ -114,7 +115,12 @@ export default function Classrooms() {
               <ClassroomCardSkeleton key={i} />
             )))}
             {!isloading && classrooms.map((classroom) => (
-            <ClassroomCard key={classroom.id} classroom={classroom} userRole={userRole} />
+              <ClassroomCard
+                key={classroom.id}
+                classroom={classroom}
+                userRole={userRole}
+                onLeaveClassroom={load}
+              />
           ))}
         </div>
       )}

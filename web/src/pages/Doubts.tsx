@@ -60,7 +60,9 @@ function Doubts({ classroomId }: Props) {
                     {isLoading && (
                         <div className="space-y-4">
                             {Array.from({ length: 5 }).map((_, index) => (
-                                <Card className="cursor-not-allowed">
+                                <Card
+                                    key={index}
+                                    className="cursor-not-allowed">
                                     <CardContent className="flex items-center space-x-4 p-4">
                                         <div className="flex-shrink-0">
                                             <Skeleton className="h-12 w-12 rounded-full" />
