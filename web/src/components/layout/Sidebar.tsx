@@ -138,7 +138,6 @@ export function Sidebar({ open, onOpenChange, user, userRole }: SidebarProps) {
                     variant="destructive"
                     size="sm"
                     onClick={logout}
-                    className="ml-2 px-2 py-1 text-sm bg-red-700 text-white hover:bg-red-500 cursor-pointer transition-colors duration-200"
                   >
                     Logout
                   </Button>

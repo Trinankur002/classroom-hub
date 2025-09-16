@@ -181,6 +181,7 @@ export default function Settings() {
     // open file picker
     inputFileRef.current?.click();
   };
+  const { logout } = useAuth();
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -318,6 +319,19 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+
+          <div className="flex justify-end sm:hidden">
+            <Button
+            variant="destructive"
+            size='lg'
+            className="w-full"
+            onClick={logout}
+          >
+            Logout
+          </Button>
+          </div>
+
+          
         </TabsContent>
 
         {/* Notifications Tab */}
