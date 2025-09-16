@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   Users,
@@ -20,17 +20,30 @@ interface SidebarProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const navigationItems = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Classrooms", href: "/classrooms", icon: Users },
-  { name: "All Assignments", href: "/allassignments", icon: BookOpen },
-  { name: "Chat", href: "/chat", icon: MessageCircle },
-  { name: "Settings", href: "/settings", icon: Settings },
-];
-
 export function Sidebar({ open, onOpenChange }: SidebarProps) {
-  const location = useLocation();
+  let navigationItems = [];
   const { logout, user } = useAuth();
+
+  const userRole = user.role.toString().toLowerCase()
+
+  if (userRole === "student") {
+    navigationItems = [
+      { name: "Dashboard", href: "/dashboard", icon: Home },
+      { name: "Classes", href: "/classrooms", icon: Users },
+      { name: "All Assignments", href: "/allassignments", icon: BookOpen },
+      { name: "Chat", href: "/chat", icon: MessageCircle },
+      { name: "Settings", href: "/settings", icon: Settings },
+    ];
+  } else if (userRole === "teacher") {
+    navigationItems = [
+      { name: "Dashboard", href: "/dashboard", icon: Home },
+      { name: "Classes", href: "/classrooms", icon: Users },
+      // { name: "All Assignments", href: "/allassignments", icon: BookOpen },
+      { name: "Chat", href: "/chat", icon: MessageCircle },
+      { name: "Settings", href: "/settings", icon: Settings },
+    ];
+  }
+  const location = useLocation();
 
 
   return (

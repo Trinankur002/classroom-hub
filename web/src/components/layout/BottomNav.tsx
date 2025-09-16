@@ -1,25 +1,43 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, MessageCircle, Settings, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const bottomNavItems = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Classes", href: "/classrooms", icon: Users },
-  { name: "All Assignments", href: "/allassignments", icon: BookOpen },
-  { name: "Chat", href: "/chat", icon: MessageCircle },
-  { name: "Settings", href: "/settings", icon: Settings },
-];
-
 export function BottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user"));
+  if (!user) {
+    navigate("/");
+  }
+  const userRole = user.role.toString().toLowerCase()
+
+  let bottomNavItems = [];
+
+  if (userRole === "student") {
+    bottomNavItems = [
+      { name: "Dashboard", href: "/dashboard", icon: Home },
+      { name: "Classes", href: "/classrooms", icon: Users },
+      { name: "All Assignments", href: "/allassignments", icon: BookOpen },
+      { name: "Chat", href: "/chat", icon: MessageCircle },
+      { name: "Settings", href: "/settings", icon: Settings },
+    ];
+  } else if (userRole === "teacher") {
+    bottomNavItems = [
+      { name: "Dashboard", href: "/dashboard", icon: Home },
+      { name: "Classes", href: "/classrooms", icon: Users },
+      // { name: "All Assignments", href: "/allassignments", icon: BookOpen },
+      { name: "Chat", href: "/chat", icon: MessageCircle },
+      { name: "Settings", href: "/settings", icon: Settings },
+    ];
+  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border">
       <div className="flex items-center justify-around py-2">
         {bottomNavItems.map((item) => {
-          const isActive = location.pathname === item.href || 
-                         (item.href !== "/dashboard" && location.pathname.startsWith(item.href));
-          
+          const isActive = location.pathname === item.href ||
+            (item.href !== "/dashboard" && location.pathname.startsWith(item.href));
+
           return (
             <NavLink
               key={item.name}
