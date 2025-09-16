@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -14,17 +14,20 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { IClassroomUser } from "@/types/user";
 
 interface SidebarProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  user: IClassroomUser;
+  userRole: string;
 }
 
-export function Sidebar({ open, onOpenChange }: SidebarProps) {
+export function Sidebar({ open, onOpenChange, user, userRole }: SidebarProps) {
   let navigationItems = [];
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
 
-  const userRole = user.role.toString().toLowerCase()
+  // const userRole = user.role.toString().toLowerCase()
 
   if (userRole === "student") {
     navigationItems = [

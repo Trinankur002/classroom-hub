@@ -2,14 +2,16 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Home, Users, MessageCircle, Settings, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function BottomNav() {
+export function BottomNav(
+  { userRole }: { userRole: string }
+) {
   const location = useLocation();
-  const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
-  if (!user) {
-    navigate("/");
-  }
-  const userRole = user.role.toString().toLowerCase()
+  // const navigate = useNavigate();
+  // const user = JSON.parse(localStorage.getItem("user"));
+  // if (!user) {
+  //   navigate("/");
+  // }
+  // const userRole = user.role.toString().toLowerCase()
 
   let bottomNavItems = [];
 
