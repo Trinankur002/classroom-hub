@@ -1,6 +1,7 @@
 import { IClassroomAnnouncement, ICreateComment } from "@/types/classroomAnnouncement";
 import api from "./api";
 import { IClassroomUser } from "@/types/user";
+import { IAssignment } from "@/types/assignment";
 
 class ClassroomAnnouncementService {
     async getAll(classroomId: string): Promise<{ data: IClassroomAnnouncement[]; error?: string }> {
@@ -104,6 +105,109 @@ class ClassroomAnnouncementService {
             return {
                 error: error?.response?.data?.message || error.message || "Something went wrong",
             };
+        }
+    }
+
+    /**
+   * Gets all submitted assignments for a specific announcement. The result varies based on the user's role.
+   * @param announcementid The ID of the announcement.
+   */
+    async getAllSubmitedAssignments(announcementid: string): Promise<{ data?: IAssignment[]; error?: string }> {
+        try {
+            const response = await api.get(`/assignments/allsubmited/${announcementid}`);
+            return { data: response.data };
+        } catch (error: any) {
+            console.error("Error fetching submitted assignments:", error);
+            return { error: error?.response?.data?.message || error.message || "Something went wrong" };
+        }
+    }
+
+    /**
+     * Gets pending assignments for a student in a specific classroom.
+     * @param classroomid The ID of the classroom.
+     */
+    async getPendingForClassroomForStudent(classroomid: string): Promise<{ data?: IClassroomAnnouncement[]; error?: string }> {
+        try {
+            const response = await api.get(`/assignments/pending/student/${classroomid}`);
+            return { data: response.data };
+        } catch (error: any) {
+            console.error("Error fetching pending assignments:", error);
+            return { error: error?.response?.data?.message || error.message || "Something went wrong" };
+        }
+    }
+
+    /**
+     * Gets submitted assignments for a student in a specific classroom.
+     * @param classroomid The ID of the classroom.
+     */
+    async getSubmittedForClassroomForStudent(classroomid: string): Promise<{ data?: IAssignment[]; error?: string }> {
+        try {
+            const response = await api.get(`/assignments/submitted/student/${classroomid}`);
+            return { data: response.data };
+        } catch (error: any) {
+            console.error("Error fetching submitted assignments:", error);
+            return { error: error?.response?.data?.message || error.message || "Something went wrong" };
+        }
+    }
+
+    /**
+     * Gets all pending assignments for a student.
+     */
+    async getAllPendingAssignmentsForStudent(): Promise<{ data?: IClassroomAnnouncement[]; error?: string }> {
+        try {
+            const response = await api.get(`/assignments/all/pending/student`);
+            console.log("response.data:", response.data);
+            
+            return { data: response.data };
+        } catch (error: any) {
+            console.error("Error fetching all pending assignments:", error);
+            return { error: error?.response?.data?.message || error.message || "Something went wrong" };
+        }
+    }
+
+    /**
+     * Gets missed assignments for a student in a specific classroom.
+     * @param classroomid The ID of the classroom.
+     */
+    async getMissedForClassroomForStudent(classroomid: string): Promise<{ data?: IClassroomAnnouncement[]; error?: string }> {
+        try {
+            const response = await api.get(`/assignments/missed/student/${classroomid}`);
+            return { data: response.data };
+        } catch (error: any) {
+            console.error("Error fetching missed assignments:", error);
+            return { error: error?.response?.data?.message || error.message || "Something went wrong" };
+        }
+    }
+
+    /**
+     * Gets all missed assignments for a student.
+     */
+    async getAllMissedForStudent(): Promise<{ data?: IClassroomAnnouncement[]; error?: string }> {
+        try {
+            const response = await api.get(`/assignments/all/missed/student`);
+            if (response.data && response.data.length > 0) {
+                console.log("response.data:", response.data);
+            } else {
+                console.log("No missed assignments found. The API returned an empty array.");
+            }
+            return { data: response.data };
+        } catch (error: any) {
+            console.error("Error fetching all missed assignments:", error);
+            return { error: error?.response?.data?.message || error.message || "Something went wrong" };
+        }
+    }
+
+    /**
+     * Gets a list of pending students for a specific announcement.
+     * @param announcementid The ID of the announcement.
+     */
+    async getPendingStudentsForAnnouncement(announcementid: string): Promise<{ data?: IClassroomUser[]; error?: string }> {
+        try {
+            const response = await api.get(`/assignments/all/studentlist/pending/${announcementid}`);
+            return { data: response.data };
+        } catch (error: any) {
+            console.error("Error fetching pending students:", error);
+            return { error: error?.response?.data?.message || error.message || "Something went wrong" };
         }
     }
 }

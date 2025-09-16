@@ -3,16 +3,16 @@ import { User } from "./user";
 
 export interface IClassroomAnnouncement {
     id: string;
-    name: string;
-    description: string;
-    classroomId: string;
-    teacherId: string;
-    teacher: User;
-    files: IClassroomFile[];
-    comments: IClassroomComment[];
-    isAssignment: boolean;
-    dueDate: string | null;
-    updatedAt: string,
+    name?: string;
+    description?: string;
+    classroomId?: string;
+    teacherId?: string;
+    teacher?: User;
+    files?: IClassroomFile[];
+    comments?: IClassroomComment[];
+    isAssignment?: boolean;
+    dueDate?: string | null;
+    updatedAt?: string,
 }
 
 export interface IClassroomComment {

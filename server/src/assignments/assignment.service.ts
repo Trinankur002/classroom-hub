@@ -172,13 +172,13 @@ export class AssignmentService {
             .innerJoin('announcement.classroom', 'classroom')
             .innerJoin('classroom.students', 'student_classroom', 'student_classroom.studentId = :studentId', { studentId: user.id })
             .where('announcement.isAssignment = true')
-            .andWhere(qb => {
-                const subQuery = qb.subQuery()
-                    .select('assignment.announcementId')
-                    .from('assignment', 'assignment')
-                    .where('assignment.studentId = :studentId');
-                return 'announcement.id NOT IN ' + subQuery.getQuery();
-            })
+            // .andWhere(qb => {
+            //     const subQuery = qb.subQuery()
+            //         .select('assignment.announcementId')
+            //         .from('assignment', 'assignment')
+            //         .where('assignment.studentId = :studentId');
+            //     return 'announcement.id NOT IN ' + subQuery.getQuery();
+            // })
             .andWhere('(announcement.dueDate IS NULL OR announcement.dueDate >= :now)')
             .setParameters({ studentId: user.id, now })
             .getMany();
@@ -234,19 +234,32 @@ export class AssignmentService {
 
     //For Teacher only..
 
-    async getAllSubmitedAssignmentsForAnnouncement(announcementid: string, user: User) {
+    async getAllSubmitedAssignmentsForAnnouncement(announcementid: string, user: User):Promise<Assignment[]> {
         const announcement = await this.announcementRepository.findOne({ where: { id: announcementid, teacherId: user.id } });
         if (!announcement) {
             throw new HttpException('Announcement not found or you are not authorized to view its submissions.', HttpStatus.NOT_FOUND);
         }
 
-        const data = await this.assignmentRepository.find({
+        return await this.assignmentRepository.find({
             where: {
                 announcementId: announcementid,
             },
             relations: ['files', 'student'],
+            select: {
+                id: true,
+                announcementId: true,
+                studentId: true,
+                student: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
+                files : true,
+                createdAt: true,
+                updatedAt: true,
+            }
         });
-        return instanceToPlain(data);
+       
     }
 
     async getPendingStudentsForAnnouncement(announcementid: string, user: User): Promise<User[]> {

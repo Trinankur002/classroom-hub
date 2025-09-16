@@ -1,10 +1,11 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Users, MessageCircle, Settings } from "lucide-react";
+import { Home, Users, MessageCircle, Settings, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const bottomNavItems = [
   { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Classes", href: "/classrooms", icon: Users },
+  { name: "All Assignments", href: "/allassignments", icon: BookOpen },
   { name: "Chat", href: "/chat", icon: MessageCircle },
   { name: "Settings", href: "/settings", icon: Settings },
 ];

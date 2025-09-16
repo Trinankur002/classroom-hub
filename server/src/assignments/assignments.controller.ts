@@ -1,25 +1,18 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
-  Patch,
   Param,
-  Delete,
-  UseGuards,
-  Req,
+  Post,
+  Request,
   UploadedFiles,
-  UseInterceptors,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
-  Request
+  UseGuards,
+  UseInterceptors
 } from '@nestjs/common';
-import { AssignmentService } from './assignment.service';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { AnyFilesInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiParam } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Role } from 'src/users/entities/role.enum';
+import { AssignmentService } from './assignment.service';
 
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()

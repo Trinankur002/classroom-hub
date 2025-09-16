@@ -1,3 +1,4 @@
+// Corrected AnnouncementCard.tsx
 import {
     Card,
     CardContent,
@@ -47,7 +48,9 @@ export default function AnnouncementCard({ announcement, onView }: Props) {
                             </Badge>
                         )}
                         <div className="text-xs text-muted-foreground">
-                            <p>By {announcement.teacher.name}</p>
+                            {announcement.teacher && announcement.teacher.name &&
+                                <p>By {announcement.teacher.name}</p>
+                            }
                             {announcement.isAssignment &&
                                 <div className="mt-1 text-sm font-semibold text-foreground">
                                     <span>Due: {formattedDueDate}</span>
