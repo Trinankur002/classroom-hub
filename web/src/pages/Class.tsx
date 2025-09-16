@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added Select imports
 import { ArrowLeft, Plus } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import Projects from "./AllAssignments";
 import ClassDetails from "./ClassDetails";
 import { useEffect, useState, useCallback } from "react";
@@ -18,9 +18,11 @@ import { IClassroomAnnouncement } from "@/types/classroomAnnouncement";
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
 import { motion, AnimatePresence } from "framer-motion";
 import StudentsList from "./StudentsList";
+import ClassroomAnnouncementService from '@/services/classroomAnnouncementService';
 
 export default function Class() {
     const navigate = useNavigate();
+    const location = useLocation(); // Add this line
     const user = JSON.parse(localStorage.getItem("user") || "null");
 
     const userRole = user.role.toString().toLowerCase();
@@ -60,6 +62,36 @@ export default function Class() {
             loadClassroom();
         }
     }, [loadClassroom]);
+
+    useEffect(() => {
+        const preSelectedId = location.state?.selectedAnnouncementId;
+
+        if (preSelectedId) {
+            const fetchAndSetAnnouncement = async () => {
+                setIsLoading(true);
+                try {
+                    const { data, error } = await ClassroomAnnouncementService.getOneAnnouncement(preSelectedId);
+                    if (data) {
+                        setSelectedAnnouncement(data);
+                        setActiveTab("announcements");
+                    }
+                    if (error) {
+                        toast({
+                            title: "Failed to load announcement",
+                            description: error,
+                            variant: "destructive",
+                        });
+                    }
+                } finally {
+                    setIsLoading(false);
+                    navigate(location.pathname, { replace: true, state: {} });
+                }
+            };
+
+            fetchAndSetAnnouncement();
+        }
+    }, [location.state, navigate]);
+
 
     if (!user) {
         return null;

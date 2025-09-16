@@ -1,5 +1,4 @@
 import { Card } from '@/components/ui/card'
-import { IAssignment } from '@/types/assignment'
 import { BookOpen } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -11,14 +10,8 @@ import { IClassroomAnnouncement } from '@/types/classroomAnnouncement'
 import AnnouncementCardSkeleton from '@/components/customComponent/AnnouncementCardSkeleton'
 import AnnouncementCard from '@/components/customComponent/AnnouncementCard'
 
-interface Props {
-    onViewAnnouncement?: (a: IClassroomAnnouncement) => void;
-}
-
-function AllAssignments(props: Props) {
-    const { onViewAnnouncement } = props
+function AllAssignments() {
     const navigate = useNavigate();
-    const [assignments, setAssignments] = useState<IAssignment[]>([])
     const user = JSON.parse(localStorage.getItem("user") || "null");
     const userRole = user.role.toString().toLowerCase();
     const [classrooms, setClassrooms] = useState<IClassroom[]>([])
@@ -174,7 +167,7 @@ function AllAssignments(props: Props) {
                                 <AnnouncementCard
                                     key={a.id}
                                     announcement={a}
-                                    onView={() => onViewAnnouncement?.(a)}
+                                    onView={() => navigate(`/classrooms/${a.classroomId}`, { state: { selectedAnnouncementId: a.id } })}
                                 />
                             ))}
                     </div>
