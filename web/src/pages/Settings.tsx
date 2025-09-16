@@ -9,27 +9,34 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { 
-  User, 
-  Moon, 
-  Sun, 
-  Bell, 
-  Shield, 
+import {
+  User,
+  Moon,
+  Sun,
+  Bell,
+  Shield,
   Camera,
-  Save,
   Mail,
   School,
-  BookOpen
+  BookOpen,
 } from "lucide-react";
-import { useAuthStore, useThemeStore } from "@/lib/store";
+import { useThemeStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Settings() {
-  const { user, updateProfile } = useAuthStore();
+  const { logout, user } = useAuth();
   const { theme, toggleTheme } = useThemeStore();
   const { toast } = useToast();
-  
-  const [profileData, setProfileData] = useState({
+
+  // active tab state (keeps Tabs + select in sync)
+  const TAB_VALUES = ['profile', 'appearance', 'notifications', 'privacy'] as const;
+  type TabValue = typeof TAB_VALUES[number];
+
+  const [activeTab, setActiveTab] = useState<TabValue>('profile');
+
+  const [profileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
     bio: user?.bio || "",
@@ -45,14 +52,6 @@ export default function Settings() {
     assignments: true,
     grades: true,
   });
-
-  const handleProfileSave = () => {
-    updateProfile(profileData);
-    toast({
-      title: "Profile Updated",
-      description: "Your profile has been saved successfully.",
-    });
-  };
 
   const handleAvatarChange = () => {
     // TODO: Implement avatar upload
@@ -75,8 +74,23 @@ export default function Settings() {
         </div>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      {/* Mobile: simple select to pick tab, Desktop: TabsList */}
+      <div className="sm:hidden">
+        <Select value={activeTab} onValueChange={(v: TabValue) => setActiveTab(v)}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select a tab" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="profile">Profile</SelectItem>
+            <SelectItem value="appearance">Appearance</SelectItem>
+            <SelectItem value="notifications">Notifications</SelectItem>
+            <SelectItem value="privacy">Privacy</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="space-y-6">
+        <TabsList className="hidden sm:grid grid-cols-4 w-full">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="appearance">Appearance</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
@@ -102,7 +116,7 @@ export default function Settings() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-foreground">{user?.name}</h3>
+                  
                   <Badge variant="secondary" className="capitalize">
                     {user?.role}
                   </Badge>
@@ -115,80 +129,32 @@ export default function Settings() {
 
               <Separator />
 
-              {/* Basic Information */}
+              {/* Read-only display fields (no inputs) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={profileData.name}
-                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                  />
+                  <h3 className="text-lg font-semibold text-foreground">{user?.name}</h3>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                  />
+                  <h3 className="text-lg font-semibold text-foreground">{user?.email}</h3>
                 </div>
               </div>
 
-              {/* Bio */}
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  placeholder="Tell us about yourself..."
-                  value={profileData.bio}
-                  onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                  rows={3}
-                />
-              </div>
-
-              {/* Academic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="school">School/Institution</Label>
-                  <Input
-                    id="school"
-                    value={profileData.school}
-                    onChange={(e) => setProfileData({ ...profileData, school: e.target.value })}
-                    placeholder="Springfield High School"
-                  />
-                </div>
-                {user?.role === 'student' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="grade">Grade Level</Label>
-                    <Input
-                      id="grade"
-                      value={profileData.grade}
-                      onChange={(e) => setProfileData({ ...profileData, grade: e.target.value })}
-                      placeholder="12th Grade"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <Button onClick={handleProfileSave} className="gap-2">
-                <Save className="h-4 w-4" />
-                Save Changes
-              </Button>
+              {/* NOTE: Only avatar is editable here. */}
             </CardContent>
           </Card>
         </TabsContent>
+
 
         {/* Appearance Tab */}
         <TabsContent value="appearance" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                {theme === 'light' ? 
-                  <Sun className="h-5 w-5 text-primary" /> : 
+                {theme === "light" ? (
+                  <Sun className="h-5 w-5 text-primary" />
+                ) : (
                   <Moon className="h-5 w-5 text-primary" />
-                }
+                )}
                 <span>Appearance</span>
               </CardTitle>
             </CardHeader>
@@ -196,14 +162,9 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label className="text-base font-medium">Dark Mode</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Switch between light and dark themes
-                  </p>
+                  <p className="text-sm text-muted-foreground">Switch between light and dark themes</p>
                 </div>
-                <Switch
-                  checked={theme === 'dark'}
-                  onCheckedChange={toggleTheme}
-                />
+                <Switch checked={theme === "dark"} onCheckedChange={toggleTheme} />
               </div>
 
               <Separator />
@@ -239,10 +200,10 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-6">
               {[
-                { key: 'email', label: 'Email Notifications', description: 'Receive notifications via email', icon: Mail },
-                { key: 'messages', label: 'Chat Messages', description: 'New messages in classrooms', icon: Bell },
-                { key: 'assignments', label: 'Assignment Updates', description: 'Due dates and new assignments', icon: BookOpen },
-                { key: 'grades', label: 'Grade Updates', description: 'When grades are posted', icon: School },
+                { key: "email", label: "Email Notifications", description: "Receive notifications via email", icon: Mail },
+                { key: "messages", label: "Chat Messages", description: "New messages in classrooms", icon: Bell },
+                { key: "assignments", label: "Assignment Updates", description: "Due dates and new assignments", icon: BookOpen },
+                { key: "grades", label: "Grade Updates", description: "When grades are posted", icon: School },
               ].map((item) => (
                 <div key={item.key} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
@@ -254,9 +215,7 @@ export default function Settings() {
                   </div>
                   <Switch
                     checked={notifications[item.key as keyof typeof notifications]}
-                    onCheckedChange={(checked) => 
-                      setNotifications({ ...notifications, [item.key]: checked })
-                    }
+                    onCheckedChange={(checked) => setNotifications({ ...notifications, [item.key]: checked })}
                   />
                 </div>
               ))}
@@ -277,9 +236,7 @@ export default function Settings() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-base font-medium">Password</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Last changed 30 days ago
-                  </p>
+                  <p className="text-sm text-muted-foreground">Last changed 30 days ago</p>
                   <Button variant="outline">Change Password</Button>
                 </div>
 
@@ -287,9 +244,7 @@ export default function Settings() {
 
                 <div className="space-y-2">
                   <Label className="text-base font-medium">Data Export</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Download a copy of your data
-                  </p>
+                  <p className="text-sm text-muted-foreground">Download a copy of your data</p>
                   <Button variant="outline">Download Data</Button>
                 </div>
 
@@ -297,9 +252,7 @@ export default function Settings() {
 
                 <div className="space-y-2">
                   <Label className="text-base font-medium text-destructive">Danger Zone</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Permanently delete your account and all data
-                  </p>
+                  <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
                   <Button variant="destructive">Delete Account</Button>
                 </div>
               </div>
