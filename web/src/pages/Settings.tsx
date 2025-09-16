@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,25 +24,51 @@ import { useThemeStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import AuthService from '@/services/authservice';
+import { IClassroomUser } from "@/types/user";
+import { set } from "date-fns";
 
 export default function Settings() {
-  const { logout, user } = useAuth();
+  const [user, setUser] = useState<IClassroomUser | null>(null);
+
+  useEffect(() => {
+    fetchUser()
+  }, [user]);
+
+  const fetchUser = async () => {
+    try {
+      const userData = await AuthService.me()
+      localStorage.removeItem("user");
+      if (userData) {
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
+      }
+    } catch (error) {
+      toast({
+        title: "failed to fetch User",
+        description: "Something went wrong",
+        variant: "destructive",
+      });
+    }
+  }
+
+  // const { logout, user } = useAuth();
   const { theme, toggleTheme } = useThemeStore();
   const { toast } = useToast();
 
   // active tab state (keeps Tabs + select in sync)
-  const TAB_VALUES = ['profile', 'appearance', 'notifications', 'privacy'] as const;
+  const TAB_VALUES = ['basics', 'notifications', 'privacy'] as const;
   type TabValue = typeof TAB_VALUES[number];
 
-  const [activeTab, setActiveTab] = useState<TabValue>('profile');
+  const [activeTab, setActiveTab] = useState<TabValue>('basics');
 
   const [profileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
-    bio: user?.bio || "",
-    school: user?.school || "",
-    grade: user?.grade || "",
-    subjects: user?.subjects || [],
+    // bio: user?.bio || "",
+    // school: user?.school || "",
+    // grade: user?.grade || "",
+    // subjects: user?.subjects || [],
   });
 
   const [notifications, setNotifications] = useState({
@@ -55,6 +81,7 @@ export default function Settings() {
 
   const handleAvatarChange = () => {
     // TODO: Implement avatar upload
+    fetchUser()
     toast({
       title: "Coming Soon",
       description: "Avatar upload will be available soon.",
@@ -81,8 +108,7 @@ export default function Settings() {
             <SelectValue placeholder="Select a tab" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="profile">Profile</SelectItem>
-            <SelectItem value="appearance">Appearance</SelectItem>
+            <SelectItem value="basics">Basics</SelectItem>
             <SelectItem value="notifications">Notifications</SelectItem>
             <SelectItem value="privacy">Privacy</SelectItem>
           </SelectContent>
@@ -90,63 +116,93 @@ export default function Settings() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabValue)} className="space-y-6">
-        <TabsList className="hidden sm:grid grid-cols-4 w-full">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
+        <TabsList className="hidden sm:grid grid-cols-3 w-full">
+          <TabsTrigger value="basics">Basics</TabsTrigger>
           <TabsTrigger value="notifications">Notifications</TabsTrigger>
           <TabsTrigger value="privacy">Privacy</TabsTrigger>
         </TabsList>
 
-        {/* Profile Tab */}
-        <TabsContent value="profile" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="h-5 w-5 text-primary" />
-                <span>Profile Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Avatar Section */}
-              <div className="flex items-center space-x-6">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={user?.avatar} />
-                  <AvatarFallback className="text-lg font-semibold bg-gradient-primary text-white">
-                    {user?.name?.slice(0, 2).toUpperCase() || "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="space-y-2">
-                  
-                  <Badge variant="secondary" className="capitalize">
-                    {user?.role}
-                  </Badge>
-                  <Button variant="outline" onClick={handleAvatarChange} className="gap-2">
-                    <Camera className="h-4 w-4" />
-                    Change Avatar
-                  </Button>
+        {/* Basics Tab - Merged Profile and Appearance */}
+        <TabsContent value="basics" className="space-y-6">
+          {/* Enhanced Profile Card */}
+          <Card className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5"></div>
+            <CardContent className="relative p-8">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-6 sm:space-y-0 sm:space-x-8">
+                {/* Avatar Section */}
+                <div className="flex flex-col items-center space-y-4">
+                  <div className="relative">
+                    <Avatar className="h-32 w-32 border-4 border-background shadow-xl">
+                      <AvatarImage src={user?.avatarUrl} />
+                      <AvatarFallback className="text-2xl font-bold bg-gradient-to-br from-primary to-primary/80 text-white">
+                        {user?.name?.slice(0, 2).toUpperCase() || "?"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button
+                      size="sm"
+                      onClick={handleAvatarChange}
+                      className="absolute -bottom-2 -right-2 rounded-full h-10 w-10 p-0 shadow-lg"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Profile Info */}
+                <div className="flex-1 space-y-4 text-center sm:text-left">
+                  <div className="space-y-2">
+                    <h2 className="text-3xl font-bold text-foreground">
+                      {user?.name || "User Name"}
+                    </h2>
+                    <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-2 sm:space-y-0 sm:space-x-3">
+                      <p className="text-lg text-muted-foreground">
+                        {user?.email || "user@example.com"}
+                      </p>
+                      <Badge variant="secondary" className="capitalize text-sm px-3 py-1">
+                        {user?.role || "Student"}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* {user?.bio && (
+                    <p className="text-muted-foreground leading-relaxed max-w-md">
+                      {user.bio}
+                    </p>
+                  )} */}
+
+                  {/* <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
+                    {user?.school && (
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-full">
+                        <School className="h-4 w-4" />
+                        <span>{user.school}</span>
+                      </div>
+                    )}
+                    {user?.grade && (
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-full">
+                        <BookOpen className="h-4 w-4" />
+                        <span>Grade {user.grade}</span>
+                      </div>
+                    )}
+                  </div> */}
+
+                  {/* {user?.subjects && user.subjects.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium text-muted-foreground">Subjects</Label>
+                      <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                        {user.subjects.map((subject, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {subject}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )} */}
                 </div>
               </div>
-
-              <Separator />
-
-              {/* Read-only display fields (no inputs) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-foreground">{user?.name}</h3>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold text-foreground">{user?.email}</h3>
-                </div>
-              </div>
-
-              {/* NOTE: Only avatar is editable here. */}
             </CardContent>
           </Card>
-        </TabsContent>
 
-
-        {/* Appearance Tab */}
-        <TabsContent value="appearance" className="space-y-6">
+          {/* Appearance Settings */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -171,17 +227,17 @@ export default function Settings() {
 
               <div className="space-y-4">
                 <Label className="text-base font-medium">Preview</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg bg-card space-y-2">
-                    <div className="h-3 bg-muted rounded w-3/4"></div>
-                    <div className="h-2 bg-muted rounded w-1/2"></div>
-                    <div className="h-2 bg-muted rounded w-2/3"></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg bg-card space-y-3 transition-colors">
+                    <div className="h-4 bg-muted rounded w-3/4 animate-pulse"></div>
+                    <div className="h-3 bg-muted rounded w-1/2"></div>
+                    <div className="h-3 bg-muted rounded w-2/3"></div>
                   </div>
-                  <div className="p-4 border rounded-lg bg-card space-y-2">
-                    <div className="h-8 bg-primary rounded w-full flex items-center justify-center">
-                      <span className="text-xs text-primary-foreground font-medium">Button</span>
+                  <div className="p-4 border rounded-lg bg-card space-y-3 transition-colors">
+                    <div className="h-10 bg-primary rounded w-full flex items-center justify-center hover:bg-primary/90 transition-colors">
+                      <span className="text-sm text-primary-foreground font-medium">Sample Button</span>
                     </div>
-                    <div className="h-2 bg-muted rounded w-full"></div>
+                    <div className="h-3 bg-muted rounded w-full"></div>
                   </div>
                 </div>
               </div>

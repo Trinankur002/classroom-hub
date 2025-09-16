@@ -69,4 +69,16 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
     };
   }
+
+  async updateAvater(user: User, file?: Express.Multer.File) {
+    const userWithAvatar = await this.usersService.updateAvatar(user, file);
+    return {
+      id: userWithAvatar.id,
+      name: userWithAvatar.name,
+      email: userWithAvatar.email,
+      role: userWithAvatar.role,
+      avatarUrl: userWithAvatar.avatarUrl,
+      createdAt: userWithAvatar.createdAt
+    }
+  }
 }
