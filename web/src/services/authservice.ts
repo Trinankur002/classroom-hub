@@ -30,6 +30,23 @@ class AuthService {
             throw error;
         }
     }
+
+    async changeAvater(file: File): Promise<any> {
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const response = await api.post(`/auth/me/avatar`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            return { data: response.data };
+        } catch (error) {
+            console.error("Error updating avater:", error);
+            return {
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+            };
+        }
+    }
 }
 
 export default new AuthService();

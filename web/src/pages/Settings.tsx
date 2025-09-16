@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Cropper from "react-easy-crop";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,18 +27,59 @@ import { useAuth } from "@/hooks/useAuth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AuthService from '@/services/authservice';
 import { IClassroomUser } from "@/types/user";
-import { set } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"; // adapt if exports differ
+import { Slider } from "@/components/ui/slider"; // optional for zoom control
+
+// helper to create a blob from canvas
+async function getCroppedImg(imageSrc: string, pixelCrop: { x: number; y: number; width: number; height: number }, rotation = 0): Promise<Blob> {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image();
+    img.setAttribute("crossOrigin", "anonymous"); // needed for CORS-safe canvas export
+    img.onload = () => resolve(img);
+    img.onerror = (e) => reject(e);
+    img.src = imageSrc;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = pixelCrop.width;
+  canvas.height = pixelCrop.height;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    pixelCrop.width,
+    pixelCrop.height
+  );
+
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      // fallback if null
+      if (!blob) {
+        // create empty blob
+        const fallback = new Blob([], { type: "image/png" });
+        resolve(fallback);
+      } else {
+        resolve(blob);
+      }
+    }, "image/png");
+  });
+}
 
 export default function Settings() {
   const [user, setUser] = useState<IClassroomUser | null>(null);
 
   useEffect(() => {
-    fetchUser()
-  }, [user]);
+    fetchUser();
+  }, []); // run once on mount
 
   const fetchUser = async () => {
     try {
-      const userData = await AuthService.me()
+      const userData = await AuthService.me();
       localStorage.removeItem("user");
       if (userData) {
         setUser(userData);
@@ -50,9 +92,8 @@ export default function Settings() {
         variant: "destructive",
       });
     }
-  }
+  };
 
-  // const { logout, user } = useAuth();
   const { theme, toggleTheme } = useThemeStore();
   const { toast } = useToast();
 
@@ -65,10 +106,6 @@ export default function Settings() {
   const [profileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
-    // bio: user?.bio || "",
-    // school: user?.school || "",
-    // grade: user?.grade || "",
-    // subjects: user?.subjects || [],
   });
 
   const [notifications, setNotifications] = useState({
@@ -79,13 +116,70 @@ export default function Settings() {
     grades: true,
   });
 
-  const handleAvatarChange = () => {
-    // TODO: Implement avatar upload
-    fetchUser()
-    toast({
-      title: "Coming Soon",
-      description: "Avatar upload will be available soon.",
-    });
+  // --- Avatar upload + crop states ---
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const [selectedImageDataUrl, setSelectedImageDataUrl] = useState<string | null>(null); // original image for cropper
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const inputFileRef = useRef<HTMLInputElement | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const onFileSelected = async (file?: File) => {
+    const f = file ?? inputFileRef.current?.files?.[0];
+    if (!f) return;
+    // only images
+    if (!f.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image file.", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImageDataUrl(reader.result as string);
+      setIsCropOpen(true);
+      // reset crop/zoom
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+      setCroppedAreaPixels(null);
+    };
+    reader.readAsDataURL(f);
+  };
+
+  const onCropComplete = useCallback((_: any, croppedPixels: any) => {
+    // croppedPixels contains x, y, width, height in px of the source image
+    setCroppedAreaPixels(croppedPixels);
+  }, []);
+
+  const handleConfirmCrop = async () => {
+    if (!selectedImageDataUrl || !croppedAreaPixels) {
+      toast({ title: "Nothing to crop", description: "Select an image first.", variant: "destructive" });
+      return;
+    }
+    try {
+      setIsUploading(true);
+      const blob = await getCroppedImg(selectedImageDataUrl, croppedAreaPixels);
+      // convert blob to File (preserve png)
+      const file = new File([blob], `avatar_${user?.id ?? "me"}.png`, { type: "image/png" });
+
+      // call your existing AuthService function (note original spelled changeAvater)
+      await AuthService.changeAvater(file);
+
+      // refetch user and close dialog
+      await fetchUser();
+      setIsCropOpen(false);
+      setSelectedImageDataUrl(null);
+      toast({ title: "Avatar updated", description: "Your avatar was successfully updated." });
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Upload failed", description: "Could not upload avatar.", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleAvatarButtonClick = () => {
+    // open file picker
+    inputFileRef.current?.click();
   };
 
   return (
@@ -100,6 +194,20 @@ export default function Settings() {
           <p className="text-muted-foreground">Manage your account and preferences</p>
         </div>
       </div>
+
+      {/* hidden file input for avatar */}
+      <input
+        type="file"
+        accept="image/*"
+        ref={inputFileRef}
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFileSelected(f);
+          // reset input so same file re-select works
+          e.currentTarget.value = "";
+        }}
+      />
 
       {/* Mobile: simple select to pick tab, Desktop: TabsList */}
       <div className="sm:hidden">
@@ -122,7 +230,7 @@ export default function Settings() {
           <TabsTrigger value="privacy">Privacy</TabsTrigger>
         </TabsList>
 
-        {/* Basics Tab - Merged Profile and Appearance */}
+        {/* Basics Tab */}
         <TabsContent value="basics" className="space-y-6">
           {/* Enhanced Profile Card */}
           <Card className="relative overflow-hidden">
@@ -140,8 +248,9 @@ export default function Settings() {
                     </Avatar>
                     <Button
                       size="sm"
-                      onClick={handleAvatarChange}
+                      onClick={handleAvatarButtonClick}
                       className="absolute -bottom-2 -right-2 rounded-full h-10 w-10 p-0 shadow-lg"
+                      aria-label="Change avatar"
                     >
                       <Camera className="h-4 w-4" />
                     </Button>
@@ -163,46 +272,12 @@ export default function Settings() {
                       </Badge>
                     </div>
                   </div>
-
-                  {/* {user?.bio && (
-                    <p className="text-muted-foreground leading-relaxed max-w-md">
-                      {user.bio}
-                    </p>
-                  )} */}
-
-                  {/* <div className="flex flex-wrap gap-3 justify-center sm:justify-start">
-                    {user?.school && (
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-full">
-                        <School className="h-4 w-4" />
-                        <span>{user.school}</span>
-                      </div>
-                    )}
-                    {user?.grade && (
-                      <div className="flex items-center space-x-2 text-sm text-muted-foreground bg-muted/50 px-3 py-2 rounded-full">
-                        <BookOpen className="h-4 w-4" />
-                        <span>Grade {user.grade}</span>
-                      </div>
-                    )}
-                  </div> */}
-
-                  {/* {user?.subjects && user.subjects.length > 0 && (
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-muted-foreground">Subjects</Label>
-                      <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                        {user.subjects.map((subject, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {subject}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )} */}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Appearance Settings */}
+          {/* Appearance Settings (unchanged) */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -316,6 +391,75 @@ export default function Settings() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Crop Dialog */}
+      <Dialog open={isCropOpen} onOpenChange={setIsCropOpen}>
+        <DialogContent className="max-w-3xl w-full">
+          <DialogHeader>
+            <DialogTitle>Crop avatar (square)</DialogTitle>
+          </DialogHeader>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative w-full h-64 sm:h-96 bg-black/5">
+              {selectedImageDataUrl ? (
+                <Cropper
+                  image={selectedImageDataUrl}
+                  crop={crop}
+                  zoom={zoom}
+                  aspect={1}
+                  onCropChange={setCrop}
+                  onZoomChange={setZoom}
+                  onCropComplete={onCropComplete}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground">No image selected</div>
+              )}
+            </div>
+
+            <div className="flex-1 space-y-4">
+              <div>
+                <Label className="text-sm">Zoom</Label>
+                <div className="py-2">
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    step={0.01}
+                    value={zoom}
+                    onChange={(e) => setZoom(Number(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Preview</Label>
+                <div className="w-28 h-28 overflow-hidden rounded bg-muted flex items-center justify-center">
+                  {/* small preview by creating an <img> using the current cropped area (best-effort) */}
+                  {selectedImageDataUrl ? (
+                    <img src={selectedImageDataUrl} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Choose a different file</Label>
+                <div className="flex space-x-2">
+                  <Button onClick={() => inputFileRef.current?.click()}>Select file</Button>
+                  <Button variant="ghost" onClick={() => { setSelectedImageDataUrl(null); setIsCropOpen(false); }}>Cancel</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4 flex justify-end space-x-2">
+            <Button variant="ghost" onClick={() => { setIsCropOpen(false); setSelectedImageDataUrl(null); }}>Close</Button>
+            <Button onClick={handleConfirmCrop} disabled={isUploading}>
+              {isUploading ? "Uploading..." : "Save avatar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
