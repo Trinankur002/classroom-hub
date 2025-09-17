@@ -6,6 +6,7 @@ import { UsersModule } from "src/users/users.module";
 import { DoubtsController } from "./doubts.controller";
 import { Doubts } from "./doubts.entity";
 import { DoubtsService } from "./doubts.service";
+import { EventsModule } from "src/event/event.module";
 
 
 @Module({
@@ -13,7 +14,8 @@ import { DoubtsService } from "./doubts.service";
         TypeOrmModule.forFeature([Doubts]),
         ClassroomsModule,
         UsersModule,
-        FileModule
+        FileModule,
+        EventsModule
     ],
     controllers: [DoubtsController],
     providers: [DoubtsService],

@@ -10,6 +10,7 @@ import { ChatModule } from './chat/chat.module';
 import { FileModule } from './fileServices/file.module';
 import { AssignmentModule } from './assignments/assignment.module';
 import { DoubtsModule } from './doubts/doubts.module';
+import { EventsModule } from './event/event.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { DoubtsModule } from './doubts/doubts.module';
     FileModule,
     AssignmentModule,
     DoubtsModule,
+    EventsModule
   ],
 
   controllers: [AppController],
