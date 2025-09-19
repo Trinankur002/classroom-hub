@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, forwardRef, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Classroom } from './entities/classroom.entity';
@@ -16,6 +16,8 @@ import { v4 as uuid } from 'uuid';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UsersService } from 'src/users/users.service';
 import { Transactional } from 'typeorm-transactional-cls-hooked';
+import { EventService } from 'src/event/event.service';
+import { EventType } from 'src/event/event.interface';
 
 @Injectable()
 export class ClassroomsService {
@@ -26,8 +28,10 @@ export class ClassroomsService {
     private studentClassroomsRepository: Repository<StudentClassroom>,
     @InjectRepository(ClassroomAnnouncement)
     private classroomAnnouncementsRepository: Repository<ClassroomAnnouncement>,
-    private fileService: FileService, // Inject FileService
-    private userService: UsersService, // Inject UserService
+    private fileService: FileService,
+    private userService: UsersService, 
+    @Inject(forwardRef(() => EventService))
+    private readonly eventService: EventService,
   ) { }
 
   async create(
@@ -244,6 +248,22 @@ export class ClassroomsService {
             { id: In(data.filesIds) },
             { announcementId: savedAnnouncement.id },
           );
+        }
+
+        if (savedAnnouncement.isAssignment) {
+          this.eventService.createEvent({
+            type: EventType.ASSIGNMENT_CREATED,
+            actorId: user.id,
+            classroomId: data.classroomId,
+            announcementId: savedAnnouncement.id,
+          })
+        } else if (!savedAnnouncement.isAssignment) {
+          this.eventService.createEvent({
+            type: EventType.ANNOUNCEMENT_POSTED,
+            actorId: user.id,
+            classroomId: data.classroomId,
+            announcementId: savedAnnouncement.id,
+          })
         }
 
         // 4. Reload the announcement with relations
@@ -464,12 +484,27 @@ export class ClassroomsService {
         },
       });
 
+      if (savedAnnouncement.isAssignment) {
+        this.eventService.createEvent({
+          type: EventType.ASSIGNMENT_CREATED,
+          actorId: user.id,
+          classroomId: data.classroomId,
+          announcementId: savedAnnouncement.id,
+        })
+      } else if (!savedAnnouncement.isAssignment) {
+        this.eventService.createEvent({
+          type: EventType.ANNOUNCEMENT_POSTED,
+          actorId: user.id,
+          classroomId: data.classroomId,
+          announcementId: savedAnnouncement.id,
+        })
+      }
+
       if (!finalAnnouncement) {
         throw new NotFoundException(
           `Announcement with ID "${savedAnnouncement.id}" could not be found after creation.`,
         );
       }
-
       return finalAnnouncement;
     });
   }
@@ -610,6 +645,15 @@ export class ClassroomsService {
 
     if (mentionedUser) {
       newComment.mentionedUser = mentionedUser;
+
+      this.eventService.createEvent({
+        type: EventType.MENTION,
+        actorId: user.id,
+        targetUserId: mentionedUser.id,
+        classroomId: announcement.classroomId,
+        announcementId: announcement.id,
+        metadata: { newComment }
+      })      
     }
     if (!announcement.comments) {
       announcement.comments = [];
@@ -734,6 +778,13 @@ export class ClassroomsService {
     // Decrement the count after a successful deletion
     classroom.studentCount--;
     await this.classroomsRepository.save(classroom);
+    this.eventService.createEvent({
+      type: EventType.STUDENT_REMOVED,
+      actorId: user.id,
+      classroomId: classroom.id,
+      targetUserId: studentId,
+    })
+    return;
   }
 
   async leaveClassroom(classroomId: string, user: User): Promise<void> { 
@@ -741,6 +792,12 @@ export class ClassroomsService {
       throw new ForbiddenException('You are not a Student');
     }
     await this.removeStudentFromClassroom(classroomId, user.id, user)
+    this.eventService.createEvent({
+      type: EventType.STUDENT_LEFT,
+      actorId: user.id,
+      classroomId: classroomId,
+    })
+    return;
   }
     
   // Add the database transaction decorator to your method

@@ -15,6 +15,8 @@ import { Role } from "src/users/entities/role.enum";
 import { AddMessageDto } from "./dto/add-message.dto";
 import { IClassroomUser } from "src/classrooms/classrooms.interface";
 import { IClassroomFile } from "src/fileServices/file.interface";
+import { EventService } from "src/event/event.service";
+import { EventType } from "src/event/event.interface";
 
 @Injectable()
 export class DoubtsService {
@@ -25,6 +27,7 @@ export class DoubtsService {
     private readonly fileService: FileService,
     private readonly classroomService: ClassroomsService,
     private readonly userService: UsersService,
+    private readonly eventService: EventService,
   ) { }
 
   async createDoubtWithFiles(
@@ -35,7 +38,7 @@ export class DoubtsService {
     return this.doubtsRepository.manager.transaction(
       async (manager) => {
         // 1. Validate classroom and that user is a student in it
-        await this.classroomService.getClassRoomdetails(data.classroomId, user);
+        const classroom = await this.classroomService.getClassRoomdetails(data.classroomId, user);
 
         if (user.role !== Role.Student) {
           throw new ForbiddenException('You can only create doubts for yourself as a student.');
@@ -128,6 +131,14 @@ export class DoubtsService {
             `Doubt with ID "${savedDoubt.id}" could not be found after creation.`,
           );
         }
+
+        this.eventService.createEvent({
+          type: EventType.NEW_DOUBT,
+          actorId: user.id,
+          classroomId: data.classroomId,
+          targetUserId: classroom.teacherId,
+          metadata: { finalDoubt }
+        })
 
         return finalDoubt;
       });

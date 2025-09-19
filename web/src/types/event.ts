@@ -1,3 +1,24 @@
+import { IAssignment } from "./assignment";
+import { IClassroom } from "./classroom";
+import { IClassroomAnnouncement } from "./classroomAnnouncement";
+import { IClassroomUser } from "./user";
+
+export interface IEvent {
+    id: string;
+    type: EventType;
+    actorId?: string;
+    actor?: IClassroomUser;
+    targetUserId?: string;
+    targetUser?: IClassroomUser;
+    classroomId?: string;
+    classroom?: IClassroom;
+    assignmentId?: string;
+    assignment?: IAssignment;
+    announcementId?: string;
+    announcement?: IClassroomAnnouncement;
+    metadata?: any;
+}
+
 export enum EventType {
     CLASSROOM_CREATED = 'CLASSROOM_CREATED',
     STUDENT_JOINED = 'STUDENT_JOINED',
@@ -13,14 +34,4 @@ export enum EventType {
     NEW_DOUBT = 'NEW_DOUBT',
     DOUBT_ANSWERED = 'DOUBT_ANSWERED',
     // add more as needed
-}
-
-export interface ICreateEventParams {
-    type: EventType;
-    actorId: string;
-    classroomId?: string;
-    targetUserId?: string;
-    assignmentId?: string;
-    announcementId?: string;
-    metadata?: any;
 }

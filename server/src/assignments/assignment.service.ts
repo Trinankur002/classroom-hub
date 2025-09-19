@@ -10,6 +10,8 @@ import { User } from "src/users/entities/user.entity";
 import { v4 as uuid } from 'uuid';
 import { getBucket } from "src/fileServices/gcs.config";
 import { instanceToPlain } from "class-transformer";
+import { EventService } from "src/event/event.service";
+import { EventType } from "src/event/event.interface";
 
 
 @Injectable()
@@ -22,6 +24,7 @@ export class AssignmentService {
         @InjectRepository(User)
         private userRepository: Repository<User>,
         private fileService: FileService,
+        private eventService: EventService,
     ) { }
 
     async submitAssignment(announcementid: string, user: User, files: Express.Multer.File[]) {
@@ -89,6 +92,13 @@ export class AssignmentService {
                 studentId: student.id,
                 files: fileEntities,
             });
+
+            this.eventService.createEvent({
+                type: EventType.ASSIGNMENT_SUBMITTED,
+                actorId: user.id,
+                announcementId: announcement.id,
+                classroomId: announcement.classroomId,
+            })
 
             return await manager.save(assignment);
         });
