@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   BeforeInsert,
+  BeforeUpdate,
 } from 'typeorm';
 import { Role } from './role.enum';
 import * as bcrypt from 'bcrypt';
@@ -41,4 +42,11 @@ export class User {
   async hashPassword() {
     this.password = await bcrypt.hash(this.password, 10);
   }
+  @BeforeUpdate()
+  async hashPasswordBeforeUpdate() {
+    if (this.password) {
+      this.password = await bcrypt.hash(this.password, 10);
+    }
+  }
+
 }

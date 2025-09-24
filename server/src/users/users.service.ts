@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -6,6 +6,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { v4 as uuid } from 'uuid';
 import { getBucket } from 'src/fileServices/gcs.config';
 import { FileEntity } from 'src/fileServices/file.entity';
+import { ChangePasswordDto } from 'src/auth/dto/changePassword.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -29,6 +31,18 @@ export class UsersService {
 
   async count(): Promise<number> {
     return this.usersRepository.count();
+  }
+
+  async changePassword(user: User, data: ChangePasswordDto) {
+    const { oldPassword, newPassword } = data;
+    const exixtingUser = await this.findByEmail(user.email);
+
+    if (!exixtingUser || !(await bcrypt.compare(oldPassword, exixtingUser.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    exixtingUser.password = newPassword;
+    return this.usersRepository.save(exixtingUser);
   }
 
   async updateAvatar(user: User, file?: Express.Multer.File): Promise<User> {

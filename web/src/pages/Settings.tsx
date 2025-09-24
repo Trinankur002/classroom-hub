@@ -20,6 +20,8 @@ import {
   Mail,
   School,
   BookOpen,
+  EyeOff,
+  Eye,
 } from "lucide-react";
 import { useThemeStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
@@ -124,6 +126,62 @@ export default function Settings() {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const inputFileRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  // Change Password dialog state
+  const [changePwOpen, setChangePwOpen] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOld, setShowOld] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [changing, setChanging] = useState(false);
+
+
+  const handleChangePassword = async () => {
+    // basic validation
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      toast({ title: "Please fill all fields", variant: "destructive" });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "New passwords do not match", variant: "destructive" });
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast({ title: "Password too short", description: "Use at least 8 characters", variant: "destructive" });
+      return;
+    }
+
+    setChanging(true);
+    try {
+      const resp = await AuthService.changePassword({ oldPassword, newPassword });
+      // assume API returns { access_token: "...", ... } or similar
+      const accessToken = resp?.access_token ?? resp?.token ?? resp?.accessToken ?? resp;
+      if (typeof accessToken === "string") {
+        localStorage.setItem("token", accessToken);
+      } else if (accessToken && accessToken.access_token) {
+        localStorage.setItem("token", accessToken.access_token);
+      } else {
+        // if API returned entire object, stringify fallback (rare)
+        // but prefer a string token; if not present, still notify success
+        // (you can change this behavior depending on your backend shape)
+      }
+
+      // success UX
+      toast({ title: "Password changed", description: "Your session token was updated." });
+      setChangePwOpen(false);
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      console.error("Change password failed", err);
+      const msg = err?.response?.data?.message ?? err?.message ?? "Failed to change password";
+      toast({ title: "Failed to change password", description: msg, variant: "destructive" });
+    } finally {
+      setChanging(false);
+    }
+  };
+
 
   const onFileSelected = async (file?: File) => {
     const f = file ?? inputFileRef.current?.files?.[0];
@@ -379,19 +437,13 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
+                {/* Password */}
                 <div className="space-y-2">
                   <Label className="text-base font-medium">Password</Label>
                   <p className="text-sm text-muted-foreground">Last changed 30 days ago</p>
-                  <Button variant="outline">Change Password</Button>
+                  <Button variant="outline" onClick={() => setChangePwOpen(true)}>Change Password</Button>
                 </div>
 
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label className="text-base font-medium">Data Export</Label>
-                  <p className="text-sm text-muted-foreground">Download a copy of your data</p>
-                  <Button variant="outline">Download Data</Button>
-                </div>
 
                 <Separator />
 
@@ -474,6 +526,91 @@ export default function Settings() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={changePwOpen} onOpenChange={setChangePwOpen}>
+        <DialogContent className="max-w-lg w-full">
+          <DialogHeader>
+            <DialogTitle>Change Password</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Old password */}
+            <div>
+              <Label className="mb-2">Current password</Label>
+              <div className="relative">
+                <Input
+                  type={showOld ? "text" : "password"}
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  aria-label={showOld ? "Hide password" : "Show password"}
+                  onClick={() => setShowOld(!showOld)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded hover:bg-muted/30"
+                >
+                  {showOld ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* New password */}
+            <div>
+              <Label className="mb-2">New password</Label>
+              <div className="relative">
+                <Input
+                  type={showNew ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  aria-label={showNew ? "Hide password" : "Show password"}
+                  onClick={() => setShowNew(!showNew)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded hover:bg-muted/30"
+                >
+                  {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Use at least 8 characters.</p>
+            </div>
+
+            {/* Confirm password */}
+            <div>
+              <Label className="mb-2">Confirm new password</Label>
+              <div className="relative">
+                <Input
+                  type={showConfirm ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  aria-label={showConfirm ? "Hide password" : "Show password"}
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded hover:bg-muted/30"
+                >
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4 flex justify-end space-x-2">
+            <Button variant="ghost" onClick={() => setChangePwOpen(false)} disabled={changing}>Cancel</Button>
+            <Button onClick={handleChangePassword} disabled={changing}>
+              {changing ? "Saving..." : "Change password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

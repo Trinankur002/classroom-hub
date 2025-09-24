@@ -1,23 +1,24 @@
-import { Controller, Post, Body, Get, UseGuards, Request, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, UseInterceptors, UploadedFile, Put } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ChangePasswordDto } from './dto/changePassword.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('signup')
-  @ApiBody({type : SignUpDto})
+  @ApiBody({ type: SignUpDto })
   signUp(@Body() signUpDto: SignUpDto) {
     return this.authService.signUp(signUpDto);
   }
 
   @Post('login')
-  @ApiBody({type: LoginDto})
+  @ApiBody({ type: LoginDto })
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
@@ -52,4 +53,12 @@ export class AuthController {
     return this.authService.updateAvater((req as any).user, file);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Put('password')
+  @ApiBody({ type: ChangePasswordDto })
+  async changePassword(@Request() req,
+    @Body() changePasswordDto: ChangePasswordDto) {
+      return this.authService.changePassword((req as any).user, changePasswordDto);
+  }
 }

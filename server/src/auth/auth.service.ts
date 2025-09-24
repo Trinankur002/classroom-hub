@@ -6,13 +6,14 @@ import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { Role } from '../users/entities/role.enum';
 import { User } from 'src/users/entities/user.entity';
+import { ChangePasswordDto } from './dto/changePassword.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   async signUp(signUpDto: SignUpDto): Promise<{ access_token: string }> {
     const { name, email, password, role: rawRole } = signUpDto;
@@ -81,4 +82,13 @@ export class AuthService {
       createdAt: userWithAvatar.createdAt
     }
   }
+
+  async changePassword(user: User, data: ChangePasswordDto) {
+    const updatedUser = await this.usersService.changePassword(user, data);
+    const payload = { sub: updatedUser.id, email: updatedUser.email };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
+  }
+
 }

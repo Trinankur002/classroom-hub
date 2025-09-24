@@ -47,6 +47,19 @@ class AuthService {
             };
         }
     }
+
+    async changePassword(data: {
+        oldPassword: string,
+        newPassword: string
+    }): Promise<any> {
+        try {
+            const res = await api.put(`/auth/password`, data);
+            return res.data;
+        } catch (error) {
+            console.error('Error changing password', error);
+            throw error;
+        }
+    }
 }
 
 export default new AuthService();
