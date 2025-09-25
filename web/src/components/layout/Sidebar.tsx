@@ -34,7 +34,7 @@ export function Sidebar({ open, onOpenChange, user, userRole }: SidebarProps) {
       { name: "Dashboard", href: "/dashboard", icon: Home },
       { name: "Classes", href: "/classrooms", icon: Users },
       { name: "All Assignments", href: "/allassignments", icon: BookOpen },
-      { name: "Chat", href: "/chat", icon: MessageCircle },
+      // { name: "Chat", href: "/chat", icon: MessageCircle },
       { name: "Settings", href: "/settings", icon: Settings },
     ];
   } else if (userRole === "teacher") {
@@ -42,7 +42,7 @@ export function Sidebar({ open, onOpenChange, user, userRole }: SidebarProps) {
       { name: "Dashboard", href: "/dashboard", icon: Home },
       { name: "Classes", href: "/classrooms", icon: Users },
       // { name: "All Assignments", href: "/allassignments", icon: BookOpen },
-      { name: "Chat", href: "/chat", icon: MessageCircle },
+      // { name: "Chat", href: "/chat", icon: MessageCircle },
       { name: "Settings", href: "/settings", icon: Settings },
     ];
   }
