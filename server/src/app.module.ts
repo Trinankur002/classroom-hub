@@ -11,6 +11,7 @@ import { FileModule } from './fileServices/file.module';
 import { AssignmentModule } from './assignments/assignment.module';
 import { DoubtsModule } from './doubts/doubts.module';
 import { EventsModule } from './event/event.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -34,7 +35,8 @@ import { EventsModule } from './event/event.module';
     FileModule,
     AssignmentModule,
     DoubtsModule,
-    EventsModule
+    EventsModule,
+    NotificationModule
   ],
 
   controllers: [AppController],

@@ -1,3 +1,4 @@
+// event.service.ts
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
@@ -5,6 +6,7 @@ import { EventType, ICreateEventParams } from "./event.interface";
 import { Event } from "./event.entity";
 import { ClassroomsService } from "src/classrooms/classrooms.service";
 import { User } from "src/users/entities/user.entity";
+import { NotificationQueueService } from "src/notification/notification-queue.service";
 
 @Injectable()
 export class EventService {
@@ -13,11 +15,34 @@ export class EventService {
         private readonly eventRepo: Repository<Event>,
         @Inject(forwardRef(() => ClassroomsService))
         private readonly classroomService: ClassroomsService,
+        // Add the NotificationQueueService here
+        private readonly notificationQueueService: NotificationQueueService,
     ) { }
 
     async createEvent(params: ICreateEventParams): Promise<Event> {
         const event = this.eventRepo.create(params);
-        return this.eventRepo.save(event);
+        const savedEvent = await this.eventRepo.save(event);
+
+        if (params.type === EventType.ASSIGNMENT_CREATED) {
+            // Check if classroomId and assignmentId exist
+            if (params.classroomId && params.assignmentId) {
+                const studentIds: string[] = await this.classroomService.getStudentIds(
+                    params.classroomId,
+                );
+
+                // Add a job to the notification queue
+                await this.notificationQueueService.addDeliverJob({
+                    userIds: studentIds,
+                    type: params.type,
+                    payload: {
+                        assignmentId: params.assignmentId,
+                        classroomId: params.classroomId,
+                        // You can add more data to the payload as needed
+                    },
+                });
+            }
+        }
+        return savedEvent;
     }
 
     async getClassroomEvents(classroomId: string, limit = 10, offset = 0) {
@@ -64,7 +89,7 @@ export class EventService {
         })
     }
 
-    async getNewDoubtsEventsForTeacher(user: User, limit: number = 5): Promise<Event[]> { 
+    async getNewDoubtsEventsForTeacher(user: User, limit: number = 5): Promise<Event[]> {
         const classes = await this.classroomService.findAllForUser(user)
         let classIds = classes.map(c => c.id)
 
@@ -72,7 +97,6 @@ export class EventService {
             where: { classroomId: In(classIds), type: EventType.NEW_DOUBT },
             order: { createdAt: 'DESC' },
             take: limit,
-        })        
+        })
     }
-
 }

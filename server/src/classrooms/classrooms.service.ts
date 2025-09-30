@@ -817,4 +817,17 @@ export class ClassroomsService {
     await this.classroomsRepository.delete(classroomId);
 
   }
+
+  async getStudentIds(classroomId: string): Promise<string[]> {
+    const studentClassrooms = await this.studentClassroomsRepository.find({
+      where: { classroomId },
+      relations: ['student'],
+    });
+
+    const studentIds = studentClassrooms
+      .filter((sc) => sc.student)
+      .map((sc) => sc.student.id);
+
+    return studentIds;
+  }
 }
