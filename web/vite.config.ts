@@ -1,28 +1,30 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import { env } from "process";
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-    proxy: {
-      "/api": {
-        target: env.VITE_BACKEND_API_URL || env.VITE_HOSTED_BACKEND_URL ||"https://classroom-hub-jjd4.onrender.com/",
-        changeOrigin: true,
+export default defineConfig(({ mode }) => {
+  // load .env, .env.development, etc
+  const env = loadEnv(mode, process.cwd(), "");
+
+  // ensure no trailing slash here
+  const backend = (env.VITE_BACKEND_API_URL || "https://classroom-hub-jjd4.onrender.com").replace(/\/$/, "");
+
+  return {
+    server: {
+      host: "::",
+      port: 8080,
+      proxy: {
+        // proxy any request starting with /api to backend
+        "/api": {
+          target: backend,
+          changeOrigin: true,
+          // strip the /api prefix before forwarding
+          rewrite: (p) => p.replace(/^\/api/, ""),
+        },
       },
     },
-  },
-  plugins: [
-    react(),
-    mode === "development" && componentTagger(),
-  ].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-}));
+    plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
+    resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+  };
+});

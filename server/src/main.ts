@@ -18,8 +18,20 @@ async function bootstrap() {
 
   // Request logging middleware
   app.use((req, res, next) => new LoggerMiddleware(appLogger).use(req, res, next));
+  
+  const frontendUrl = process.env.FRONTEND_URL;
 
-  app.enableCors();
+  // 🔥 CORS: allow from anywhere
+  app.enableCors({
+    origin: [
+      frontendUrl
+    ],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization',
+    credentials: true,
+  });
+
+
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({
