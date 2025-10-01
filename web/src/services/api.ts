@@ -1,6 +1,6 @@
 import axios from "axios";
 
-let raw = import.meta.env.VITE_BACKEND_API_URL || "https://classroom-hub-jjd4.onrender.com";
+let raw = import.meta.env.VITE_BACKEND_API_URL 
 
 // ensure protocol exists (default to http if missing)
 if (!/^https?:\/\//i.test(raw)) {

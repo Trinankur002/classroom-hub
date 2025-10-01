@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   // ensure no trailing slash here
-  const backend = (env.VITE_BACKEND_API_URL || "https://classroom-hub-jjd4.onrender.com").replace(/\/$/, "");
+  const backend = env.VITE_BACKEND_API_URL.replace(/\/$/, "");
 
   return {
     server: {
