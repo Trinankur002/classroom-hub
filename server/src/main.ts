@@ -19,18 +19,16 @@ async function bootstrap() {
   // Request logging middleware
   app.use((req, res, next) => new LoggerMiddleware(appLogger).use(req, res, next));
   
-  const frontendUrl = process.env.FRONTEND_URL;
+  // const frontendUrl = process.env.FRONTEND_URL;
 
   // 🔥 CORS: allow from anywhere
+  // 🔥 CORS: allow from anywhere and handle credentials
   app.enableCors({
-    origin: [
-      frontendUrl
-    ],
+    origin: true, 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
     credentials: true,
   });
-
 
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
