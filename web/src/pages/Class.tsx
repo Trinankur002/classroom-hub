@@ -19,6 +19,7 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbS
 import { motion, AnimatePresence } from "framer-motion";
 import StudentsList from "./StudentsList";
 import ClassroomAnnouncementService from '@/services/classroomAnnouncementService';
+import DoubtButton from "@/components/customComponent/DoubtButton";
 
 export default function Class() {
     const navigate = useNavigate();
@@ -178,6 +179,17 @@ export default function Class() {
                         />
                     </div>
                 )}
+
+                {/* Right section: Doubt Button (desktop only) */}
+                {!isloading && classroom && userRole === "student" && activeTab === "doubts" && (
+                    <div className="hidden sm:block">
+                        <DoubtButton
+                            userRole={userRole}
+                            classromId={classroom.id}
+                            onDoubtChange={handleAnnouncementChange} // Re-uses the same refresh logic
+                        />
+                    </div>
+                )}
             </div>
 
             <div className="w-full px-4 space-y-6">
@@ -281,6 +293,32 @@ export default function Class() {
                 </div>
             )}
 
+            {/*Create Doubt Button and Mobile FAB for students */}
+            {!isloading && classroom && userRole === "student" && activeTab === "doubts" && (
+                <div className="fixed bottom-20 right-6 sm:hidden z-50">
+                    <div className="hidden">
+                        <DoubtButton
+                            userRole={userRole}
+                            classromId={classroom.id}
+                            onDoubtChange={handleAnnouncementChange}
+                        />
+                    </div>
+
+                    <Button
+                        variant="accent"
+                        onClick={() => {
+                            const btn = Array.from(document.querySelectorAll("button")).find((el) =>
+                                el.textContent?.includes("Ask a Doubt")
+                            ) as HTMLButtonElement | undefined;
+                            btn?.click();
+                        }}
+                        className={`h-12 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-400 ease-in-out ${isScrolled ? 'w-12 px-0' : 'px-4 w-auto'}`}
+                    >
+                        <Plus className="h-6 w-6" />
+                        {!isScrolled && <span className="ml-2 whitespace-nowrap">Ask a Doubt</span>}
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }
