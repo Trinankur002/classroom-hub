@@ -22,6 +22,7 @@ import { useThemeStore } from "./lib/store";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PublicRoute from "./components/auth/PublicRoute";
 import Class from "./pages/Class";
+import AllNotesPage from "./pages/AllNotesPage";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
                 <Route path="classrooms" element={<Classrooms />} />
                 <Route path="classrooms/:id" element={<Class />} />
                 <Route path="allassignments" element={<AllAssignments />} />
+                <Route path="notes" element = {<AllNotesPage/>} />
                 <Route path="chat" element={<Chat />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

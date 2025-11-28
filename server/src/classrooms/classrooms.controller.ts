@@ -24,6 +24,7 @@ import { ClassroomAnnouncement } from './entities/classroom-announcement.entity'
 import { IClassroom, IClassroomUser } from './classrooms.interface';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { GetNotesQueryDto } from './dto/GetNotesQueryDto';
 
 @Controller('classrooms')
 @UseGuards(JwtAuthGuard)
@@ -121,7 +122,21 @@ export class ClassroomsController {
     @Param('classroomId') classroomId: string,
     @Request() req,
   ): Promise<ClassroomAnnouncement[]> {
-    return this.classroomsService.getAnnouncements(classroomId, req.user);
+    return this.classroomsService.getAnnouncements(classroomId);
+  }
+
+  @Get('announcement/notes')
+  async getNotesForStudent(
+    @Request() req: any,
+    @Query() query: GetNotesQueryDto,
+  ): Promise<ClassroomAnnouncement[]> {
+
+    return this.classroomsService.getNotesForStudent({
+      user: req.user,
+      classroomId: query.classroomId,
+      page: query.page,
+      count: query.count,
+    });
   }
 
   @Get('announcement/one/:announcementId')

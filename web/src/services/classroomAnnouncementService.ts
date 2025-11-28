@@ -219,5 +219,39 @@ class ClassroomAnnouncementService {
             return { error: error?.response?.data?.message || error.message || "Something went wrong" };
         }
     }
+
+    /**
+     * Fetches notes (announcements where isNote=true) for the student.
+     * Optionally filtered by classroom, page, and count.
+     * Corresponds to the backend GET /announcement/notes.
+     * * @param params Optional parameters for filtering and pagination.
+     */
+    async getNotesForStudent(params: {
+        classroomId?: string;
+        page?: number;
+        count?: number;
+    }): Promise<{ data?: IClassroomAnnouncement[]; error?: string }> {
+        try {
+            const { classroomId, page, count } = params;
+
+            // Construct query parameters
+            const queryParams = new URLSearchParams();
+            if (classroomId) queryParams.append('classroomId', classroomId);
+            if (page !== undefined) queryParams.append('page', String(page));
+            if (count !== undefined) queryParams.append('count', String(count));
+
+            const queryString = queryParams.toString();
+            const url = `/classrooms/announcement/notes${queryString ? '?' + queryString : ''}`;
+
+            const response = await api.get(url);
+
+            return { data: response.data };
+        } catch (error: any) {
+            console.error('Error fetching notes for student:', error);
+            return {
+                error: error?.response?.data?.message || error.message || "Something went wrong"
+            };
+        }
+    }
 }
 export default new ClassroomAnnouncementService();

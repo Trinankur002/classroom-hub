@@ -1,25 +1,22 @@
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added Select imports
-import { ArrowLeft, Plus } from "lucide-react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import Projects from "./AllAssignments";
-import ClassDetails from "./ClassDetails";
-import { useEffect, useState, useCallback } from "react";
-import { IClassroom } from "@/types/classroom";
-import ClassroomService from '@/services/classroomService';
-import { toast } from "@/hooks/use-toast";
-import { Skeleton } from "@/components/ui/skeleton";
-import Doubts from "./Doubts";
 import AnnouncementButton from "@/components/customComponent/AnnouncementButton";
-import AnnouncementDetails from "./AnnouncementDetails";
-import Announcements from "./Announcements";
-import { IClassroomAnnouncement } from "@/types/classroomAnnouncement";
-import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from "@/components/ui/breadcrumb";
-import { motion, AnimatePresence } from "framer-motion";
-import StudentsList from "./StudentsList";
-import ClassroomAnnouncementService from '@/services/classroomAnnouncementService';
 import DoubtButton from "@/components/customComponent/DoubtButton";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/hooks/use-toast";
+import ClassroomAnnouncementService from '@/services/classroomAnnouncementService';
+import ClassroomService from '@/services/classroomService';
+import { IClassroom } from "@/types/classroom";
+import { IClassroomAnnouncement } from "@/types/classroomAnnouncement";
+import { Plus } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import Announcements from "./Announcements";
+import ClassDetails from "./ClassDetails";
+import Doubts from "./Doubts";
+import StudentsList from "./StudentsList";
 
 export default function Class() {
     const navigate = useNavigate();

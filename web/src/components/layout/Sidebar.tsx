@@ -9,7 +9,8 @@ import {
   ChevronLeft,
   GraduationCap,
   Menu,
-  ChevronRight
+  ChevronRight,
+  NotebookPen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -34,7 +35,7 @@ export function Sidebar({ open, onOpenChange, user, userRole }: SidebarProps) {
       { name: "Dashboard", href: "/dashboard", icon: Home },
       { name: "Classes", href: "/classrooms", icon: Users },
       { name: "All Assignments", href: "/allassignments", icon: BookOpen },
-      // { name: "Chat", href: "/chat", icon: MessageCircle },
+      { name: "Notes", href: "/notes", icon: NotebookPen },
       { name: "Settings", href: "/settings", icon: Settings },
     ];
   } else if (userRole === "teacher") {
