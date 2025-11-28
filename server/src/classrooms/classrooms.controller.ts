@@ -96,6 +96,7 @@ export class ClassroomsController {
         description: { type: "string" },
         classroomId: { type: "string", format: "uuid" },
         isAssignment: { type: "boolean" },
+        isNote: { type: "boolean" },
         dueDate: { type: "string", format: "date-time" },
         files: {
           type: "array",
@@ -109,6 +110,8 @@ export class ClassroomsController {
     @UploadedFiles() files: Express.Multer.File[],
     @Request() req,
   ) {
+    console.log('controller function called .');
+    
     return this.classroomsService.createAnnouncementWithFiles(body, files, req.user);
   }
 

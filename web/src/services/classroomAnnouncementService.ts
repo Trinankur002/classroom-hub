@@ -44,6 +44,13 @@ class ClassroomAnnouncementService {
                 formData.append("files", file);
             });
 
+            console.log("--- FormData Contents ---");
+            for (const pair of formData.entries()) {
+                console.log(`${pair[0]}:`, pair[1]);
+            }
+            console.log("-------------------------");
+            
+
             const response = await api.post(`/classrooms/announce-files`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",

@@ -54,7 +54,7 @@ export class ClassroomAnnouncement {
     @Column({default : false})
     isAssignment: boolean
 
-    @Column({ nullable: true, default: null })
+    @Column({ nullable: true, default: false })
     isNote: boolean;
 
     @Column({ nullable: true })
@@ -66,18 +66,4 @@ export class ClassroomAnnouncement {
     @UpdateDateColumn()
     updatedAt: Date;
 
-    // --- Entity Listener ---
-    /**
-     * Executes before inserting and before updating the entity.
-     * Ensures that if isNote is true, then isAssignment is false.
-     */
-    @BeforeInsert()
-    @BeforeUpdate()
-    setAssignmentStatus() {
-        // Only run this logic if a value was explicitly provided for isNote
-        // We use 'this.isNote === true' to handle null, undefined, and false cases gracefully.
-        if (this.isNote === true) {
-            this.isAssignment = false;
-        }
-    }
 }

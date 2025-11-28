@@ -386,11 +386,141 @@ export class ClassroomsService {
   //   });
   // }
 
+  // async createAnnouncementWithFiles(
+  //   data: CreateAnnouncementDto,
+  //   files: Express.Multer.File[],
+  //   user: User,
+  // ): Promise<ClassroomAnnouncement> {
+  //   return this.classroomAnnouncementsRepository.manager.transaction(async (manager) => {
+  //     // 1. Validate classroom ownership
+  //     const classroom = await manager.findOne(Classroom, {
+  //       where: { id: data.classroomId, teacherId: user.id },
+  //     });
+
+  //     if (!classroom) {
+  //       throw new NotFoundException(`Classroom not found or unauthorized`);
+  //     }
+
+  //     if (user.role !== Role.Teacher) {
+  //       throw new ForbiddenException('Only teachers can create announcements.');
+  //     }
+
+  //     // 2. Save announcement
+  //     const announcement = manager.create(ClassroomAnnouncement, {
+  //       name: data.name,
+  //       description: data.description,
+  //       classroomId: data.classroomId,
+  //       teacherId: user.id,
+  //     });
+  //     if (data.isAssignment) {
+  //       announcement.isAssignment = true;
+  //       announcement.dueDate = data.dueDate;
+  //     }
+  //     if (data.isNote) {
+  //       announcement.isNote = true;
+  //     }
+  //     const savedAnnouncement = await manager.save(announcement);
+
+  //     // 3. Upload files + save metadata (parallelized)
+  //     if (files?.length) {
+  //       await Promise.all(
+  //         files.map(async (file) => {
+  //           const fileKey = `${uuid()}-${file.originalname}`;
+  //           const gcsBucket = getBucket();
+  //           const blob = gcsBucket.file(fileKey);
+
+  //           await blob.save(file.buffer, {
+  //             contentType: file.mimetype,
+  //             resumable: false,
+  //           });
+
+  //           const [url] = await blob.getSignedUrl({
+  //             action: "read",
+  //             expires: Date.now() + 365 * 24 * 60 * 60 * 1000, // 1 year
+  //           });
+
+  //           await manager.save(FileEntity, {
+  //             name: file.originalname,
+  //             role: user.role,
+  //             userId: user.id,
+  //             key: fileKey,
+  //             url,
+  //             size: file.size,
+  //             mimetype: file.mimetype,
+  //             announcementId: savedAnnouncement.id,
+  //           });
+  //         }),
+  //       );
+  //     }
+
+  //     // 4. Reload announcement with relations
+  //     const finalAnnouncement = await manager.findOne(ClassroomAnnouncement, {
+  //       where: { id: savedAnnouncement.id },
+  //       relations: ["files", "teacher"],
+  //       select: {
+  //         id: true,
+  //         name: true,
+  //         description: true,
+  //         classroomId: true,
+  //         teacherId: true,
+  //         isAssignment: true,
+  //         isNote: true,
+  //         dueDate: true,
+  //         createdAt: true,
+  //         updatedAt: true,
+  //         teacher: {
+  //           id: true,
+  //           name: true,
+  //           email: true,
+  //           role: true,
+  //           avatarUrl: true,
+  //           createdAt: true,
+  //         },
+  //         files: {
+  //           id: true,
+  //           name: true,
+  //           key: true,
+  //           url: true,
+  //           size: true,
+  //           mimetype: true,
+  //           createdAt: true,
+  //         },
+  //       },
+  //     });
+
+  //     if (savedAnnouncement.isAssignment) {
+  //       this.eventService.createEvent({
+  //         type: EventType.ASSIGNMENT_CREATED,
+  //         actorId: user.id,
+  //         classroomId: data.classroomId,
+  //         announcementId: savedAnnouncement.id,
+  //       })
+  //     } else if (!savedAnnouncement.isAssignment) {
+  //       this.eventService.createEvent({
+  //         type: EventType.ANNOUNCEMENT_POSTED,
+  //         actorId: user.id,
+  //         classroomId: data.classroomId,
+  //         announcementId: savedAnnouncement.id,
+  //       })
+  //     }
+
+  //     if (!finalAnnouncement) {
+  //       throw new NotFoundException(
+  //         `Announcement with ID "${savedAnnouncement.id}" could not be found after creation.`,
+  //       );
+  //     }
+  //     return finalAnnouncement;
+  //   });
+  // }
+
+
   async createAnnouncementWithFiles(
     data: CreateAnnouncementDto,
     files: Express.Multer.File[],
     user: User,
   ): Promise<ClassroomAnnouncement> {
+    console.log('service called');
+    
     return this.classroomAnnouncementsRepository.manager.transaction(async (manager) => {
       // 1. Validate classroom ownership
       const classroom = await manager.findOne(Classroom, {
@@ -405,20 +535,31 @@ export class ClassroomsService {
         throw new ForbiddenException('Only teachers can create announcements.');
       }
 
-      // 2. Save announcement
+      // --- 2. Save announcement (FIXED LOGIC) ---
+
+      // Use local variables to explicitly determine final boolean values.
+      let isAssignment = data.isAssignment === true;
+      let isNote = data.isNote === true;
+
+      // Backend Safety Check: Enforce exclusivity, prioritizing assignment.
+      if (isAssignment && isNote) {
+        isNote = false;
+      }
+
       const announcement = manager.create(ClassroomAnnouncement, {
         name: data.name,
         description: data.description,
         classroomId: data.classroomId,
         teacherId: user.id,
+
+        // FIX: Explicitly set boolean fields to ensure FALSE values are saved correctly.
+        isAssignment: isAssignment,
+        isNote: isNote,
+
+        // Due date only applies if it is an assignment
+        dueDate: isAssignment ? data.dueDate : undefined,
       });
-      if (data.isAssignment) {
-        announcement.isAssignment = true;
-        announcement.dueDate = data.dueDate;
-      }
-      if (data.isNote) {
-        announcement.isNote = true;
-      }
+
       const savedAnnouncement = await manager.save(announcement);
 
       // 3. Upload files + save metadata (parallelized)
@@ -488,14 +629,17 @@ export class ClassroomsService {
         },
       });
 
+      // 5. Event Logging
       if (savedAnnouncement.isAssignment) {
+        console.log('assignment posted');
         this.eventService.createEvent({
           type: EventType.ASSIGNMENT_CREATED,
           actorId: user.id,
           classroomId: data.classroomId,
           announcementId: savedAnnouncement.id,
         })
-      } else if (!savedAnnouncement.isAssignment) {
+      } else {
+        // Covers both Note and General Announcement (when neither isAssignment nor isNote is true)
         this.eventService.createEvent({
           type: EventType.ANNOUNCEMENT_POSTED,
           actorId: user.id,
