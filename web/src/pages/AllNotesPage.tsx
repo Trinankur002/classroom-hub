@@ -119,8 +119,7 @@ export default function AllNotesPage() {
             {/* Controls */}
             <div className="flex items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-5">
-                    {/* Desktop Filter */}
-                    <div className="hidden md:block">
+                    <div className="md:block">
                         <Select onValueChange={(v) => setSelectedClassroomId(v || "all")} defaultValue="all">
                             <SelectTrigger className="w-48">
                                 <SelectValue placeholder="All Classrooms" />
@@ -135,45 +134,6 @@ export default function AllNotesPage() {
                             </SelectContent>
                         </Select>
                     </div>
-                </div>
-
-                {/* Mobile Filter Sheet */}
-                <div className="md:hidden">
-                    <Sheet>
-                        <SheetTrigger asChild>
-                            <Button variant="outline" size="sm" className="flex items-center gap-2">
-                                <Filter className="w-4 h-4" />
-                                Filters
-                            </Button>
-                        </SheetTrigger>
-
-                        <SheetContent side="right" className="w-[300px]">
-                            <h3 className="text-lg font-medium mb-4">Filters</h3>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-2">Classroom</label>
-                                    <Select onValueChange={(v) => setSelectedClassroomId(v || "all")} defaultValue={selectedClassroomId || "all"}>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="All Classrooms" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">All Classrooms</SelectItem>
-                                            {classrooms.map((c) => (
-                                                <SelectItem key={c.id} value={c.id}>
-                                                    {c.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="flex justify-end pt-4">
-                                    <Button onClick={() => fetchNotes(selectedClassroomId || "all")}>Apply</Button>
-                                </div>
-                            </div>
-                        </SheetContent>
-                    </Sheet>
                 </div>
             </div>
 
