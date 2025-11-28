@@ -36,7 +36,7 @@ import { NotificationModule } from './notification/notification.module';
     AssignmentModule,
     DoubtsModule,
     EventsModule,
-    NotificationModule
+    // NotificationModule
   ],
 
   controllers: [AppController],

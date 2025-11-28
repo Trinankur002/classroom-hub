@@ -25,7 +25,7 @@ export default function Announcements({ selectedAnnouncement, onBack, classroom,
     const [isloading, setIsLoading] = useState(false);
     const [announcements, setAnnouncements] = useState<IClassroomAnnouncement[]>([]);
 
-    const [filter, setFilter] = useState<"all" | "assignments" | "announcements">("all");
+    const [filter, setFilter] = useState<"all" | "assignments" | "announcements" | "notes">("all");
     const [isPopoverOpen, setIsPopoverOpen] = useState(false); // Add this state
 
     const navigate = useNavigate();
@@ -81,14 +81,33 @@ export default function Announcements({ selectedAnnouncement, onBack, classroom,
             return a.isAssignment;
         }
         if (filter === "announcements") {
-            return !a.isAssignment;
+            // A general announcement is NOT an assignment AND NOT a note
+            return !a.isAssignment && !a.isNote;
+        }
+        if (filter === "notes") {
+            return a.isNote;
         }
         return true;
     }) || [];
 
-    const handleFilterChange = (newFilter: "all" | "assignments" | "announcements") => {
+    const handleFilterChange = (newFilter: "all" | "assignments" | "announcements"| "notes") => {
         setFilter(newFilter);
         setIsPopoverOpen(false); // Close the popover after selection
+    };
+
+    const getDisplayFilterName = (currentFilter: typeof filter) => {
+        switch (currentFilter) {
+            case "all":
+                return "All";
+            case "assignments":
+                return "Assignments";
+            case "announcements":
+                return "Announcements";
+            case "notes":
+                return "Notes";
+            default:
+                return "Filter"; // Fallback, though "all" is the default state
+        }
     };
 
     return (
@@ -97,14 +116,17 @@ export default function Announcements({ selectedAnnouncement, onBack, classroom,
 
             {/* Filter Dropdown for medium and large screens */}
             <div className="hidden md:flex justify-end my-4">
-                <Select onValueChange={handleFilterChange}>
+                {/* 👈 1. Pass the current 'filter' state as the value */}
+                <Select value={filter} onValueChange={handleFilterChange}>
                     <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter" />
+                        {/* 👈 2. Remove the placeholder prop, the value will be automatically rendered */}
+                        <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectItem value="all">All</SelectItem>
                         <SelectItem value="assignments">Assignments</SelectItem>
                         <SelectItem value="announcements">Announcements</SelectItem>
+                        <SelectItem value="notes">Notes</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -121,11 +143,11 @@ export default function Announcements({ selectedAnnouncement, onBack, classroom,
                     <PopoverContent className="w-48 p-0">
                         <div className="grid gap-1 p-1">
                             <Button
-                                variant={filter === "all" ? "accent" : "ghost"}
-                                onClick={() => handleFilterChange("all")}
+                                variant={filter === "notes" ? "accent" : "ghost"}
+                                onClick={() => handleFilterChange("notes")}
                                 className="justify-start"
                             >
-                                All
+                                Notes
                             </Button>
                             <Button
                                 variant={filter === "assignments" ? "accent" : "ghost"}
@@ -140,6 +162,13 @@ export default function Announcements({ selectedAnnouncement, onBack, classroom,
                                 className="justify-start"
                             >
                                 Announcements
+                            </Button>
+                            <Button
+                                variant={filter === "all" ? "accent" : "ghost"}
+                                onClick={() => handleFilterChange("all")}
+                                className="justify-start"
+                            >
+                                All
                             </Button>
                         </div>
                     </PopoverContent>

@@ -38,6 +38,10 @@ export class CreateAnnouncementDto {
     @IsOptional()
     isAssignment: boolean
 
+    @ApiProperty({ required: false })
+    @IsOptional()
+    isNote: boolean
+
     @ApiProperty({
         description: 'The due date of the assignment in ISO 8601 format.',
         example: '2025-08-25T10:11:20.000Z',

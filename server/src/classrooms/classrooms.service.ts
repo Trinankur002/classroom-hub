@@ -416,6 +416,9 @@ export class ClassroomsService {
         announcement.isAssignment = true;
         announcement.dueDate = data.dueDate;
       }
+      if (data.isNote) {
+        announcement.isNote = true;
+      }
       const savedAnnouncement = await manager.save(announcement);
 
       // 3. Upload files + save metadata (parallelized)
@@ -461,6 +464,7 @@ export class ClassroomsService {
           classroomId: true,
           teacherId: true,
           isAssignment: true,
+          isNote: true,
           dueDate: true,
           createdAt: true,
           updatedAt: true,
@@ -524,6 +528,7 @@ export class ClassroomsService {
           teacherId: true,
           isAssignment: true,
           dueDate: true,
+          isNote: true,
           createdAt: true,
           updatedAt: true,
           teacher: {
@@ -568,6 +573,7 @@ export class ClassroomsService {
         teacherId: true,
         isAssignment: true,
         dueDate: true,
+        isNote: true,
         comments: true,
         createdAt: true,
         updatedAt: true,

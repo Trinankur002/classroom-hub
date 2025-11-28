@@ -293,9 +293,28 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                             </div>
                         </div>
                         <div className="flex flex-col items-start sm:items-end gap-3 sm:gap-6 mt-4 sm:mt-0">
-                            <Badge variant={announcement.isAssignment ? "default" : "secondary"}>
-                                {announcement.isAssignment ? "Assignment" : "Announcement"}
-                            </Badge>
+                            {/* 1. Display Badge for Note, Assignment, or Announcement */}
+                            {(() => {
+                                if (announcement.isNote) {
+                                    return (
+                                        <Badge variant="noHoverSecondary">
+                                            Note
+                                        </Badge>
+                                    );
+                                }
+                                if (announcement.isAssignment) {
+                                    return (
+                                        <Badge variant="noHoverDefault">
+                                            Assignment
+                                        </Badge>
+                                    );
+                                }
+                                return (
+                                    <Badge variant="noHoverSecondary">
+                                        Announcement
+                                    </Badge>
+                                );
+                            })()}
                             {announcement.isAssignment && formattedDueDate && (
                                 <div className="flex items-center text-sm sm:text-xl text-muted-foreground gap-1">
                                     <CalendarDays className="h-4 w-4 sm:h-6 sm:w-6" />

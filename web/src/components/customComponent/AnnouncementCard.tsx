@@ -43,7 +43,7 @@ export default function AnnouncementCard({ announcement, onView }: Props) {
                 <div className="px-6 pb-4 md:p-0 md:pr-6 md:py-4 flex flex-col justify-between items-start md:items-end">
                     <div className="w-full text-left md:text-right">
                         {announcement.isAssignment && (
-                            <Badge variant='default' className="mb-2">
+                            <Badge variant='noHoverDefault' className="mb-2">
                                 {"Assignment"}
                             </Badge>
                         )}

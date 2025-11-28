@@ -24,6 +24,7 @@ class ClassroomAnnouncementService {
             classroomId: string;
             isAssignment?: boolean;
             dueDate?: string; // or Date, but stringify for form
+            isNote?: boolean;
         },
         files: File[]
     ): Promise<{ data?: IClassroomAnnouncement; error?: string }> {
@@ -36,6 +37,7 @@ class ClassroomAnnouncementService {
             formData.append("classroomId", payload.classroomId);
             if (payload.isAssignment !== undefined) formData.append("isAssignment", String(payload.isAssignment));
             if (payload.dueDate) formData.append("dueDate", new Date(payload.dueDate).toISOString());
+            if (payload.isNote !== undefined) formData.append("isNote", String(payload.isNote));
 
             // append files
             files.forEach((file) => {

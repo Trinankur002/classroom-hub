@@ -34,9 +34,10 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [isAssignment, setIsAssignment] = useState(false);
+    const [isNote, setIsNote] = useState(false); // 👈 New state for Note
     const [dueDateTime, setDueDateTime] = useState<Date | undefined>(undefined);
     const [files, setFiles] = useState<File[]>([]);
-    const [isDragging, setIsDragging] = useState(false); // New state for drag-and-drop
+    const [isDragging, setIsDragging] = useState(false); // State for drag-and-drop
     const [formSubmitting, setFormSubmitting] = useState(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,6 +49,24 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
     const removeFile = (index: number) => {
         setFiles((prev) => prev.filter((_, i) => i !== index));
     };
+
+    // Handler for Assignment Switch, ensures mutual exclusivity with Note
+    const handleAssignmentChange = (checked: boolean) => {
+        setIsAssignment(checked);
+        if (checked) {
+            setIsNote(false); // If assignment, it cannot be a note
+        }
+    };
+
+    // Handler for Note Switch, ensures mutual exclusivity with Assignment
+    const handleNoteChange = (checked: boolean) => {
+        setIsNote(checked);
+        if (checked) {
+            setIsAssignment(false); // If note, it cannot be an assignment
+            setDueDateTime(undefined); // Clear due date if it becomes a note
+        }
+    };
+
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -69,6 +88,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
                     description,
                     classroomId: classromId,
                     isAssignment,
+                    isNote, // 👈 Include in payload
                     dueDate: dueDateTime?.toISOString() || undefined,
                 },
                 files
@@ -81,6 +101,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
             setName("");
             setDescription("");
             setIsAssignment(false);
+            setIsNote(false); // 👈 Reset
             setDueDateTime(undefined);
             setFiles([]);
 
@@ -103,6 +124,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
         setName("");
         setDescription("");
         setIsAssignment(false);
+        setIsNote(false); // 👈 Reset
         setDueDateTime(undefined);
         setFiles([]);
     };
@@ -137,7 +159,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
         <>
             {userRole === "teacher" && (
                 <Button variant="accent" size="sm" onClick={() => setOpen(true)}>
-                    Create Announcement
+                    Share Update
                 </Button>
             )}
 
@@ -222,11 +244,21 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
 
                             {/* Assignment Switch */}
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="isAssignment">Is Assignment?</Label>
+                                <Label htmlFor="isAssignment">This is an Assignment</Label>
                                 <Switch
                                     id="isAssignment"
                                     checked={isAssignment}
-                                    onCheckedChange={setIsAssignment}
+                                    onCheckedChange={handleAssignmentChange} // 👈 Updated handler
+                                />
+                            </div>
+
+                            {/* Note Switch */}
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="isNote">This is a Note</Label>
+                                <Switch
+                                    id="isNote"
+                                    checked={isNote}
+                                    onCheckedChange={handleNoteChange} // 👈 New handler
                                 />
                             </div>
 
@@ -254,7 +286,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
                                         Create
                                     </Button>)}
                                 {formSubmitting && (
-                                    <Skeleton className="w-full sm:w-auto"/>
+                                    <Skeleton className="w-full sm:w-auto" />
                                 )}
                             </DialogFooter>
                         </div>

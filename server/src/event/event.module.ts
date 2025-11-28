@@ -11,7 +11,7 @@ import { EventsController } from './event.controller';
   imports: [
     TypeOrmModule.forFeature([Event]),
     forwardRef(() => ClassroomsModule),
-    forwardRef(() => NotificationModule), // Apply forwardRef here
+    // forwardRef(() => NotificationModule), // Apply forwardRef here
   ],
   controllers: [EventsController],
   providers: [EventService],

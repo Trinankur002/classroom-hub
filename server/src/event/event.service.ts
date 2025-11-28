@@ -6,7 +6,7 @@ import { EventType, ICreateEventParams } from "./event.interface";
 import { Event } from "./event.entity";
 import { ClassroomsService } from "src/classrooms/classrooms.service";
 import { User } from "src/users/entities/user.entity";
-import { NotificationQueueService } from "src/notification/notification-queue.service";
+// import { NotificationQueueService } from "src/notification/notification-queue.service";
 
 @Injectable()
 export class EventService {
@@ -16,7 +16,7 @@ export class EventService {
         @Inject(forwardRef(() => ClassroomsService))
         private readonly classroomService: ClassroomsService,
         // Add the NotificationQueueService here
-        private readonly notificationQueueService: NotificationQueueService,
+        // private readonly notificationQueueService: NotificationQueueService,
     ) { }
 
     async createEvent(params: ICreateEventParams): Promise<Event> {
@@ -31,15 +31,15 @@ export class EventService {
                 );
 
                 // Add a job to the notification queue
-                await this.notificationQueueService.addDeliverJob({
-                    userIds: studentIds,
-                    type: params.type,
-                    payload: {
-                        assignmentId: params.assignmentId,
-                        classroomId: params.classroomId,
-                        // You can add more data to the payload as needed
-                    },
-                });
+                // await this.notificationQueueService.addDeliverJob({
+                //     userIds: studentIds,
+                //     type: params.type,
+                //     payload: {
+                //         assignmentId: params.assignmentId,
+                //         classroomId: params.classroomId,
+                //         // You can add more data to the payload as needed
+                //     },
+                // });
             }
         }
         return savedEvent;
