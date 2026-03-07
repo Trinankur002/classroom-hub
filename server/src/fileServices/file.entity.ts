@@ -5,6 +5,7 @@ import { Role } from "src/users/entities/role.enum";
 import { User } from "src/users/entities/user.entity";
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Doubts } from "src/doubts/doubts.entity";
+import { Message } from "src/chat/entities/message.entity";
 
 @Entity('files')
 export class FileEntity {
@@ -51,6 +52,9 @@ export class FileEntity {
 
     @ManyToOne(() => Doubts, (doubt) => doubt.files, { onDelete: 'CASCADE' })
     doubt: Doubts;
+
+    @ManyToOne(() => Message, (message) => message.files, { onDelete: 'CASCADE' })
+    message: Message;
 
     @Column({ nullable: true })
     url: string;

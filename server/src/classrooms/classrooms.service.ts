@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, ForbiddenException, forwardRef, Inject, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Classroom } from './entities/classroom.entity';
@@ -18,9 +18,12 @@ import { UsersService } from 'src/users/users.service';
 import { Transactional } from 'typeorm-transactional-cls-hooked';
 import { EventService } from 'src/event/event.service';
 import { EventType } from 'src/event/event.interface';
+import { ChatService } from 'src/chat/chat.service';
 
 @Injectable()
 export class ClassroomsService {
+  private readonly logger = new Logger(ClassroomsService.name);
+
   constructor(
     @InjectRepository(Classroom)
     private classroomsRepository: Repository<Classroom>,
@@ -32,6 +35,7 @@ export class ClassroomsService {
     private userService: UsersService,
     @Inject(forwardRef(() => EventService))
     private readonly eventService: EventService,
+    private readonly chatService: ChatService,
   ) { }
 
   async create(
@@ -46,7 +50,14 @@ export class ClassroomsService {
       teacherId: teacher.id,
       joinCode,
     });
-    return this.classroomsRepository.save(classroom);
+    const savedClassroom = await this.classroomsRepository.save(classroom);
+
+    await this.chatService.createClassroomChat(
+      savedClassroom.id,
+      teacher.id
+    );
+
+    return savedClassroom;
   }
 
   async findByJoinCode(joinCode: string): Promise<Classroom | null> {
@@ -80,6 +91,12 @@ export class ClassroomsService {
     const classroomEntity = await this.studentClassroomsRepository.save(studentClassroom);
     classroom.studentCount++;
     await this.classroomsRepository.save(classroom);
+
+    await this.chatService.addParticipantToClassroomChat(
+      classroom.id,
+      student.id
+    );
+
     return classroomEntity;
 
   }
@@ -750,6 +767,12 @@ export class ClassroomsService {
       classroomId: classroom.id,
       targetUserId: studentId,
     })
+
+    await this.chatService.removeParticipantFromClassroomChat(
+      classroom.id,
+      studentId
+    );
+
     return;
   }
 
@@ -778,9 +801,16 @@ export class ClassroomsService {
     if (!classroom) {
       throw new NotFoundException('Classroom not found or you are not the teacher.');
     }
-    await this.classroomAnnouncementsRepository.delete({ classroomId: classroom.id });
-    await this.studentClassroomsRepository.delete({ classroomId: classroom.id });
-    await this.classroomsRepository.delete(classroomId);
+
+    try {
+      await this.classroomAnnouncementsRepository.delete({ classroomId: classroom.id });
+      await this.studentClassroomsRepository.delete({ classroomId: classroom.id });
+      await this.classroomsRepository.delete(classroomId);
+    } catch (error) {
+      if (error) {
+        this.logger.error(error)
+      }
+    }
 
   }
 

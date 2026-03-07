@@ -1,48 +1,95 @@
 import {
   WebSocketGateway,
-  SubscribeMessage,
-  MessageBody,
   WebSocketServer,
+  SubscribeMessage,
   ConnectedSocket,
+  MessageBody,
+  OnGatewayConnection,
 } from '@nestjs/websockets';
+import { Logger } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
-import { CreateMessageDto } from './dto/create-message.dto';
+
+interface JwtPayload {
+  sub: string;
+  email: string;
+}
+
+interface SendMessagePayload {
+  roomId: string;
+  content: string;
+}
 
 @WebSocketGateway({
-  cors: {
-    origin: '*',
-  },
+  cors: true,
 })
-export class ChatGateway {
+export class ChatGateway implements OnGatewayConnection {
+  private readonly logger = new Logger(ChatGateway.name);
+
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly jwtService: JwtService,
+  ) { }
 
-  @SubscribeMessage('joinRoom')
-  handleJoinRoom(
-    @MessageBody() data: { classroomId: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    client.join(data.classroomId);
+  async handleConnection(socket: Socket) {
+    try {
+
+      const token = socket.handshake.auth?.token;
+      this.logger.log("TOKEN RECEIVED:");
+      this.logger.log(token);
+      const user = this.jwtService.verify<JwtPayload>(token);
+      this.logger.log("JWT PAYLOAD:");
+      this.logger.log(user);
+      socket.data.user = user;
+      this.logger.log(`User connected: ${user.sub}`);
+    } catch (error) {
+
+      this.logger.error(error);
+      this.logger.warn(`Unauthorized socket connection`);
+      socket.disconnect();
+    }
   }
 
-  @SubscribeMessage('leaveRoom')
-  handleLeaveRoom(
-    @MessageBody() data: { classroomId: string },
-    @ConnectedSocket() client: Socket,
-  ) {
-    client.leave(data.classroomId);
+  private getRoomName(roomId: string): string {
+    return `room_${roomId}`;
   }
 
-  @SubscribeMessage('sendMessage')
-  async handleMessage(
-    @MessageBody() createMessageDto: CreateMessageDto,
-    @ConnectedSocket() client: Socket,
+  @SubscribeMessage('join_room')
+  async joinRoom(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() roomId: string,
   ) {
-    const message = await this.chatService.create(createMessageDto);
-    this.server.to(createMessageDto.classroomId).emit('newMessage', message);
-    return message;
+
+    const room = this.getRoomName(roomId);
+    socket.join(room);
+    this.logger.log(`User ${socket.data.user?.sub} joined ${room}`);
+  }
+
+  @SubscribeMessage('send_message')
+  async sendMessage(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: SendMessagePayload,
+  ) {
+
+    const user = socket.data.user;
+
+    if (!user) {
+      socket.disconnect();
+      return;
+    }
+
+    const savedMessage = await this.chatService.saveMessage({
+      roomId: payload.roomId,
+      senderId: user.sub ,
+      content: payload.content,
+    });
+
+    this.server
+      .to(this.getRoomName(payload.roomId))
+      .emit('receive_message', savedMessage);
   }
 }

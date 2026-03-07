@@ -520,11 +520,13 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                     <div className="mt-8 flex justify-end" ></div>
 
                     <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-                        <h1 className="text-2xl font-bold">
+                        {announcement.isAssignment && (
+                            <h1 className="text-2xl font-bold">
                             {userRole === 'teacher'
                                 ? 'Assignments submitted by students'
                                 : 'My Assignment'}
-                        </h1>
+                            </h1>
+                        )}
 
                         {userRole === 'teacher' && pendingStudents.length > 0 && (
                             <div className="flex items-center gap-3">
@@ -555,20 +557,23 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
 
 
                     {/* Main assignments grid */}
-                    <Assignments
-                        assignments={assignments}
-                        role={userRole}
-                        pendingStudentOpen={pendingopen}
-                        students={pendingStudents}
-                    />
-
+                    {announcement.isAssignment && (
+                        <Assignments
+                            assignments={assignments}
+                            role={userRole}
+                            pendingStudentOpen={pendingopen}
+                            students={pendingStudents}
+                        />
+                    )}
                     {/* Mobile-only drawer */}
-                    <RemainingStudentsDrawer
-                        open={drawerOpen}
-                        onOpenChange={setDrawerOpen}
-                        students={pendingStudents}
-                    />
+                    {announcement.isAssignment && (
+                        <RemainingStudentsDrawer
+                            open={drawerOpen}
+                            onOpenChange={setDrawerOpen}
+                            students={pendingStudents}
+                        />
 
+                    )}
                 </div>
             )}
         </div>

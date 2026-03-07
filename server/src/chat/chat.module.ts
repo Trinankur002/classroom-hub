@@ -1,13 +1,36 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ChatMessage } from './entities/chat-message.entity';
-import { ChatService } from './chat.service';
+import { JwtModule } from '@nestjs/jwt';
+
 import { ChatGateway } from './chat.gateway';
+import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 
+import { ChatRoom } from './entities/chat-room.entity';
+import { ChatParticipant } from './entities/chat-participant.entity';
+import { Message } from './entities/message.entity';
+import { FileModule } from 'src/fileServices/file.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+
 @Module({
-  imports: [TypeOrmModule.forFeature([ChatMessage])],
-  providers: [ChatService, ChatGateway],
+  imports: [
+    TypeOrmModule.forFeature([
+      ChatRoom,
+      ChatParticipant,
+      Message,
+      FileModule,
+    ]),
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+      }),
+    }),
+  ],
   controllers: [ChatController],
+  providers: [ChatService, ChatGateway],
+  exports: [ChatService],
 })
-export class ChatModule {}
+export class ChatModule { }

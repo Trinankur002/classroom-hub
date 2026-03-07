@@ -9,6 +9,7 @@ import { FileModule } from '../fileServices/file.module';
 import { UsersModule } from 'src/users/users.module';
 import { AssignmentModule } from 'src/assignments/assignment.module';
 import { EventsModule } from 'src/event/event.module';
+import { ChatModule } from 'src/chat/chat.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { EventsModule } from 'src/event/event.module';
     FileModule,
     UsersModule,
     AssignmentModule,
+    ChatModule,
     forwardRef(() => EventsModule), // OK
   ],
   providers: [ClassroomsService],
