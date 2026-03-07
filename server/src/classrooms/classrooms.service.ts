@@ -15,7 +15,6 @@ import { getBucket } from 'src/fileServices/gcs.config';
 import { v4 as uuid } from 'uuid';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UsersService } from 'src/users/users.service';
-import { Transactional } from 'typeorm-transactional-cls-hooked';
 import { EventService } from 'src/event/event.service';
 import { EventType } from 'src/event/event.interface';
 import { ChatService } from 'src/chat/chat.service';
@@ -733,6 +732,7 @@ export class ClassroomsService {
       await this.fileService.deleteFiles(fileIds, user);
     }
 
+    await this.eventService.deleteEventsForAnnouncement(announcement.id);
     await this.classroomAnnouncementsRepository.delete(announcement.id);
   }
 
@@ -803,6 +803,16 @@ export class ClassroomsService {
     }
 
     try {
+      const announcements = await this.classroomAnnouncementsRepository.find({
+        where: { classroomId: classroom.id },
+        select: ['id'],
+      });
+
+      for (const announcement of announcements) {
+        await this.eventService.deleteEventsForAnnouncement(announcement.id);
+      }
+
+      await this.eventService.deleteEventsForClassroom(classroom.id);
       await this.classroomAnnouncementsRepository.delete({ classroomId: classroom.id });
       await this.studentClassroomsRepository.delete({ classroomId: classroom.id });
       await this.classroomsRepository.delete(classroomId);

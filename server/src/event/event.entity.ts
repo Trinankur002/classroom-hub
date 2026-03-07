@@ -35,21 +35,21 @@ export class Event {
     @Column({ type: 'uuid', nullable: true })
     classroomId: string;
 
-    @ManyToOne(() => Classroom, { nullable: true })
+    @ManyToOne(() => Classroom, { nullable: true, onDelete: 'CASCADE' })
     @JoinColumn({ name: 'classroomId' })
     classroom: Classroom;
 
     @Column({ type: 'uuid', nullable: true })
     assignmentId: string;
 
-    @ManyToOne(() => Assignment, { nullable: true })
+    @ManyToOne(() => Assignment, { nullable: true, onDelete: 'CASCADE' })
     @JoinColumn({ name: 'assignmentId' })
     assignment: Assignment;
 
     @Column({ type: 'uuid', nullable: true })
     announcementId: string;
 
-    @ManyToOne(() => ClassroomAnnouncement, { nullable: true })
+    @ManyToOne(() => ClassroomAnnouncement, { nullable: true, onDelete: 'CASCADE' })
     @JoinColumn({ name: 'announcementId' })
     announcement: ClassroomAnnouncement;
 

@@ -99,4 +99,12 @@ export class EventService {
             take: limit,
         })
     }
+
+    async deleteEventsForAnnouncement(announcementId: string): Promise<void> {
+        await this.eventRepo.delete({ announcementId });
+    }
+
+    async deleteEventsForClassroom(classroomId: string): Promise<void> {
+        await this.eventRepo.delete({ classroomId });
+    }
 }
