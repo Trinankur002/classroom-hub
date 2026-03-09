@@ -836,4 +836,28 @@ export class ClassroomsService {
 
     return studentIds;
   }
+
+  async assertUserBelongsToClassroom(userId: string, classroomId: string): Promise<void> {
+    const classroom = await this.classroomsRepository.findOne({
+      where: { id: classroomId },
+      select: ['id', 'teacherId'],
+    });
+
+    if (!classroom) {
+      throw new NotFoundException(`Classroom with id ${classroomId} not found`);
+    }
+
+    if (classroom.teacherId === userId) {
+      return;
+    }
+
+    const membership = await this.studentClassroomsRepository.findOne({
+      where: { classroomId, studentId: userId },
+      select: ['id'],
+    });
+
+    if (!membership) {
+      throw new ForbiddenException('You are not authorized to access this classroom chat.');
+    }
+  }
 }

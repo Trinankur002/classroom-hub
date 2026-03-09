@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 
@@ -11,6 +11,7 @@ import { ChatParticipant } from './entities/chat-participant.entity';
 import { Message } from './entities/message.entity';
 import { FileModule } from 'src/fileServices/file.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClassroomsModule } from 'src/classrooms/classrooms.module';
 
 @Module({
   imports: [
@@ -18,8 +19,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       ChatRoom,
       ChatParticipant,
       Message,
-      FileModule,
     ]),
+    forwardRef(() => ClassroomsModule),
+    FileModule,
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

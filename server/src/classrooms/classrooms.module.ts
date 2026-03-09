@@ -17,7 +17,7 @@ import { ChatModule } from 'src/chat/chat.module';
     FileModule,
     UsersModule,
     AssignmentModule,
-    ChatModule,
+    forwardRef(() => ChatModule),
     forwardRef(() => EventsModule), // OK
   ],
   providers: [ClassroomsService],

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { Message } from './entities/message.entity';
 import { ChatRoom } from './entities/chat-room.entity';
@@ -6,6 +6,7 @@ import { ChatParticipant } from './entities/chat-participant.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { ChatRoomType } from './chat.types';
+import { ClassroomsService } from 'src/classrooms/classrooms.service';
 
 @Injectable()
 export class ChatService {
@@ -17,6 +18,8 @@ export class ChatService {
     private roomRepo: Repository<ChatRoom>,
     @InjectRepository(ChatParticipant)
     private participantRepo: Repository<ChatParticipant>,
+    @Inject(forwardRef(() => ClassroomsService))
+    private readonly classroomsService: ClassroomsService,
   ) { }
 
   async createRoom(dto: CreateRoomDto) {
@@ -172,10 +175,70 @@ export class ChatService {
   }
 
   async getChatMessages(chatRoomId: string) { 
-    return await this.messageRepo.find({
-      where: {
-        roomId: chatRoomId
-      }
+    return this.getChatMessagesPage(chatRoomId);
+  }
+
+  async assertUserBelongsToClassroom(userId: string, classroomId: string): Promise<void> {
+    await this.classroomsService.assertUserBelongsToClassroom(userId, classroomId);
+  }
+
+  async assertUserBelongsToChatRoomClassroom(userId: string, chatRoomId: string): Promise<void> {
+    const room = await this.roomRepo.findOne({
+      where: { id: chatRoomId },
+      select: ['id', 'classroomId'],
     });
+
+    if (!room) {
+      throw new NotFoundException(`Chat room with id ${chatRoomId} not found`);
+    }
+
+    if (!room.classroomId) {
+      throw new ForbiddenException('This chat room is not linked to a classroom.');
+    }
+
+    await this.assertUserBelongsToClassroom(userId, room.classroomId);
+  }
+
+  async getChatMessagesPage(
+    chatRoomId: string,
+    options?: {
+      before?: string;
+      limit?: number;
+    }
+  ) {
+
+    const limit = Math.min(Math.max(options?.limit ?? 30, 1), 100);
+
+    const query = this.messageRepo
+      .createQueryBuilder('message')
+      .where('message.roomId = :chatRoomId', { chatRoomId })
+      .orderBy('message.createdAt', 'DESC')
+      .addOrderBy('message.id', 'DESC')
+      .take(limit + 1);
+
+    if (options?.before) {
+
+      const beforeDate = new Date(options.before);
+
+      if (Number.isNaN(beforeDate.getTime())) {
+        throw new BadRequestException('Invalid "before" cursor. Expected ISO date string.');
+      }
+
+      query.andWhere('message.createdAt < :before', { before: beforeDate.toISOString() });
+
+    }
+
+    const rows = await query.getMany();
+    const hasMore = rows.length > limit;
+    const pageRows = hasMore ? rows.slice(0, limit) : rows;
+    const messages = pageRows.reverse();
+
+    return {
+      messages,
+      hasMore,
+      nextCursor: hasMore && messages.length
+        ? messages[0].createdAt.toISOString()
+        : null,
+    };
   }
 }
