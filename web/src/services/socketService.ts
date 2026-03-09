@@ -9,7 +9,11 @@ const getSocketServerUrl = () => {
         raw = `http://${raw}`;
     }
 
-    return raw.replace(/\/+$/, "");
+    // VITE_BACKEND_API_URL may include "/api" for REST.
+    // Socket.IO must connect to the server origin (namespace stays "/").
+    const normalized = raw.replace(/\/+$/, "");
+    const parsed = new URL(normalized);
+    return parsed.origin;
 };
 
 export const getGlobalSocket = (token?: string) => {
@@ -27,5 +31,6 @@ export const getGlobalSocket = (token?: string) => {
     }
 
     socket.auth = { token };
+    socket.connect();
     return socket;
 };

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator";
 import { 
   Send, 
@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useChatStore, useClassroomStore, useAuthStore } from "@/lib/store";
 import { useToast } from "@/hooks/use-toast";
+import { getGlobalSocket } from "@/services/socketService";
+import ChatService from "@/services/chatService";
 import { format, isToday, isYesterday } from "date-fns";
 
 export default function Chat() {
@@ -34,6 +36,7 @@ export default function Chat() {
   const [chatType, setChatType] = useState<'student' | 'class'>('class');
   const [messageInput, setMessageInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [chatRoomId, setChatRoomId] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const userId = user?.id || '';
@@ -48,6 +51,8 @@ export default function Chat() {
   const classroomMessages = selectedClassroom 
     ? getMessagesForClassroom(selectedClassroom, chatType)
     : [];
+
+
 
   // Filter messages by search term
   const filteredMessages = classroomMessages.filter(msg =>
@@ -67,37 +72,78 @@ export default function Chat() {
     }
   }, [userClassrooms, selectedClassroom]);
 
-  const handleSendMessage = () => {
-    if (!messageInput.trim() || !selectedClassroom) return;
+  useEffect(() => {
+    let isActive = true;
 
-    const message = {
-      id: Date.now().toString(),
-      content: messageInput,
-      senderId: userId,
-      senderName: user?.name || 'Unknown',
-      senderRole: userRole,
-      chatType,
-      classroomId: selectedClassroom,
-      timestamp: new Date(),
-      mentions: extractMentions(messageInput),
+    const setup = async () => {
+      if (!selectedClassroom) {
+        setChatRoomId("");
+        return;
+      }
+
+      const roomResponse = await ChatService.getClassroomChatroom(selectedClassroom);
+      if (!isActive || !roomResponse.data?.id) {
+        setChatRoomId("");
+        return;
+      }
+
+      const roomId = roomResponse.data.id;
+      setChatRoomId(roomId);
+
+      const socket = getGlobalSocket(localStorage.getItem("token") || undefined);
+
+      const onReceiveMessage = (message: any) => {
+        if (message?.roomId !== roomId) return;
+        addMessage({
+          id: message.id,
+          content: message.content,
+          senderId: message.senderId,
+          senderName: message.senderName || "Unknown",
+          senderRole: (message.senderRole || "student") as "student" | "teacher" | "system",
+          chatType,
+          classroomId: selectedClassroom,
+          timestamp: message.createdAt ? new Date(message.createdAt) : new Date(),
+          mentions: [],
+        });
+      };
+
+      socket.on("receive_message", onReceiveMessage);
+      socket.emit("join_room", roomId);
+
+      return () => {
+        socket.off("receive_message", onReceiveMessage);
+      };
     };
 
-    addMessage(message);
+    let cleanup: (() => void) | undefined;
+    setup().then((fn) => {
+      cleanup = fn;
+    });
+
+    return () => {
+      isActive = false;
+      cleanup?.();
+    };
+  }, [selectedClassroom, addMessage, chatType]);
+
+
+  useEffect(() => {
+      console.log("Messages updated:", messages);
+  }, [messages]);
+
+  const handleSendMessage = () => {
+    if (!messageInput.trim() || !chatRoomId || !selectedClassroom) return;
+
+    const socket = getGlobalSocket(localStorage.getItem("token") || undefined);
+    socket.emit("send_message", { roomId: chatRoomId, content: messageInput });
+    console.log(`Emitted send_message event: ${messageInput}`);
+
+    // addMessage(message);  //  <--- REMOVE THIS
     setMessageInput("");
     toast({
       title: "Message Sent",
       description: "Your message has been sent to the chat.",
     });
-  };
-
-  const extractMentions = (text: string): string[] => {
-    const mentionRegex = /@(\w+)/g;
-    const mentions = [];
-    let match;
-    while ((match = mentionRegex.exec(text)) !== null) {
-      mentions.push(match[1]);
-    }
-    return mentions;
   };
 
   const formatMessageTime = (date: Date) => {
@@ -138,7 +184,7 @@ export default function Chat() {
             {selectedClassroom && (
               <div className="flex gap-2">
                 <Button
-                  variant={chatType === 'class' ? 'default' : 'outline-solid'}
+                  variant={chatType === 'class' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setChatType('class')}
                   className="flex-1 gap-1"
@@ -148,7 +194,7 @@ export default function Chat() {
                 </Button>
                 {userRole === 'student' && (
                   <Button
-                    variant={chatType === 'student' ? 'default' : 'outline-solid'}
+                    variant={chatType === 'student' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setChatType('student')}
                     className="flex-1 gap-1"

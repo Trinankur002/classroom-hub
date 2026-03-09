@@ -5,6 +5,7 @@ import {
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
+  OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -24,7 +25,7 @@ interface SendMessagePayload {
 @WebSocketGateway({
   cors: true,
 })
-export class ChatGateway implements OnGatewayConnection {
+export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
 
   @WebSocketServer()
@@ -37,12 +38,17 @@ export class ChatGateway implements OnGatewayConnection {
 
   async handleConnection(socket: Socket) {
     try {
-
-      const token = socket.handshake.auth?.token;
+      this.logger.log('Handle connection called');
+      const rawToken = socket.handshake.auth?.token;
+      const token = typeof rawToken === 'string' && rawToken.startsWith('Bearer ')
+        ? rawToken.slice(7)
+        : rawToken;
       this.logger.log("TOKEN RECEIVED:");
       this.logger.log(token);
       const user = this.jwtService.verify<JwtPayload>(token);
+
       this.logger.log("JWT PAYLOAD:");
+      console.log('User', user);
       this.logger.log(user);
       socket.data.user = user;
       this.logger.log(`User connected: ${user.sub}`);
@@ -52,6 +58,10 @@ export class ChatGateway implements OnGatewayConnection {
       this.logger.warn(`Unauthorized socket connection`);
       socket.disconnect();
     }
+  }
+
+  handleDisconnect(socket: Socket) {
+    this.logger.log(`Socket disconnected: ${socket.id}`);
   }
 
   private getRoomName(roomId: string): string {
@@ -82,6 +92,7 @@ export class ChatGateway implements OnGatewayConnection {
     @ConnectedSocket() socket: Socket,
     @MessageBody() roomId: string,
   ) {
+    this.logger.log(`joinRoom event received: ${roomId}`);
     const user = socket.data.user;
 
     if (!user) {
@@ -99,6 +110,25 @@ export class ChatGateway implements OnGatewayConnection {
     const room = this.getRoomName(roomId);
     socket.join(room);
     this.logger.log(`User ${user.sub} joined ${room}`);
+    socket.emit('room_joined', { roomId });
+  }
+
+  @SubscribeMessage('get_messages')
+  async getMessages(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody() payload: { roomId: string; before?: string; limit?: number },
+  ) {
+    const user = socket.data.user;
+    if (!user) {
+      socket.disconnect();
+      return;
+    }
+
+    await this.chatService.assertUserIsChatParticipant(user.sub, payload.roomId);
+    return this.chatService.getChatMessagesPage(payload.roomId, {
+      before: payload.before,
+      limit: payload.limit,
+    });
   }
 
   @SubscribeMessage('send_message')
@@ -106,6 +136,7 @@ export class ChatGateway implements OnGatewayConnection {
     @ConnectedSocket() socket: Socket,
     @MessageBody() payload: SendMessagePayload,
   ) {
+    this.logger.log(`sendMessage event received: ${JSON.stringify(payload)}`);
 
     const user = socket.data.user;
 
@@ -130,5 +161,9 @@ export class ChatGateway implements OnGatewayConnection {
     this.server
       .to(this.getRoomName(payload.roomId))
       .emit('receive_message', savedMessage);
+    this.server
+      .to(this.getRoomName(payload.roomId))
+      .emit('new_message', savedMessage);
+    this.logger.log(`Emitted receive_message to room ${payload.roomId}: ${JSON.stringify(savedMessage)}`);
   }
 }

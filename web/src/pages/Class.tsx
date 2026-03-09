@@ -201,7 +201,9 @@ export default function Class() {
                         </TabsTrigger>
                         <TabsTrigger className="flex-1 min-w-[120px]" value="announcements">Stream</TabsTrigger>
                         <TabsTrigger className="flex-1 min-w-[120px]" value="doubts">Doubts</TabsTrigger>
-                        <TabsTrigger className="flex-1 min-w-[120px]" value="chat">Chat</TabsTrigger>
+                        {userRole === 'student' && (
+                            <TabsTrigger className="flex-1 min-w-[120px]" value="chat">Chat</TabsTrigger>
+                        )}
                         {userRole === 'teacher' && (
                             <TabsTrigger className="flex-1 min-w-[120px]" value="students">Students</TabsTrigger>
                         )}
@@ -217,7 +219,7 @@ export default function Class() {
                                 <SelectItem value="updates">All Updates</SelectItem>
                                 <SelectItem value="announcements">Stream</SelectItem>
                                 <SelectItem value="doubts">Doubts</SelectItem>
-                                <SelectItem value="chat">Chat</SelectItem>
+                                {userRole === 'student' && <SelectItem value="chat">Chat</SelectItem>}
                                 {userRole === 'teacher' && <SelectItem value="students">Students</SelectItem>}
                             </SelectContent>
                         </Select>
@@ -252,9 +254,11 @@ export default function Class() {
                     <TabsContent value="doubts" className="flex-1 flex flex-col">
                         <Doubts classroomId={classroom?.id || ''} />
                     </TabsContent>
-                    <TabsContent value="chat" className="flex-1 flex flex-col">
-                        <ClassroomChat classroomId={classroom?.id || ''} />
-                    </TabsContent>
+                    {userRole === 'student' && (
+                        <TabsContent value="chat" className="flex-1 flex flex-col">
+                            <ClassroomChat classroomId={classroom?.id || ''} />
+                        </TabsContent>
+                    )}
                     {userRole === 'teacher' && <TabsContent value="students">
                         <StudentsList
                             classroomId={classroom?.id || ''}
