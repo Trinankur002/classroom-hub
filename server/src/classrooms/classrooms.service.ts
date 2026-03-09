@@ -18,6 +18,7 @@ import { UsersService } from 'src/users/users.service';
 import { EventService } from 'src/event/event.service';
 import { EventType } from 'src/event/event.interface';
 import { ChatService } from 'src/chat/chat.service';
+import { ChatGateway } from 'src/chat/chat.gateway';
 
 @Injectable()
 export class ClassroomsService {
@@ -35,6 +36,8 @@ export class ClassroomsService {
     @Inject(forwardRef(() => EventService))
     private readonly eventService: EventService,
     private readonly chatService: ChatService,
+    @Inject(forwardRef(() => ChatGateway))
+    private readonly chatGateway: ChatGateway,
   ) { }
 
   async create(
@@ -771,6 +774,11 @@ export class ClassroomsService {
     await this.chatService.removeParticipantFromClassroomChat(
       classroom.id,
       studentId
+    );
+
+    await this.chatGateway.notifyStudentRemovedFromClassroom(
+      classroom.id,
+      studentId,
     );
 
     return;

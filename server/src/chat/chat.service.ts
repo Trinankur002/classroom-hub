@@ -170,7 +170,19 @@ export class ChatService {
     return await this.participantRepo.find({
       where: {
         roomId: chatRoomId
-      }
+      },
+      relations: ['user'],
+      select: {
+        id: true,
+        roomId: true,
+        userId: true,
+        joinedAt: true,
+        user: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+        },
+      },
     });
   }
 
@@ -197,6 +209,20 @@ export class ChatService {
     }
 
     await this.assertUserBelongsToClassroom(userId, room.classroomId);
+  }
+
+  async assertUserIsChatParticipant(userId: string, roomId: string): Promise<void> {
+    const participant = await this.participantRepo.findOne({
+      where: {
+        roomId,
+        userId,
+      },
+      select: ['id'],
+    });
+
+    if (!participant) {
+      throw new ForbiddenException('You are no longer a participant in this chat room.');
+    }
   }
 
   async getChatMessagesPage(

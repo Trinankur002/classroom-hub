@@ -33,6 +33,6 @@ import { ClassroomsModule } from 'src/classrooms/classrooms.module';
   ],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],
-  exports: [ChatService],
+  exports: [ChatService, ChatGateway],
 })
 export class ChatModule { }

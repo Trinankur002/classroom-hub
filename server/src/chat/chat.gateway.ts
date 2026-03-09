@@ -58,15 +58,47 @@ export class ChatGateway implements OnGatewayConnection {
     return `room_${roomId}`;
   }
 
+  async notifyStudentRemovedFromClassroom(classroomId: string, studentId: string): Promise<void> {
+    const room = await this.chatService.getClassroomChatRooms(classroomId);
+    if (!room) return;
+
+    const roomName = this.getRoomName(room.id);
+    const sockets = await this.server.in(roomName).fetchSockets();
+
+    for (const socket of sockets) {
+      if (socket.data.user?.sub === studentId) {
+        socket.emit('removed_from_classroom', {
+          classroomId,
+          roomId: room.id,
+        });
+        socket.leave(roomName);
+        socket.disconnect(true);
+      }
+    }
+  }
+
   @SubscribeMessage('join_room')
   async joinRoom(
     @ConnectedSocket() socket: Socket,
     @MessageBody() roomId: string,
   ) {
+    const user = socket.data.user;
+
+    if (!user) {
+      socket.disconnect();
+      return;
+    }
+
+    try {
+      await this.chatService.assertUserIsChatParticipant(user.sub, roomId);
+    } catch (error) {
+      socket.emit('removed_from_classroom', { roomId });
+      return;
+    }
 
     const room = this.getRoomName(roomId);
     socket.join(room);
-    this.logger.log(`User ${socket.data.user?.sub} joined ${room}`);
+    this.logger.log(`User ${user.sub} joined ${room}`);
   }
 
   @SubscribeMessage('send_message')
@@ -82,9 +114,16 @@ export class ChatGateway implements OnGatewayConnection {
       return;
     }
 
+    try {
+      await this.chatService.assertUserIsChatParticipant(user.sub, payload.roomId);
+    } catch (error) {
+      socket.emit('removed_from_classroom', { roomId: payload.roomId });
+      return;
+    }
+
     const savedMessage = await this.chatService.saveMessage({
       roomId: payload.roomId,
-      senderId: user.sub ,
+      senderId: user.sub,
       content: payload.content,
     });
 
