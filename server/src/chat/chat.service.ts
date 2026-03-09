@@ -29,7 +29,7 @@ export class ChatService {
 
   async createRoom(dto: CreateRoomDto) {
 
-    if (dto.type === 'DIRECT' && dto.participantIds.length === 2) {
+    if (dto.type === ChatRoomType.DIRECT && dto.participantIds.length === 2) {
 
       const [user1, user2] = [...dto.participantIds].sort();
 

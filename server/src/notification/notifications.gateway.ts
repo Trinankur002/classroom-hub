@@ -4,6 +4,7 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import * as cookie from 'cookie';
 import { Injectable, Logger } from '@nestjs/common';
+import { WEBSOCKET_EVENTS } from 'src/common/websocket-events.enum';
 
 @WebSocketGateway({ namespace: '/notifications', cors: { origin: true, credentials: true } })
 @Injectable()
@@ -47,7 +48,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
     emitToUser(userId: string, payload: any) {
         try {
-            this.server.to(this.userRoom(userId)).emit('notification', payload);
+            this.server.to(this.userRoom(userId)).emit(WEBSOCKET_EVENTS.NOTIFICATION, payload);
         } catch (err) {
             this.logger.warn(`emitToUser failed for ${userId}`, err);
         }

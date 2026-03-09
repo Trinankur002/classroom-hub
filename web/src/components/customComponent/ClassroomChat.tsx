@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import ChatService from "@/services/chatService";
 import { getGlobalSocket } from "@/services/socketService";
+import { WEBSOCKET_EVENTS } from "@/constants/websocketEvents";
 import { IChatMessage, IChatParticipant, IChatRoom } from "@/types/chat";
 import { MessageCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -223,7 +224,7 @@ function ClassroomChat({ classroomId }: Props) {
                 }
             } else {
                 const socket = getGlobalSocket(token);
-                socket.emit("send_message", {
+                socket.emit(WEBSOCKET_EVENTS.SEND_MESSAGE, {
                     roomId: room.id,
                     content: messageInput.trim(),
                     mentionedUserId,
@@ -258,11 +259,11 @@ function ClassroomChat({ classroomId }: Props) {
         }
 
         const onConnect = () => {
-            socket.emit("join_room", room.id);
+            socket.emit(WEBSOCKET_EVENTS.JOIN_ROOM, room.id);
         };
 
         const onReconnect = () => {
-            socket.emit("join_room", room.id);
+            socket.emit(WEBSOCKET_EVENTS.JOIN_ROOM, room.id);
         };
 
         const onReceiveMessage = (message: IChatMessage) => {
@@ -287,20 +288,20 @@ function ClassroomChat({ classroomId }: Props) {
 
         socket.on("connect", onConnect);
         socket.on("reconnect", onReconnect);
-        socket.on("receive_message", onReceiveMessage);
-        socket.on("removed_from_classroom", onRemoved);
-        socket.on("chat_error", onChatError);
+        socket.on(WEBSOCKET_EVENTS.RECEIVE_MESSAGE, onReceiveMessage);
+        socket.on(WEBSOCKET_EVENTS.REMOVED_FROM_CLASSROOM, onRemoved);
+        socket.on(WEBSOCKET_EVENTS.CHAT_ERROR, onChatError);
 
         if (socket.connected) {
-            socket.emit("join_room", room.id);
+            socket.emit(WEBSOCKET_EVENTS.JOIN_ROOM, room.id);
         }
 
         return () => {
             socket.off("connect", onConnect);
             socket.off("reconnect", onReconnect);
-            socket.off("receive_message", onReceiveMessage);
-            socket.off("removed_from_classroom", onRemoved);
-            socket.off("chat_error", onChatError);
+            socket.off(WEBSOCKET_EVENTS.RECEIVE_MESSAGE, onReceiveMessage);
+            socket.off(WEBSOCKET_EVENTS.REMOVED_FROM_CLASSROOM, onRemoved);
+            socket.off(WEBSOCKET_EVENTS.CHAT_ERROR, onChatError);
         };
     }, [appendUniqueMessages, classroomId, moveToDashboard, room?.id, scrollToBottom, token, userRole]);
 

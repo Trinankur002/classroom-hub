@@ -11,6 +11,7 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
+import { WEBSOCKET_EVENTS } from 'src/common/websocket-events.enum';
 
 interface JwtPayload {
   sub: string;
@@ -72,10 +73,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   emitMessageToRoom(roomId: string, message: any) {
     this.server
       .to(this.getRoomName(roomId))
-      .emit('receive_message', message);
+      .emit(WEBSOCKET_EVENTS.RECEIVE_MESSAGE, message);
     this.server
       .to(this.getRoomName(roomId))
-      .emit('new_message', message);
+      .emit(WEBSOCKET_EVENTS.NEW_MESSAGE, message);
   }
 
   async notifyStudentRemovedFromClassroom(classroomId: string, studentId: string): Promise<void> {
@@ -87,7 +88,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     for (const socket of sockets) {
       if (socket.data.user?.sub === studentId) {
-        socket.emit('removed_from_classroom', {
+        socket.emit(WEBSOCKET_EVENTS.REMOVED_FROM_CLASSROOM, {
           classroomId,
           roomId: room.id,
         });
@@ -97,7 +98,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  @SubscribeMessage('join_room')
+  @SubscribeMessage(WEBSOCKET_EVENTS.JOIN_ROOM)
   async joinRoom(
     @ConnectedSocket() socket: Socket,
     @MessageBody() roomId: string,
@@ -113,20 +114,20 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       await this.chatService.assertUserIsChatParticipant(user.sub, roomId);
     } catch (error) {
-      socket.emit('removed_from_classroom', { roomId });
+      socket.emit(WEBSOCKET_EVENTS.REMOVED_FROM_CLASSROOM, { roomId });
       return;
     }
 
     const room = this.getRoomName(roomId);
     socket.join(room);
     this.logger.log(`User ${user.sub} joined ${room}`);
-    socket.emit('room_joined', { roomId });
+    socket.emit(WEBSOCKET_EVENTS.ROOM_JOINED, { roomId });
   }
 
-  @SubscribeMessage('get_messages')
+  @SubscribeMessage(WEBSOCKET_EVENTS.GET_MESSAGES)
   async getMessages(
     @ConnectedSocket() socket: Socket,
-    @MessageBody() payload: { roomId: string; before?: string; limit?: number },
+    @MessageBody() payload: { roomId: string; before?: string; beforeMessageId?: string; limit?: number },
   ) {
     const user = socket.data.user;
     if (!user) {
@@ -137,11 +138,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.chatService.assertUserIsChatParticipant(user.sub, payload.roomId);
     return this.chatService.getChatMessagesPage(payload.roomId, {
       before: payload.before,
+      beforeMessageId: payload.beforeMessageId,
       limit: payload.limit,
     });
   }
 
-  @SubscribeMessage('send_message')
+  @SubscribeMessage(WEBSOCKET_EVENTS.SEND_MESSAGE)
   async sendMessage(
     @ConnectedSocket() socket: Socket,
     @MessageBody() payload: SendMessagePayload,
@@ -158,14 +160,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       await this.chatService.assertUserIsChatParticipant(user.sub, payload.roomId);
     } catch (error) {
-      socket.emit('removed_from_classroom', { roomId: payload.roomId });
+      socket.emit(WEBSOCKET_EVENTS.REMOVED_FROM_CLASSROOM, { roomId: payload.roomId });
       return;
     }
 
     try {
       await this.chatService.assertMentionedUserIsParticipant(payload.roomId, payload.mentionedUserId);
     } catch (error) {
-      socket.emit('chat_error', { message: 'Mentioned user is not in this room.' });
+      socket.emit(WEBSOCKET_EVENTS.CHAT_ERROR, { message: 'Mentioned user is not in this room.' });
       return;
     }
 
