@@ -16,7 +16,7 @@ export class ChatRoom {
   @Column({ nullable: true })
   name: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true , unique: true})
   classroomId: string;
 
   @CreateDateColumn()

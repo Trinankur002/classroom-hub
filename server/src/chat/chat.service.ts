@@ -91,7 +91,7 @@ export class ChatService {
 
   async createClassroomChat(
     classroomId: string,
-    teacherId: string,
+    teacherId?: string,
   ): Promise<ChatRoom> {
 
     const room = this.roomRepo.create({
@@ -152,5 +152,30 @@ export class ChatService {
       userId
     });
 
+  }
+
+  async getClassroomChatRooms(classroomId: string,) {
+    return await this.roomRepo.findOne({
+      where: {
+        classroomId,
+        type: ChatRoomType.CLASSROOM
+      }
+    });
+  }
+
+  async getChatroomParticipants(chatRoomId: string): Promise<ChatParticipant[]> { 
+    return await this.participantRepo.find({
+      where: {
+        roomId: chatRoomId
+      }
+    });
+  }
+
+  async getChatMessages(chatRoomId: string) { 
+    return await this.messageRepo.find({
+      where: {
+        roomId: chatRoomId
+      }
+    });
   }
 }

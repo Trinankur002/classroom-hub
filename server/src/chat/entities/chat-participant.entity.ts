@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
+import { User } from "src/users/entities/user.entity";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, JoinColumn, ManyToOne } from "typeorm";
 
 @Entity('chat_participants')
 export class ChatParticipant {
@@ -11,6 +12,10 @@ export class ChatParticipant {
 
     @Column()
     userId: string;
+
+    @ManyToOne(() => User)
+    @JoinColumn({ name: 'userId', referencedColumnName: 'id' })
+    user: User;
 
     @CreateDateColumn()
     joinedAt: Date;
