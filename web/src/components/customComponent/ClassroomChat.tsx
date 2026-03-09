@@ -76,7 +76,7 @@ function ClassroomChat({ classroomId }: Props) {
     }, []);
 
     const loadOlderMessages = useCallback(async () => {
-        if (!room?.id || isLoadingOlder) return;
+        if (!room?.id || isLoadingOlder || !hasMore) return;
 
         const oldestLoadedMessage = messages[0];
         const beforeCursor = cursor || getCursorFromMessage(oldestLoadedMessage);
@@ -128,7 +128,7 @@ function ClassroomChat({ classroomId }: Props) {
         } finally {
             setIsLoadingOlder(false);
         }
-    }, [appendUniqueMessages, cursor, getCursorFromMessage, isLoadingOlder, messages, moveToDashboard, room?.id]);
+    }, [appendUniqueMessages, cursor, getCursorFromMessage, hasMore, isLoadingOlder, messages, moveToDashboard, room?.id]);
 
     useEffect(() => {
         const saved = prependScrollRef.current;

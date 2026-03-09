@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { IChatMessage, IChatParticipant } from "@/types/chat";
 import { Loader2 } from "lucide-react";
-import { RefObject } from "react";
+import { RefObject, useEffect } from "react";
 
 interface Props {
     messages: IChatMessage[];
@@ -24,6 +24,21 @@ function ClassroomChatMessageList({
     onLoadOlder,
     scrollContainerRef,
 }: Props) {
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        const viewport = container?.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement | null;
+        if (!viewport) return;
+
+        const handleScroll = () => {
+            if (viewport.scrollTop <= 40 && hasMore && !isLoadingOlder) {
+                onLoadOlder();
+            }
+        };
+
+        viewport.addEventListener("scroll", handleScroll);
+        return () => viewport.removeEventListener("scroll", handleScroll);
+    }, [hasMore, isLoadingOlder, onLoadOlder, scrollContainerRef]);
+
     if (messages.length === 0) {
         return (
             <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -36,15 +51,19 @@ function ClassroomChatMessageList({
         <ScrollArea className="h-full p-4" ref={scrollContainerRef}>
             <div className="space-y-3">
                 <div className="flex justify-center">
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={onLoadOlder}
-                        disabled={isLoadingOlder}
-                    >
-                        {isLoadingOlder && <Loader2 className="h-4 w-4 animate-spin" />}
-                        {hasMore ? "Load older messages" : "Load previous messages"}
-                    </Button>
+                    {hasMore ? (
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={onLoadOlder}
+                            disabled={isLoadingOlder}
+                        >
+                            {isLoadingOlder && <Loader2 className="h-4 w-4 animate-spin" />}
+                            Load older messages
+                        </Button>
+                    ) : (
+                        <p className="text-xs text-muted-foreground">That was the oldest message</p>
+                    )}
                 </div>
 
                 {messages.map((message) => {
