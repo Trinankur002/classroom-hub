@@ -255,7 +255,7 @@ export default function Class() {
                         <Doubts classroomId={classroom?.id || ''} />
                     </TabsContent>
                     {userRole === 'student' && (
-                        <TabsContent value="chat" className="flex-1 flex flex-col">
+                        <TabsContent value="chat" className="flex-1 flex flex-col" forceMount>
                             <ClassroomChat classroomId={classroom?.id || ''} />
                         </TabsContent>
                     )}

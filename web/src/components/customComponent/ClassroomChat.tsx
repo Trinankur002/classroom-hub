@@ -19,6 +19,8 @@ function ClassroomChat({ classroomId }: Props) {
     const [messages, setMessages] = useState<IChatMessage[]>([]);
     const [participants, setParticipants] = useState<IChatParticipant[]>([]);
     const [messageInput, setMessageInput] = useState("");
+    const [mentionedUserId, setMentionedUserId] = useState<string | undefined>(undefined);
+    const [pendingFiles, setPendingFiles] = useState<File[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingOlder, setIsLoadingOlder] = useState(false);
     const [hasMore, setHasMore] = useState(false);
@@ -59,6 +61,11 @@ function ClassroomChat({ classroomId }: Props) {
         });
     }, []);
 
+    const getCursorFromMessage = useCallback((message?: IChatMessage | null) => {
+        if (!message) return null;
+        return `${new Date(message.createdAt).toISOString()}::${message.id}`;
+    }, []);
+
     const appendUniqueMessages = useCallback((current: IChatMessage[], incoming: IChatMessage[]) => {
         const map = new Map<string, IChatMessage>();
         current.forEach((m) => map.set(m.id, m));
@@ -69,7 +76,11 @@ function ClassroomChat({ classroomId }: Props) {
     }, []);
 
     const loadOlderMessages = useCallback(async () => {
-        if (!room?.id || !hasMore || isLoadingOlder || !cursor) return;
+        if (!room?.id || isLoadingOlder) return;
+
+        const oldestLoadedMessage = messages[0];
+        const beforeCursor = cursor || getCursorFromMessage(oldestLoadedMessage);
+        if (!beforeCursor && !oldestLoadedMessage?.id) return;
 
         const container = scrollContainerRef.current;
         const viewport = container?.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement | null;
@@ -84,7 +95,8 @@ function ClassroomChat({ classroomId }: Props) {
         setIsLoadingOlder(true);
         try {
             const { data, error, statusCode } = await ChatService.getChatMessages(room.id, {
-                before: cursor,
+                beforeMessageId: oldestLoadedMessage?.id,
+                before: oldestLoadedMessage?.id ? undefined : beforeCursor || undefined,
                 limit: 30,
             });
 
@@ -97,9 +109,15 @@ function ClassroomChat({ classroomId }: Props) {
             }
 
             if (data) {
+                if ((data.messages || []).length === 0) {
+                    setHasMore(false);
+                    setCursor(null);
+                    return;
+                }
+
                 setMessages((prev) => appendUniqueMessages(data.messages, prev));
                 setHasMore(Boolean(data.hasMore));
-                setCursor(data.nextCursor);
+                setCursor(data.nextCursor || getCursorFromMessage(data.messages[0]));
             }
         } catch (error) {
             toast({
@@ -110,7 +128,7 @@ function ClassroomChat({ classroomId }: Props) {
         } finally {
             setIsLoadingOlder(false);
         }
-    }, [appendUniqueMessages, cursor, hasMore, isLoadingOlder, moveToDashboard, room?.id]);
+    }, [appendUniqueMessages, cursor, getCursorFromMessage, isLoadingOlder, messages, moveToDashboard, room?.id]);
 
     useEffect(() => {
         const saved = prependScrollRef.current;
@@ -183,15 +201,48 @@ function ClassroomChat({ classroomId }: Props) {
     }, [classroomId, moveToDashboard, scrollToBottom, userRole]);
 
     const handleSendMessage = useCallback(() => {
-        if (!room?.id || !messageInput.trim()) return;
+        if (!room?.id || (!messageInput.trim() && pendingFiles.length === 0)) return;
 
-        const socket = getGlobalSocket(token);
-        socket.emit("send_message", {
-            roomId: room.id,
-            content: messageInput.trim(),
+        const send = async () => {
+            if (pendingFiles.length > 0) {
+                const { error, statusCode } = await ChatService.sendMessageWithFiles(
+                    room.id,
+                    {
+                        content: messageInput.trim(),
+                        mentionedUserId,
+                    },
+                    pendingFiles
+                );
+
+                if (error) {
+                    if (statusCode === 403) {
+                        moveToDashboard();
+                        return;
+                    }
+                    throw new Error(error);
+                }
+            } else {
+                const socket = getGlobalSocket(token);
+                socket.emit("send_message", {
+                    roomId: room.id,
+                    content: messageInput.trim(),
+                    mentionedUserId,
+                });
+            }
+
+            setMessageInput("");
+            setMentionedUserId(undefined);
+            setPendingFiles([]);
+        };
+
+        send().catch((error) => {
+            toast({
+                title: "Failed to send message",
+                description: String(error),
+                variant: "destructive",
+            });
         });
-        setMessageInput("");
-    }, [messageInput, room?.id, token]);
+    }, [mentionedUserId, messageInput, moveToDashboard, pendingFiles, room?.id, token]);
 
     useEffect(() => {
         if (userRole !== "student") return;
@@ -226,10 +277,19 @@ function ClassroomChat({ classroomId }: Props) {
             }
         };
 
+        const onChatError = (payload: { message?: string }) => {
+            toast({
+                title: "Chat error",
+                description: payload?.message || "Unable to process chat event.",
+                variant: "destructive",
+            });
+        };
+
         socket.on("connect", onConnect);
         socket.on("reconnect", onReconnect);
         socket.on("receive_message", onReceiveMessage);
         socket.on("removed_from_classroom", onRemoved);
+        socket.on("chat_error", onChatError);
 
         if (socket.connected) {
             socket.emit("join_room", room.id);
@@ -240,6 +300,7 @@ function ClassroomChat({ classroomId }: Props) {
             socket.off("reconnect", onReconnect);
             socket.off("receive_message", onReceiveMessage);
             socket.off("removed_from_classroom", onRemoved);
+            socket.off("chat_error", onChatError);
         };
     }, [appendUniqueMessages, classroomId, moveToDashboard, room?.id, scrollToBottom, token, userRole]);
 
@@ -292,6 +353,11 @@ function ClassroomChat({ classroomId }: Props) {
                 value={messageInput}
                 onChange={setMessageInput}
                 onSend={handleSendMessage}
+                participants={participants}
+                mentionedUserId={mentionedUserId}
+                onMentionChange={setMentionedUserId}
+                files={pendingFiles}
+                onFilesChange={setPendingFiles}
             />
         </Card>
     );

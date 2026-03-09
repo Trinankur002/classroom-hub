@@ -17,12 +17,14 @@ class ChatService {
 
     async getChatMessages(
         chatRoomId: string,
-        params?: { before?: string; limit?: number }
+        params?: { before?: string; beforeMessageId?: string; limit?: number }
     ): Promise<{ data?: IChatMessagePage; error?: string; statusCode?: number }> {
         try {
             const queryParams = new URLSearchParams();
             if (params?.before) queryParams.append("before", params.before);
+            if (params?.beforeMessageId) queryParams.append("beforeMessageId", params.beforeMessageId);
             if (params?.limit !== undefined) queryParams.append("limit", String(params.limit));
+            queryParams.append("_ts", String(Date.now()));
 
             const query = queryParams.toString();
             const url = `/chat/messages/${chatRoomId}/history${query ? `?${query}` : ""}`;
@@ -46,6 +48,33 @@ class ChatService {
             console.error("Error fetching chat participants:", error);
             return {
                 data: [],
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+                statusCode: error?.response?.status,
+            };
+        }
+    }
+
+    async sendMessageWithFiles(
+        chatRoomId: string,
+        payload: { content?: string; mentionedUserId?: string },
+        files: File[]
+    ): Promise<{ data?: any; error?: string; statusCode?: number }> {
+        try {
+            const formData = new FormData();
+            if (payload.content !== undefined) formData.append("content", payload.content);
+            if (payload.mentionedUserId) formData.append("mentionedUserId", payload.mentionedUserId);
+            files.forEach((file) => formData.append("files", file));
+
+            const response = await api.post(`/chat/messages/${chatRoomId}`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+
+            return { data: response.data };
+        } catch (error: any) {
+            console.error("Error sending chat message:", error);
+            return {
                 error: error?.response?.data?.message || error.message || "Something went wrong",
                 statusCode: error?.response?.status,
             };

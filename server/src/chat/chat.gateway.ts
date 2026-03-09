@@ -20,6 +20,7 @@ interface JwtPayload {
 interface SendMessagePayload {
   roomId: string;
   content: string;
+  mentionedUserId?: string;
 }
 
 @WebSocketGateway({
@@ -66,6 +67,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private getRoomName(roomId: string): string {
     return `room_${roomId}`;
+  }
+
+  emitMessageToRoom(roomId: string, message: any) {
+    this.server
+      .to(this.getRoomName(roomId))
+      .emit('receive_message', message);
+    this.server
+      .to(this.getRoomName(roomId))
+      .emit('new_message', message);
   }
 
   async notifyStudentRemovedFromClassroom(classroomId: string, studentId: string): Promise<void> {
@@ -152,18 +162,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+    try {
+      await this.chatService.assertMentionedUserIsParticipant(payload.roomId, payload.mentionedUserId);
+    } catch (error) {
+      socket.emit('chat_error', { message: 'Mentioned user is not in this room.' });
+      return;
+    }
+
     const savedMessage = await this.chatService.saveMessage({
       roomId: payload.roomId,
       senderId: user.sub,
       content: payload.content,
+      mentionedUserId: payload.mentionedUserId,
     });
 
-    this.server
-      .to(this.getRoomName(payload.roomId))
-      .emit('receive_message', savedMessage);
-    this.server
-      .to(this.getRoomName(payload.roomId))
-      .emit('new_message', savedMessage);
+    this.emitMessageToRoom(payload.roomId, savedMessage);
     this.logger.log(`Emitted receive_message to room ${payload.roomId}: ${JSON.stringify(savedMessage)}`);
   }
 }

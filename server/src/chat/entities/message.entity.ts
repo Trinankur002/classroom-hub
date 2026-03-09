@@ -1,5 +1,6 @@
 import { FileEntity } from "src/fileServices/file.entity";
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from "typeorm";
+import { User } from "src/users/entities/user.entity";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 
 @Entity('messages')
 export class Message {
@@ -16,7 +17,14 @@ export class Message {
     @Column('text')
     content: string;
 
-    @OneToMany(() => FileEntity, (file) => file.assignment, { cascade: true, nullable: true })
+    @Column({ type: 'uuid', nullable: true })
+    mentionedUserId: string | null;
+
+    @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+    @JoinColumn({ name: 'mentionedUserId', referencedColumnName: 'id' })
+    mentionedUser: User | null;
+
+    @OneToMany(() => FileEntity, (file) => file.message, { cascade: true, nullable: true })
     files: FileEntity[];
 
     @CreateDateColumn()

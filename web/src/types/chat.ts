@@ -1,5 +1,14 @@
 import { User } from "./user";
 
+export interface IChatFile {
+    id: string;
+    name: string;
+    url: string;
+    mimetype: string;
+    size: number;
+    createdAt: Date | string;
+}
+
 export interface IChatRoom {
     id: string;
     type: string;
@@ -13,6 +22,9 @@ export interface IChatMessage {
     roomId: string;
     senderId: string;
     content: string;
+    mentionedUserId?: string | null;
+    mentionedUser?: Pick<User, "id" | "name" | "avatarUrl"> | null;
+    files?: IChatFile[];
     createdAt: Date | string;
 }
 
