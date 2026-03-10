@@ -99,3 +99,7 @@ typings/
 
 # dist directory
 /dist
+
+#livekit
+livekit/livekit-server.exe
+livekit/livekit-server

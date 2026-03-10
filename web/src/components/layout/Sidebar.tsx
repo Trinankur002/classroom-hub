@@ -10,7 +10,8 @@ import {
   GraduationCap,
   Menu,
   ChevronRight,
-  NotebookPen
+  NotebookPen,
+  TvMinimalPlay
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ export function Sidebar({ open, onOpenChange, user, userRole }: SidebarProps) {
       { name: "Dashboard", href: "/dashboard", icon: Home },
       { name: "Classes", href: "/classrooms", icon: Users },
       // { name: "All Assignments", href: "/allassignments", icon: BookOpen },
+      { name: "Live Class", href: "/live-class", icon: TvMinimalPlay },
       // { name: "Chat", href: "/chat", icon: MessageCircle },
       { name: "Settings", href: "/settings", icon: Settings },
     ];
