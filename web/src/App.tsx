@@ -22,7 +22,8 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PublicRoute from "./components/auth/PublicRoute";
 import Class from "./pages/Class";
 import AllNotesPage from "./pages/AllNotesPage";
-import LiveClassTest from "./pages/LiveClassTest";
+import ClassroomLivePage from "./pages/ClassroomLivePage";
+import LiveClassPage from "./pages/LiveClassPage";
 
 const queryClient = new QueryClient();
 
@@ -56,7 +57,8 @@ const App = () => (
                 <Route path="allassignments" element={<AllAssignments />} />
                 <Route path="notes" element = {<AllNotesPage/>} />
                 <Route path="settings" element={<Settings />} />
-                <Route path="live-class" element={<LiveClassTest />} />
+                <Route path="live-class" element={<LiveClassPage />} />
+                <Route path="classrooms/:classroomId/live" element={<ClassroomLivePage />} />
               </Route>
             </Route>
 

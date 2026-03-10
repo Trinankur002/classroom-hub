@@ -6,10 +6,22 @@ import { LiveSessionService } from './services/live-session.service';
 import { LivekitService } from './services/livekit.service';
 import { LiveSessionController } from './live-session.controller';
 import { LiveSessionGateway } from './live-session.gateway';
+import { Classroom } from 'src/classrooms/entities/classroom.entity';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 
 @Module({
-    imports: [TypeOrmModule.forFeature([LiveSession, ParticipantSession])],
+    imports: [
+        TypeOrmModule.forFeature([LiveSession, ParticipantSession, Classroom]),
+        JwtModule.registerAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: async (configService: ConfigService) => ({
+                secret: configService.get<string>('JWT_SECRET'),
+            }),
+        }),
+    ],
     controllers: [LiveSessionController],
     providers: [LiveSessionService, LivekitService, LiveSessionGateway],
 })

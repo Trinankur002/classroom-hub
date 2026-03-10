@@ -1,3 +1,15 @@
+import { IsBoolean, IsOptional } from 'class-validator';
+
 export class StartLiveSessionDto {
-    classroomId: string;
+    @IsOptional()
+    @IsBoolean()
+    allowStudentMicrophone?: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    allowStudentCamera?: boolean;
+
+    @IsOptional()
+    @IsBoolean()
+    allowStudentScreenShare?: boolean;
 }

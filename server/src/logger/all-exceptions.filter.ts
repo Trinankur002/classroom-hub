@@ -27,8 +27,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
                 ? exception.getResponse()
                 : (exception as any).toString();
 
+        const normalizedMessage =
+            typeof message === 'string' ? message : JSON.stringify(message);
+
         this.logger.error(
-            `Error ${status} on ${request.method} ${request.url}: ${message}`,
+            `Error ${status} on ${request.method} ${request.url}: ${normalizedMessage}`,
         );
 
         response.status(status).json({

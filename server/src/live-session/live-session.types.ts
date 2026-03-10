@@ -9,3 +9,5 @@ export enum ParticipantStatus {
     APPROVED = 'approved',
     REJECTED = 'rejected',
 }
+
+export type ModerationAction = 'mute' | 'disable-camera' | 'allow-microphone';

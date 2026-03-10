@@ -39,6 +39,6 @@ export class ParticipantSession {
     @CreateDateColumn()
     joinedAt: Date;
 
-    @Column({ nullable: true })
-    leftAt: Date;
+    @Column({ type: 'timestamp', nullable: true })
+    leftAt: Date | null;
 }

@@ -1,5 +1,5 @@
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Home, Users, MessageCircle, Settings, BookOpen, NotebookPen } from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
+import { Home, Users, Settings, BookOpen, NotebookPen, TvMinimalPlay } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function BottomNav(
@@ -22,6 +22,7 @@ export function BottomNav(
     bottomNavItems = [
       { name: "Dashboard", href: "/dashboard", icon: Home },
       { name: "Classes", href: "/classrooms", icon: Users },
+      { name: "Live", href: "/live-class", icon: TvMinimalPlay },
       // { name: "All Assignments", href: "/allassignments", icon: BookOpen },
       // { name: "Chat", href: "/chat", icon: MessageCircle },
       { name: "Settings", href: "/settings", icon: Settings },

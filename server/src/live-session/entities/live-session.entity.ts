@@ -25,9 +25,18 @@ export class LiveSession {
     @Column({ default: false })
     isLocked: boolean;
 
+    @Column({ default: false })
+    allowStudentMicrophone: boolean;
+
+    @Column({ default: false })
+    allowStudentCamera: boolean;
+
+    @Column({ default: false })
+    allowStudentScreenShare: boolean;
+
     @CreateDateColumn()
     createdAt: Date;
 
-    @Column({ nullable: true })
-    endedAt: Date;
+    @Column({ type: 'timestamp', nullable: true })
+    endedAt: Date | null;
 }
