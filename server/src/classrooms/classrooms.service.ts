@@ -19,6 +19,11 @@ import { EventService } from 'src/event/event.service';
 import { EventType } from 'src/event/event.interface';
 import { ChatService } from 'src/chat/chat.service';
 import { ChatGateway } from 'src/chat/chat.gateway';
+import { Assignment } from 'src/assignments/assignment.entity';
+import { Doubts } from 'src/doubts/doubts.entity';
+import { LiveSession } from 'src/live-session/entities/live-session.entity';
+import { ChatRoom } from 'src/chat/entities/chat-room.entity';
+import { ChatParticipant } from 'src/chat/entities/chat-participant.entity';
 
 @Injectable()
 export class ClassroomsService {
@@ -31,6 +36,16 @@ export class ClassroomsService {
     private studentClassroomsRepository: Repository<StudentClassroom>,
     @InjectRepository(ClassroomAnnouncement)
     private classroomAnnouncementsRepository: Repository<ClassroomAnnouncement>,
+    @InjectRepository(Assignment)
+    private assignmentRepository: Repository<Assignment>,
+    @InjectRepository(Doubts)
+    private doubtsRepository: Repository<Doubts>,
+    @InjectRepository(LiveSession)
+    private liveSessionRepository: Repository<LiveSession>,
+    @InjectRepository(ChatRoom)
+    private chatRoomRepository: Repository<ChatRoom>,
+    @InjectRepository(ChatParticipant)
+    private chatParticipantRepository: Repository<ChatParticipant>,
     private fileService: FileService,
     private userService: UsersService,
     @Inject(forwardRef(() => EventService))
@@ -867,5 +882,226 @@ export class ClassroomsService {
     if (!membership) {
       throw new ForbiddenException('You are not authorized to access this classroom chat.');
     }
+  }
+
+  async getClassroomOverview(classroomId: string, user: User) {
+    const classroom = await this.getClassRoomdetails(classroomId, user);
+
+    const [recentAnnouncements, recentDoubts, activeLiveSession, chatRoom] = await Promise.all([
+      this.classroomAnnouncementsRepository.find({
+        where: { classroomId },
+        relations: ['files', 'teacher'],
+        order: { createdAt: 'DESC' },
+        take: 3,
+      }),
+      this.doubtsRepository.find({
+        where: { classroomId },
+        relations: ['student'],
+        order: { updatedAt: 'DESC' },
+        take: 3,
+      }),
+      this.liveSessionRepository.findOne({
+        where: {
+          classroomId,
+          isActive: true,
+        },
+        order: { createdAt: 'DESC' },
+      }),
+      this.chatRoomRepository.findOne({
+        where: {
+          classroomId,
+        },
+      }),
+    ]);
+
+    const announcementsCount = await this.classroomAnnouncementsRepository.count({
+      where: { classroomId },
+    });
+    const assignments = await this.classroomAnnouncementsRepository.find({
+      where: { classroomId, isAssignment: true },
+      order: { createdAt: 'DESC' },
+      take: 10,
+    });
+    const assignmentIds = assignments.map((assignment) => assignment.id);
+    const assignmentCount = assignments.length
+      ? await this.classroomAnnouncementsRepository.count({
+          where: { classroomId, isAssignment: true },
+        })
+      : 0;
+    const materialsCount = await this.classroomAnnouncementsRepository.count({
+      where: { classroomId, isNote: true },
+    });
+    const doubtsCount = await this.doubtsRepository.count({
+      where: { classroomId },
+    });
+    const submissions = assignmentIds.length
+      ? await this.assignmentRepository.find({
+          where: { announcementId: In(assignmentIds) },
+          select: ['announcementId', 'studentId'],
+        })
+      : [];
+
+    const chatParticipantCount = chatRoom
+      ? await this.chatParticipantRepository.count({
+          where: { roomId: chatRoom.id },
+        })
+      : 0;
+
+    const submissionCountByAnnouncement = submissions.reduce((acc, submission) => {
+      acc[submission.announcementId] = (acc[submission.announcementId] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const teacherPanel =
+      user.role === Role.Teacher
+        ? {
+            pendingAssignments: assignments
+              .map((assignment) => ({
+                id: assignment.id,
+                title: assignment.name,
+                dueDate: assignment.dueDate,
+                classroomId: assignment.classroomId,
+                submissionCount: submissionCountByAnnouncement[assignment.id] || 0,
+                pendingStudentsCount: Math.max(
+                  (classroom.studentCount || 0) - (submissionCountByAnnouncement[assignment.id] || 0),
+                  0,
+                ),
+                createdAt: assignment.createdAt,
+              }))
+              .filter((assignment) => assignment.pendingStudentsCount > 0)
+              .sort((a, b) => b.pendingStudentsCount - a.pendingStudentsCount)
+              .slice(0, 5),
+          }
+        : null;
+
+    const studentPanel =
+      user.role === Role.Student
+        ? {
+            pendingAssignments: await this.getStudentAssignmentsByStatus(classroomId, user, 'pending', 5),
+            missedAssignments: await this.getStudentAssignmentsByStatus(classroomId, user, 'missed', 5),
+            recentMaterials: (
+              await this.classroomAnnouncementsRepository.find({
+                where: { classroomId, isNote: true },
+                relations: ['files', 'teacher'],
+                order: { createdAt: 'DESC' },
+                take: 5,
+              })
+            ).map((announcement) => this.toAnnouncementPreview(announcement)),
+          }
+        : null;
+
+    return {
+      classroom,
+      counts: {
+        students: classroom.studentCount || 0,
+        announcements: announcementsCount,
+        assignments: assignmentCount,
+        doubts: doubtsCount,
+        materials: materialsCount,
+      },
+      activeLiveSession: activeLiveSession
+        ? {
+            sessionId: activeLiveSession.id,
+            classroomId: activeLiveSession.classroomId,
+            roomName: activeLiveSession.roomName,
+            isActive: activeLiveSession.isActive,
+          }
+        : null,
+      chat: chatRoom
+        ? {
+            roomId: chatRoom.id,
+            participantCount: chatParticipantCount,
+          }
+        : null,
+      recentAnnouncements: recentAnnouncements.map((announcement) =>
+        this.toAnnouncementPreview(announcement),
+      ),
+      recentAssignments: assignments.slice(0, 3).map((assignment) => ({
+        id: assignment.id,
+        title: assignment.name,
+        dueDate: assignment.dueDate,
+        createdAt: assignment.createdAt,
+        pendingStudentsCount: Math.max(
+          (classroom.studentCount || 0) - (submissionCountByAnnouncement[assignment.id] || 0),
+          0,
+        ),
+        submissionCount: submissionCountByAnnouncement[assignment.id] || 0,
+        isAssignment: true,
+      })),
+      recentDoubts: recentDoubts.map((doubt) => ({
+        id: doubt.id,
+        classroomId: doubt.classroomId,
+        doubtDescribtion: doubt.doubtDescribtion,
+        createdAt: doubt.createdAt,
+        updatedAt: doubt.updatedAt,
+        messageCount: doubt.messages?.length || 0,
+        student: doubt.student
+          ? {
+              id: doubt.student.id,
+              name: doubt.student.name,
+              avatarUrl: doubt.student.avatarUrl,
+            }
+          : null,
+      })),
+      teacherPanel,
+      studentPanel,
+    };
+  }
+
+  private async getStudentAssignmentsByStatus(
+    classroomId: string,
+    user: User,
+    status: 'pending' | 'missed',
+    limit: number,
+  ) {
+    const now = new Date();
+    const announcements = await this.classroomAnnouncementsRepository.find({
+      where: {
+        classroomId,
+        isAssignment: true,
+      },
+      relations: ['files', 'teacher'],
+      order: { dueDate: 'ASC', createdAt: 'DESC' },
+      take: 30,
+    });
+
+    const submissions = await this.assignmentRepository.find({
+      where: {
+        studentId: user.id,
+        announcementId: In(announcements.map((item) => item.id)),
+      },
+      select: ['announcementId'],
+    });
+    const submittedIds = new Set(submissions.map((item) => item.announcementId));
+
+    return announcements
+      .filter((announcement) => {
+        if (submittedIds.has(announcement.id)) {
+          return false;
+        }
+        if (!announcement.dueDate) {
+          return status === 'pending';
+        }
+        return status === 'pending'
+          ? new Date(announcement.dueDate) >= now
+          : new Date(announcement.dueDate) < now;
+      })
+      .slice(0, limit)
+      .map((announcement) => this.toAnnouncementPreview(announcement));
+  }
+
+  private toAnnouncementPreview(announcement: ClassroomAnnouncement) {
+    return {
+      id: announcement.id,
+      title: announcement.name,
+      description: announcement.description,
+      classroomId: announcement.classroomId,
+      dueDate: announcement.dueDate,
+      isAssignment: announcement.isAssignment,
+      isNote: announcement.isNote,
+      updatedAt: announcement.updatedAt,
+      createdAt: announcement.createdAt,
+      fileCount: announcement.files?.length || 0,
+    };
   }
 }

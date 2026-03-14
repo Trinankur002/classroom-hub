@@ -13,6 +13,7 @@ import { DoubtsModule } from './doubts/doubts.module';
 import { EventsModule } from './event/event.module';
 import { NotificationModule } from './notification/notification.module';
 import { LiveSessionModule } from './live-session/live-session.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { LiveSessionModule } from './live-session/live-session.module';
     DoubtsModule,
     EventsModule,
     LiveSessionModule,
+    DashboardModule,
     // NotificationModule
   ],
 

@@ -4,7 +4,6 @@ import ChatService from "@/services/chatService";
 import { getGlobalSocket } from "@/services/socketService";
 import { WEBSOCKET_EVENTS } from "@/constants/websocketEvents";
 import { IChatMessage, IChatParticipant, IChatRoom } from "@/types/chat";
-import { MessageCircle } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ClassroomChatComposer from "./ClassroomChatComposer";
@@ -146,7 +145,7 @@ function ClassroomChat({ classroomId }: Props) {
     }, [messages]);
 
     const loadChat = useCallback(async () => {
-        if (!classroomId || userRole !== "student") return;
+        if (!classroomId || !userRole) return;
 
         setIsLoading(true);
         try {
@@ -246,12 +245,12 @@ function ClassroomChat({ classroomId }: Props) {
     }, [mentionedUserId, messageInput, moveToDashboard, pendingFiles, room?.id, token]);
 
     useEffect(() => {
-        if (userRole !== "student") return;
+        if (!userRole) return;
         loadChat();
     }, [loadChat, userRole]);
 
     useEffect(() => {
-        if (!room?.id || userRole !== "student") return;
+        if (!room?.id || !userRole) return;
 
         const socket = getGlobalSocket(token);
         if (!socket.connected) {
@@ -304,22 +303,6 @@ function ClassroomChat({ classroomId }: Props) {
             socket.off(WEBSOCKET_EVENTS.CHAT_ERROR, onChatError);
         };
     }, [appendUniqueMessages, classroomId, moveToDashboard, room?.id, scrollToBottom, token, userRole]);
-
-    if (userRole !== "student") {
-        return (
-            <Card className="p-12 text-center">
-                <div className="space-y-4">
-                    <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto" />
-                    <div>
-                        <h3 className="text-lg font-semibold text-foreground">Student Chat Only</h3>
-                        <p className="text-muted-foreground">
-                            Teachers use announcements and doubt responses in this classroom.
-                        </p>
-                    </div>
-                </div>
-            </Card>
-        );
-    }
 
     if (isLoading) {
         return (

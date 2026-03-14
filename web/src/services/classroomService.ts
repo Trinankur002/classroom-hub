@@ -1,4 +1,5 @@
 import { IClassroom } from "@/types/classroom";
+import { ClassroomOverview } from "@/types/classroomOverview";
 import api from "./api";
 import { AxiosResponse } from "axios";
 
@@ -35,6 +36,18 @@ class ClassroomService {
             console.error(`Error fetching classroom with ID ${id}:`, error);
             return {
                 data: {} as IClassroom,
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+            };
+        }
+    }
+
+    async getClassroomOverview(id: string): Promise<{ data?: ClassroomOverview; error?: string }> {
+        try {
+            const response = await api.get(`/classrooms/class/${id}/overview`);
+            return { data: response.data as ClassroomOverview };
+        } catch (error: any) {
+            console.error(`Error fetching classroom overview with ID ${id}:`, error);
+            return {
                 error: error?.response?.data?.message || error.message || "Something went wrong",
             };
         }

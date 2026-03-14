@@ -1,201 +1,418 @@
-import { Users, BookOpen, MessageCircle, TrendingUp } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  AlertCircle,
+  BookOpen,
+  BookText,
+  GraduationCap,
+  MessageCircleQuestion,
+  PlayCircle,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import ClassroomButton from "@/components/customComponent/ClassroomButton";
 import { DashboardCard } from "@/components/dashboard/DashboardCard";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ClassroomButton from "@/components/customComponent/ClassroomButton";
-import { useAuth } from "@/hooks/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { useCallback, useEffect, useState } from "react";
-import EventService from '@/services/eventService';
-import { IEvent } from "@/types/event";
-import { toast } from "@/hooks/use-toast";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/hooks/AuthContext";
+import { toast } from "@/hooks/use-toast";
+import DashboardService from "@/services/dashboardService";
+import { DashboardFeed, DashboardSummary } from "@/types/dashboard";
+
+function formatDate(value?: string | null) {
+  if (!value) return "No date";
+  return new Date(value).toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+  });
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const userRole = user.role.toString().toLowerCase();
-  const [mentions, setMentions] = useState<IEvent[]>([]);
-  const [assignments, setAssignments] = useState<IEvent[]>([]);
-  const [doubts, setDoubts] = useState<IEvent[]>([]);
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [feed, setFeed] = useState<DashboardFeed | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const [mentionsLoading, setMentionsLoading] = useState(false);
-  const [assignmentsLoading, setAssignmentsLoading] = useState(false);
-  const [doubtsLoading, setDoubtsLoading] = useState(false);
-
-  const getMentions = useCallback(async () => {
-    setMentionsLoading(true);
+  const loadDashboard = useCallback(async () => {
+    setLoading(true);
     try {
-      const { data, error } = await EventService.getNewMentionEvents();
-      if (error) {
-        toast({
-          title: "Failed to load recent mentions",
-          description: "Something went wrong",
-          variant: "destructive",
-        });
-        return;
-      }
-      setMentions(data || []);
-    } catch (err) {
-      console.error("getMentions error:", err);
-    } finally {
-      setMentionsLoading(false);
-    }
-  }, []);
+      const [summaryResponse, feedResponse] = await Promise.all([
+        DashboardService.getSummary(),
+        DashboardService.getFeed(),
+      ]);
 
-  const getAssignments = useCallback(async () => {
-    setAssignmentsLoading(true);
-    try {
-      const { data, error } = await EventService.getNewAssignmentEvents();
-      if (error) {
-        toast({
-          title: "Failed to load recent assignments",
-          description: "Something went wrong",
-          variant: "destructive",
-        });
-        return;
+      if (summaryResponse.error) {
+        throw new Error(summaryResponse.error);
       }
-      setAssignments(data || []);
-    } catch (err) {
-      console.error("getAssignments error:", err);
-    } finally {
-      setAssignmentsLoading(false);
-    }
-  }, []);
+      if (feedResponse.error) {
+        throw new Error(feedResponse.error);
+      }
 
-  const getDoubts = useCallback(async () => {
-    setDoubtsLoading(true);
-    try {
-      const { data, error } = await EventService.getNewDoubtsEventsForTeacher();
-      if (error) {
-        toast({
-          title: "Failed to load recent doubts",
-          description: "Something went wrong",
-          variant: "destructive",
-        });
-        return;
-      }
-      setDoubts(data || []);
-    } catch (err) {
-      console.error("getDoubts error:", err);
+      setSummary(summaryResponse.data || null);
+      setFeed(feedResponse.data || null);
+    } catch (error) {
+      toast({
+        title: "Failed to load dashboard",
+        description: String(error),
+        variant: "destructive",
+      });
     } finally {
-      setDoubtsLoading(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    getMentions();
+    loadDashboard();
+  }, [loadDashboard]);
 
-    if (userRole === "student") {
-      getAssignments();
-    }
-
-    if (userRole === "teacher") {
-      getDoubts();
-    }
-  }, [userRole, getMentions, getAssignments, getDoubts]);
+  const cards =
+    userRole === "teacher"
+      ? [
+          {
+            title: "Classrooms",
+            value: summary?.stats.totalClassrooms || 0,
+            icon: <GraduationCap className="h-5 w-5" />,
+            description: "Classes currently managed by you",
+          },
+          {
+            title: "Students",
+            value: summary?.stats.totalStudents || 0,
+            icon: <Users className="h-5 w-5" />,
+            description: "Total enrolled students across your classes",
+          },
+          {
+            title: "New Doubts",
+            value: summary?.stats.newDoubts || 0,
+            icon: <MessageCircleQuestion className="h-5 w-5" />,
+            description: "Student questions needing attention",
+          },
+          {
+            title: "Live Sessions",
+            value: summary?.stats.activeLiveSession || 0,
+            icon: <PlayCircle className="h-5 w-5" />,
+            description: "Active live sessions right now",
+          },
+        ]
+      : [
+          {
+            title: "Enrolled Classes",
+            value: summary?.stats.enrolledClasses || 0,
+            icon: <GraduationCap className="h-5 w-5" />,
+            description: "Classes you are currently enrolled in",
+          },
+          {
+            title: "Pending Work",
+            value: summary?.stats.pendingAssignments || 0,
+            icon: <BookOpen className="h-5 w-5" />,
+            description: "Assignments still waiting for submission",
+          },
+          {
+            title: "Missed Work",
+            value: summary?.stats.missedAssignments || 0,
+            icon: <AlertCircle className="h-5 w-5" />,
+            description: "Assignments past due date",
+          },
+          {
+            title: "Live Classes",
+            value: summary?.stats.activeLiveClasses || 0,
+            icon: <PlayCircle className="h-5 w-5" />,
+            description: "Active live sessions available to join",
+          },
+        ];
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">
-            {`Hello ${user.name.split(" ")[0]} 👋`}
-          </h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-3xl font-bold text-foreground">{`Hello ${user.name.split(" ")[0]} 👋`}</h1>
+          <p className="mt-1 text-muted-foreground">
             {userRole === "teacher"
-              ? "Ready to inspire your students today?"
-              : "Let's check your progress and assignments"
-            }
+              ? "Your classroom workspace for priorities, activity, and live teaching."
+              : "Your study workspace for deadlines, materials, and live classes."}
           </p>
         </div>
 
-        <ClassroomButton userRole={userRole} />
+        <div className="flex flex-wrap gap-3">
+          <ClassroomButton userRole={userRole} />
+          {userRole === "student" && (
+            <>
+              <Button variant="outline" onClick={() => navigate("/allmaterials/assignments")}>
+                All assignments
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/allmaterials/notes")}>
+                Materials
+              </Button>
+            </>
+          )}
+          {userRole === "teacher" && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  summary?.shortcuts?.busiestClassroom &&
+                  navigate(`/classrooms/${summary.shortcuts.busiestClassroom.id}`, {
+                    state: { activeTab: "students" },
+                  })
+                }
+              >
+                Busiest class
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  summary?.shortcuts?.recentDoubtClassroom &&
+                  navigate(`/classrooms/${summary.shortcuts.recentDoubtClassroom.id}`, {
+                    state: { activeTab: "doubts" },
+                  })
+                }
+              >
+                Recent doubts
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Teacher recent doubts */}
-        {userRole === "teacher" && (
-          <Card className="animate-fade-in">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {loading && !summary
+          ? Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-32 rounded-2xl" />
+            ))
+          : cards.map((card) => <DashboardCard key={card.title} {...card} />)}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.45fr,1fr]">
+        <div className="space-y-6">
+          {userRole === "teacher" ? (
+            <>
+              <Card className="rounded-3xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-primary" />
+                    Needs attention
+                  </CardTitle>
+                  <CardDescription>Assignments, doubts, and classes that deserve action first.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {loading && !feed ? (
+                    Array.from({ length: 4 }).map((_, index) => (
+                      <Skeleton key={index} className="h-20 rounded-2xl" />
+                    ))
+                  ) : feed?.lists.needsAttention?.length ? (
+                    feed.lists.needsAttention.map((item) => (
+                      <button
+                        key={item.id}
+                        className="w-full rounded-2xl border border-border/70 bg-muted/20 p-4 text-left transition hover:border-primary/40"
+                        onClick={() =>
+                          item.classroomId &&
+                          navigate(`/classrooms/${item.classroomId}`, {
+                            state: {
+                              activeTab:
+                                item.type === "doubt"
+                                  ? "doubts"
+                                  : item.type === "assignment"
+                                    ? "updates"
+                                    : "announcements",
+                            },
+                          })
+                        }
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-medium text-foreground">{item.title || item.summary}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {item.classroomName || "Classroom"}
+                              {item.pendingCount ? ` · ${item.pendingCount} pending` : ""}
+                              {item.studentName ? ` · ${item.studentName}` : ""}
+                            </p>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{formatDate(item.createdAt)}</span>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nothing urgent right now.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-3xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Recent classroom activity
+                  </CardTitle>
+                  <CardDescription>Latest signals across your classrooms.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {feed?.lists.recentActivity?.length ? (
+                    feed.lists.recentActivity.map((item) => (
+                      <div key={item.id} className="rounded-2xl border border-border/70 p-4">
+                        <p className="font-medium text-foreground">{item.summary}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {item.classroomName} · {formatDate(item.createdAt)}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No recent activity to show yet.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <>
+              <Card className="rounded-3xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    Due soon
+                  </CardTitle>
+                  <CardDescription>Your nearest deadlines across classrooms.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {feed?.lists.dueSoon?.length ? (
+                    feed.lists.dueSoon.map((item) => (
+                      <button
+                        key={item.id}
+                        className="w-full rounded-2xl border border-border/70 p-4 text-left transition hover:border-primary/40"
+                        onClick={() => navigate("/allmaterials/assignments")}
+                      >
+                        <p className="font-medium text-foreground">{item.title}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Due {formatDate(item.dueDate)}
+                        </p>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No pending deadlines right now.</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-3xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-primary" />
+                    Missed work
+                  </CardTitle>
+                  <CardDescription>Assignments that need recovery.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {feed?.lists.missedWork?.length ? (
+                    feed.lists.missedWork.map((item) => (
+                      <div key={item.id} className="rounded-2xl border border-border/70 p-4">
+                        <p className="font-medium text-foreground">{item.title}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Missed on {formatDate(item.dueDate)}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No missed assignments.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <Card className="rounded-3xl">
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <MessageCircle className="h-5 w-5 text-primary" />
-                <span>Recent Activity</span>
+              <CardTitle className="flex items-center gap-2">
+                <PlayCircle className="h-5 w-5 text-primary" />
+                Live class status
               </CardTitle>
+              <CardDescription>
+                {userRole === "teacher" ? "Your current live teaching state." : "Live sessions you can join."}
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {doubtsLoading ? (
-                <Skeleton className="w-full h-6 rounded-md" />
-              ) : (
-                <div
-                  className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors duration-200"
-                >
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">
-                      {`${doubts.length} New recent doubts from students`}
+            <CardContent className="space-y-3">
+              {feed?.lists.activeLiveClasses?.length ? (
+                feed.lists.activeLiveClasses.map((item) => (
+                  <button
+                    key={item.sessionId || item.id}
+                    className="w-full rounded-2xl border border-border/70 p-4 text-left transition hover:border-primary/40"
+                    onClick={() =>
+                      item.classroomId && navigate(`/classrooms/${item.classroomId}/live`)
+                    }
+                  >
+                    <p className="font-medium text-foreground">
+                      {item.classroomName || "Active live classroom"}
                     </p>
-                  </div>
-                </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {userRole === "teacher" ? "Resume session controls" : "Join now"}
+                    </p>
+                  </button>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {userRole === "teacher"
+                    ? "No live class is active right now."
+                    : "No live classes available right now."}
+                </p>
               )}
             </CardContent>
           </Card>
-        )}
 
-        {/* Student assignments */}
-        {userRole === "student" && (
-          <Card className="animate-fade-in">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                <span>Assignments</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {assignmentsLoading ? (
-                <Skeleton className="w-full h-6 rounded-md" />
-              ) : (
-                <div
-                  className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors duration-200"
-                >
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">
-                      {`${assignments.length} recent assignments`}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+          {userRole === "student" && (
+            <>
+              <Card className="rounded-3xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BookText className="h-5 w-5 text-primary" />
+                    Recent materials
+                  </CardTitle>
+                  <CardDescription>Latest study notes and files added for your classes.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {feed?.lists.recentMaterials?.length ? (
+                    feed.lists.recentMaterials.map((item) => (
+                      <button
+                        key={item.id}
+                        className="block w-full rounded-2xl border border-border/70 p-4 text-left transition hover:border-primary/40"
+                        onClick={() => navigate("/allmaterials/notes")}
+                      >
+                        <p className="font-medium text-foreground">{item.title}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Added {formatDate(item.createdAt)}
+                        </p>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No recent materials yet.</p>
+                  )}
+                </CardContent>
+              </Card>
 
-        {/* Mentions card (visible to all roles) */}
-        <Card className="animate-fade-in">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="h-5 w-5 text-primary" />
-              <span>Mentions</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {mentionsLoading ? (
-              <Skeleton className="w-full h-6 rounded-md" />
-            ) : (
-              <div
-                className="flex items-start space-x-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors duration-200"
-              >
-                <div className="w-2 h-2 rounded-full bg-primary mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">
-                    {`${mentions.length} recent mentions`}
-                  </p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              <Card className="rounded-3xl">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Recent mentions
+                  </CardTitle>
+                  <CardDescription>Discussion activity that directly references you.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {feed?.lists.recentMentions?.length ? (
+                    feed.lists.recentMentions.map((item) => (
+                      <div key={item.id} className="rounded-2xl border border-border/70 p-4">
+                        <p className="font-medium text-foreground">{item.summary}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{formatDate(item.createdAt)}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No recent mentions.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

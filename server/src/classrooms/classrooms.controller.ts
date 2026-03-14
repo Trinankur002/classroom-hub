@@ -59,6 +59,14 @@ export class ClassroomsController {
     return this.classroomsService.findAllForUser(req.user);
   }
 
+  @Get('class/:id/overview')
+  async getClassroomOverview(
+    @Param('id') classroomId: string,
+    @Request() req,
+  ) {
+    return this.classroomsService.getClassroomOverview(classroomId, req.user);
+  }
+
   @Get('class/:id')
   @ApiOperation({ summary: 'Get classroom details by ID' })
   @ApiParam({ name: 'id', description: 'Classroom ID (UUID)' })
