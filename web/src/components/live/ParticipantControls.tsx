@@ -1,18 +1,67 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Mic, MicOff, MonitorUp, PhoneOff, Video, VideoOff } from "lucide-react";
-import { useLiveRoom } from "./LiveRoomProvider";
-import { LiveClassPermissions } from "@/types/live-session";
+import { ReactNode, useState } from "react";
 import { Track } from "livekit-client";
+import { Hand, Mic, MicOff, MonitorUp, PhoneOff, Video, VideoOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { LiveClassPermissions } from "@/types/live-session";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useLiveRoom } from "./LiveRoomProvider";
 
 interface ParticipantControlsProps {
   isTeacher: boolean;
   permissions: LiveClassPermissions;
+  isHandRaised?: boolean;
+  compactMode?: boolean;
+  onRaiseHand?: () => Promise<void>;
+  onLowerHand?: () => Promise<void>;
   onLeave: () => void;
+  onEndSession?: () => Promise<void>;
 }
 
-export function ParticipantControls({ isTeacher, permissions, onLeave }: ParticipantControlsProps) {
+interface ControlButtonProps {
+  active?: boolean;
+  destructive?: boolean;
+  disabled?: boolean;
+  onClick: () => Promise<void> | void;
+  icon: ReactNode;
+  label: string;
+  compactMode?: boolean;
+}
+
+function ControlButton({ active, destructive, disabled, onClick, icon, label, compactMode = false }: ControlButtonProps) {
+  return (
+    <Button
+      type="button"
+      size="icon"
+      variant="outline"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        compactMode ? "h-10 w-10" : "h-12 w-12",
+        "rounded-full border-border/80 bg-background/80 text-foreground shadow-sm transition hover:bg-accent",
+        active && "border-primary/30 bg-primary text-primary-foreground hover:bg-primary/90",
+        destructive && "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90",
+      )}
+      title={label}
+      aria-label={label}
+    >
+      {icon}
+    </Button>
+  );
+}
+
+export function ParticipantControls({
+  isTeacher,
+  permissions,
+  isHandRaised = false,
+  compactMode = false,
+  onRaiseHand,
+  onLowerHand,
+  onLeave,
+  onEndSession,
+}: ParticipantControlsProps) {
+  const isMobile = useIsMobile();
   const {
     localParticipant,
     enableCamera,
@@ -30,10 +79,8 @@ export function ParticipantControls({ isTeacher, permissions, onLeave }: Partici
 
   const micPublication =
     publications.find((publication) => publication.source === Track.Source.Microphone) || null;
-
   const cameraPublication =
     publications.find((publication) => publication.source === Track.Source.Camera) || null;
-
   const screenSharePublication =
     publications.find((publication) => publication.source === Track.Source.ScreenShare) || null;
 
@@ -52,81 +99,96 @@ export function ParticipantControls({ isTeacher, permissions, onLeave }: Partici
     });
   };
 
+  const runControl = async (control: string, action: () => Promise<void>) => {
+    setIsSubmitting(true);
+    try {
+      await action();
+    } catch (error) {
+      withControlError(error, control);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
-      <Button
-        variant="outline"
-        className={isMicEnabled
-          ? "border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-500 hover:text-white"
-          : "border-input bg-background text-foreground hover:bg-background hover:text-foreground"}
-        disabled={!localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentMicrophone)}
-        onClick={async () => {
-          setIsSubmitting(true);
-          try {
-            if (isMicEnabled) await disableMicrophone();
-            else await enableMicrophone();
-          } catch (error) {
-            withControlError(error, "Microphone");
-          } finally {
-            setIsSubmitting(false);
-          }
-        }}
+    <div
+      className={cn(
+        "pointer-events-auto fixed inset-x-0 z-30 flex justify-center px-2 sm:px-4",
+        isMobile ? "bottom-20" : compactMode ? "bottom-3" : "bottom-4",
+      )}
+      style={isMobile ? { paddingBottom: "env(safe-area-inset-bottom)" } : undefined}
+    >
+      <div
+        className={cn(
+          "flex items-center rounded-full border border-border/70 bg-card/95 shadow-lg backdrop-blur",
+          isMobile ? "max-w-[calc(100vw-1rem)] gap-1 overflow-x-auto px-2 py-1.5" : compactMode ? "gap-2 px-2.5 py-1.5" : "gap-2 px-3 py-2",
+        )}
       >
-        {isMicEnabled ? <Mic className="mr-2 h-4 w-4" /> : <MicOff className="mr-2 h-4 w-4" />}
-        {isMicEnabled ? "Mic On" : "Mic Off"}
-      </Button>
+        <ControlButton
+          active={isMicEnabled}
+          disabled={!localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentMicrophone)}
+          onClick={() => runControl("Microphone", () => (isMicEnabled ? disableMicrophone() : enableMicrophone()))}
+          icon={isMicEnabled ? <Mic className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} /> : <MicOff className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
+          label={isMicEnabled ? "Turn microphone off" : "Turn microphone on"}
+          compactMode={compactMode || isMobile}
+        />
 
-      <Button
-        variant="outline"
-        className={isCameraEnabled
-          ? "border-sky-500 bg-sky-500 text-white hover:bg-sky-500 hover:text-white"
-          : "border-input bg-background text-foreground hover:bg-background hover:text-foreground"}
-        disabled={!localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentCamera)}
-        onClick={async () => {
-          setIsSubmitting(true);
-          try {
-            if (isCameraEnabled) await disableCamera();
-            else await enableCamera();
-          } catch (error) {
-            withControlError(error, "Camera");
-          } finally {
-            setIsSubmitting(false);
-          }
-        }}
-      >
-        {isCameraEnabled ? <Video className="mr-2 h-4 w-4" /> : <VideoOff className="mr-2 h-4 w-4" />}
-        {isCameraEnabled ? "Camera On" : "Camera Off"}
-      </Button>
+        <ControlButton
+          active={isCameraEnabled}
+          disabled={!localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentCamera)}
+          onClick={() => runControl("Camera", () => (isCameraEnabled ? disableCamera() : enableCamera()))}
+          icon={isCameraEnabled ? <Video className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} /> : <VideoOff className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
+          label={isCameraEnabled ? "Turn camera off" : "Turn camera on"}
+          compactMode={compactMode || isMobile}
+        />
 
-      <Button
-        variant="outline"
-        className={isScreenSharing
-          ? "border-amber-500 bg-amber-500 text-white hover:bg-amber-500 hover:text-white"
-          : "border-input bg-background text-foreground hover:bg-background hover:text-foreground"}
-        disabled={!localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentScreenShare)}
-        onClick={async () => {
-          setIsSubmitting(true);
-          try {
-            if (isScreenSharing) {
-              await stopScreenShare();
-            } else {
-              await startScreenShare();
-            }
-          } catch (error) {
-            withControlError(error, "Screen sharing");
-          } finally {
-            setIsSubmitting(false);
-          }
-        }}
-      >
-        <MonitorUp className="mr-2 h-4 w-4" />
-        {isScreenSharing ? "Stop Share" : "Share Screen"}
-      </Button>
+        {!isTeacher && (
+          <ControlButton
+            active={isHandRaised}
+            disabled={isSubmitting}
+            onClick={() => runControl("Raise hand", async () => {
+              if (isHandRaised) {
+                await onLowerHand?.();
+              } else {
+                await onRaiseHand?.();
+              }
+            })}
+            icon={<Hand className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
+            label={isHandRaised ? "Lower hand" : "Raise hand"}
+            compactMode={compactMode || isMobile}
+          />
+        )}
 
-      <Button variant="destructive" onClick={onLeave}>
-        <PhoneOff className="mr-2 h-4 w-4" />
-        Leave
-      </Button>
+        <ControlButton
+          active={isScreenSharing}
+          disabled={!localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentScreenShare)}
+          onClick={() => runControl("Screen sharing", () => (isScreenSharing ? stopScreenShare() : startScreenShare()))}
+          icon={<MonitorUp className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
+          label={isScreenSharing ? "Stop sharing screen" : "Share screen"}
+          compactMode={compactMode || isMobile}
+        />
+
+        {isTeacher && onEndSession && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={() => runControl("End session", onEndSession)}
+            className={cn("shrink-0 rounded-full border-border/80 bg-background/80 shadow-sm", isMobile ? "px-3 py-2 text-xs" : compactMode ? "px-3 py-2 text-xs" : "px-4 text-sm")}
+          >
+            {isMobile ? "End" : "End session"}
+          </Button>
+        )}
+
+        <ControlButton
+          destructive
+          disabled={isSubmitting}
+          onClick={onLeave}
+          icon={<PhoneOff className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
+          label={isTeacher ? "Leave room" : "Leave class"}
+          compactMode={compactMode || isMobile}
+        />
+      </div>
     </div>
   );
 }

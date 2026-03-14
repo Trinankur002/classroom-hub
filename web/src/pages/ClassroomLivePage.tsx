@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { RoomEvent } from "livekit-client";
+import { Participant, RoomEvent, Track } from "livekit-client";
+import { PanelRight } from "lucide-react";
 import { LiveRoomProvider, useLiveRoom } from "@/components/live/LiveRoomProvider";
 import { useLiveSession } from "@/hooks/useLiveSession";
 import { Button } from "@/components/ui/button";
 import { ScreenShareView } from "@/components/live/ScreenShareView";
 import { MeetingLayoutMode, VideoGrid } from "@/components/live/VideoGrid";
 import { ParticipantControls } from "@/components/live/ParticipantControls";
-import { WaitingRoomPanel } from "@/components/live/WaitingRoomPanel";
-import { RaiseHandQueue } from "@/components/live/RaiseHandQueue";
-import { TeacherControls } from "@/components/live/TeacherControls";
-import { useActiveSpeaker } from "@/hooks/useActiveSpeaker";
+import { ParticipantSidebar } from "@/components/live/ParticipantSidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { liveSessionSocketService } from "@/services/live-session.socket.service";
 import { WEBSOCKET_EVENTS } from "@/constants/websocketEvents";
 import { LiveClassPermissions, LiveParticipant, LiveSession, TokenResponse } from "@/types/live-session";
 import ClassroomService from "@/services/classroomService";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { LiveSessionApi } from "@/services/live-session.api";
 import ClassroomAnnouncementService from "@/services/classroomAnnouncementService";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ClassroomLivePageProps {
   classroomId?: string;
@@ -28,6 +28,7 @@ interface ClassroomLivePageProps {
 }
 
 type StudentLiveState = "checking-session" | "no-session" | "session-active" | "waiting-approval" | "connecting" | "connected";
+type SidebarView = "participants" | "chat" | "hands";
 
 function useClassroomName(classroomId?: string) {
   const [classroomName, setClassroomName] = useState("Live Classroom");
@@ -50,14 +51,23 @@ function useClassroomName(classroomId?: string) {
   return classroomName;
 }
 
+function findScreenShareParticipant(participants: Participant[]) {
+  return participants.find((participant) =>
+    Array.from(participant.trackPublications.values()).some(
+      (publication) => publication.source === Track.Source.ScreenShare && publication.track && !publication.isMuted,
+    ),
+  ) ?? null;
+}
+
 function LiveRoomContent({
+  classroomId,
   sessionId,
   isTeacher,
   permissions,
   classroomName,
   participantNameMap,
-  layoutMode,
-  onLayoutModeChange,
+  participantRoleMap,
+  teacherIdentity,
   onRaiseHand,
   onLowerHand,
   onEndSession,
@@ -68,13 +78,14 @@ function LiveRoomContent({
   onModerateParticipant,
   onLeavePage,
 }: {
+  classroomId?: string;
   sessionId: string;
   isTeacher: boolean;
   permissions: LiveClassPermissions;
   classroomName: string;
   participantNameMap?: Record<string, string>;
-  layoutMode: MeetingLayoutMode;
-  onLayoutModeChange: (mode: MeetingLayoutMode) => void;
+  participantRoleMap?: Record<string, string>;
+  teacherIdentity?: string;
   onRaiseHand: (sessionId: string) => Promise<void>;
   onLowerHand: (sessionId: string, userId?: string) => Promise<void>;
   onEndSession: (sessionId: string) => Promise<void>;
@@ -87,7 +98,9 @@ function LiveRoomContent({
 }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const {
+    room,
     participants,
     localParticipant,
     activeSpeaker,
@@ -99,11 +112,89 @@ function LiveRoomContent({
     disconnect,
   } = useLiveRoom();
 
-  const activeOrPinned = useActiveSpeaker(activeSpeaker, participants, screenShareTrack);
+  const [sidebarView, setSidebarView] = useState<SidebarView>("participants");
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [pinnedParticipantId, setPinnedParticipantId] = useState<string | null>(null);
+  const [eventSpeakerId, setEventSpeakerId] = useState<string | null>(null);
+  const [isHandRaised, setIsHandRaised] = useState(false);
+  const stageSignalsBound = useRef(false);
+
   const allParticipants = useMemo(() => {
     if (!localParticipant) return participants;
     return [localParticipant, ...participants];
   }, [localParticipant, participants]);
+
+  const teacherParticipant = useMemo(() => {
+    if (!teacherIdentity) return allParticipants.find((participant) => participant.isLocal) ?? allParticipants[0] ?? null;
+    return allParticipants.find((participant) => participant.identity === teacherIdentity) ?? allParticipants[0] ?? null;
+  }, [allParticipants, teacherIdentity]);
+
+  const raisedHandIds = useMemo(() => {
+    const ids = new Set(raisedHands.map((participant) => participant.userId));
+    if (isHandRaised && user?.id) {
+      ids.add(user.id);
+    }
+    return ids;
+  }, [isHandRaised, raisedHands, user?.id]);
+
+  const screenShareParticipant = useMemo(() => findScreenShareParticipant(allParticipants), [allParticipants]);
+  const effectiveActiveSpeakerId = activeSpeaker?.identity || eventSpeakerId || undefined;
+  const isScreenSharing = !!screenShareTrack;
+
+  const stageParticipant = useMemo(() => {
+    if (screenShareParticipant) return screenShareParticipant;
+    if (pinnedParticipantId) {
+      const pinned = allParticipants.find((participant) => participant.identity === pinnedParticipantId);
+      if (pinned) return pinned;
+    }
+    if (effectiveActiveSpeakerId) {
+      const speaker = allParticipants.find((participant) => participant.identity === effectiveActiveSpeakerId);
+      if (speaker) return speaker;
+    }
+    return teacherParticipant;
+  }, [allParticipants, effectiveActiveSpeakerId, pinnedParticipantId, screenShareParticipant, teacherParticipant]);
+
+  const layoutMode: MeetingLayoutMode = useMemo(() => {
+    if (isScreenSharing) return "screen-share";
+    if (allParticipants.length <= 4 && !effectiveActiveSpeakerId && !pinnedParticipantId) {
+      return "grid";
+    }
+    return "stage";
+  }, [allParticipants.length, effectiveActiveSpeakerId, isScreenSharing, pinnedParticipantId]);
+  const isCompactPinnedMode = !!pinnedParticipantId && layoutMode !== "grid";
+
+  useEffect(() => {
+    setSidebarOpen(!isMobile);
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!room || stageSignalsBound.current) return;
+
+    const syncStageSignals = () => {
+      setEventSpeakerId(room.activeSpeakers[0]?.identity || null);
+    };
+
+    syncStageSignals();
+    room.on(RoomEvent.ActiveSpeakersChanged, syncStageSignals);
+    room.on(RoomEvent.TrackSubscribed, syncStageSignals);
+    room.on(RoomEvent.TrackUnsubscribed, syncStageSignals);
+    stageSignalsBound.current = true;
+
+    return () => {
+      room.off(RoomEvent.ActiveSpeakersChanged, syncStageSignals);
+      room.off(RoomEvent.TrackSubscribed, syncStageSignals);
+      room.off(RoomEvent.TrackUnsubscribed, syncStageSignals);
+      stageSignalsBound.current = false;
+    };
+  }, [room]);
+
+  useEffect(() => {
+    if (!pinnedParticipantId) return;
+    const stillPresent = allParticipants.some((participant) => participant.identity === pinnedParticipantId);
+    if (!stillPresent) {
+      setPinnedParticipantId(null);
+    }
+  }, [allParticipants, pinnedParticipantId]);
 
   useEffect(() => {
     const onModerationCommand = async (payload: Record<string, unknown>) => {
@@ -135,99 +226,118 @@ function LiveRoomContent({
     navigate(-1);
   };
 
+  const sidebarContent = (
+    <ParticipantSidebar
+      classroomId={classroomId}
+      view={sidebarView}
+      onViewChange={setSidebarView}
+      connectedParticipants={allParticipants}
+      participantNameMap={participantNameMap}
+      participantRoleMap={participantRoleMap}
+      raisedHands={raisedHands}
+      waitingParticipants={waitingParticipants}
+      sessionId={sessionId}
+      isTeacher={isTeacher}
+      teacherIdentity={teacherIdentity}
+      onApproveParticipant={onApproveParticipant}
+      onRemoveParticipant={onRemoveParticipant}
+      onModerateParticipant={onModerateParticipant}
+      onLowerHand={onLowerHand}
+    />
+  );
+
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-xl font-semibold">{classroomName}</h1>
-          <p className="text-sm text-muted-foreground">Live classroom</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Select value={layoutMode} onValueChange={(value) => onLayoutModeChange(value as MeetingLayoutMode)}>
-            <SelectTrigger className="w-36">
-              <SelectValue placeholder="Layout" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="tiled">Tiled</SelectItem>
-              <SelectItem value="spotlight">Spotlight</SelectItem>
-              <SelectItem value="sidebar">Sidebar</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="rounded-md border border-border px-3 py-1 text-sm">
-            Connection: {connectionState}
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-gradient-to-br from-background via-background to-muted/30">
+      <div className={cn("flex items-center justify-between gap-3 border-b border-border/60", isCompactPinnedMode ? "px-3 py-1.5" : "px-4 py-2")}>
+        <div className="min-w-0 flex items-center gap-3 overflow-hidden">
+          <h1 className={cn("shrink-0 truncate font-semibold", isCompactPinnedMode ? "text-base" : "text-lg")}>{classroomName}</h1>
+          <div className={cn("flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap text-muted-foreground", isCompactPinnedMode ? "text-[11px]" : "text-xs")}>
+            <Badge variant="secondary" className={cn("shrink-0", isCompactPinnedMode && "px-2 py-0 text-[11px]")}>
+              {layoutMode === "grid" ? "Grid" : layoutMode === "stage" ? "Stage" : "Screen share"}
+            </Badge>
+            <span className="shrink-0">{allParticipants.length} in room</span>
+            <span className="truncate">Connection {connectionState}</span>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {isMobile ? (
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <SheetTrigger asChild>
+                <Button type="button" variant="outline" size="icon" className="rounded-full">
+                  <PanelRight className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[92vw] max-w-sm p-4">
+                <SheetHeader className="mb-4">
+                  <SheetTitle>Meeting sidebar</SheetTitle>
+                </SheetHeader>
+                <div className="h-full min-h-0">{sidebarContent}</div>
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className={cn("rounded-full", isCompactPinnedMode && "h-8 px-3 text-xs")}
+              onClick={() => setSidebarOpen((current) => !current)}
+            >
+              <PanelRight className="mr-2 h-4 w-4" />
+              {sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            </Button>
+          )}
         </div>
       </div>
 
-      <div
-        className={cn(
-          "grid min-h-0 flex-1 gap-3",
-          screenShareTrack
-            ? "grid-rows-[minmax(0,0.42fr)_minmax(0,0.58fr)]"
-            : "grid-rows-1",
+      <div className={cn(isCompactPinnedMode ? "grid min-h-0 flex-1 gap-2 overflow-hidden p-2 pb-20" : "grid min-h-0 flex-1 gap-4 overflow-hidden p-4 pb-24", sidebarOpen && !isMobile ? "lg:grid-cols-[minmax(0,1fr)_22rem]" : "grid-cols-1")}>
+        <div className={cn("flex min-h-0 flex-col overflow-hidden", isCompactPinnedMode ? "gap-2" : "gap-4")}>
+          {layoutMode === "screen-share" && screenShareTrack && (
+            <ScreenShareView track={screenShareTrack} className={cn("flex-[1.1]", isCompactPinnedMode ? "min-h-[260px]" : "min-h-[320px]")} />
+          )}
+
+          <VideoGrid
+            participants={allParticipants}
+            stageParticipant={stageParticipant}
+            activeSpeakerId={effectiveActiveSpeakerId}
+            layoutMode={layoutMode}
+            participantNameMap={participantNameMap}
+            raisedHandIds={raisedHandIds}
+            isScreenSharing={layoutMode === "screen-share"}
+            compactMode={isCompactPinnedMode}
+            pinnedParticipantId={pinnedParticipantId}
+            onPinParticipant={setPinnedParticipantId}
+          />
+        </div>
+
+        {sidebarOpen && !isMobile && (
+          <aside className={cn("min-h-0 overflow-hidden border border-border/70 bg-background/70 shadow-sm", isCompactPinnedMode ? "rounded-[24px] p-2" : "rounded-[28px] p-3")}>
+            {sidebarContent}
+          </aside>
         )}
-      >
-        {screenShareTrack && (
-          <ScreenShareView track={screenShareTrack} className="min-h-0 h-full" />
-        )}
-        <VideoGrid
-          participants={allParticipants}
-          activeSpeakerId={activeOrPinned?.identity}
-          layoutMode={layoutMode}
-          participantNameMap={participantNameMap}
-        />
       </div>
+
+      <div className={cn("pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/90 to-transparent", isCompactPinnedMode ? "h-16" : "h-24")} />
 
       <ParticipantControls
         permissions={permissions}
         isTeacher={isTeacher}
+        isHandRaised={isHandRaised}
+        compactMode={isCompactPinnedMode}
+        onRaiseHand={async () => {
+          await onRaiseHand(sessionId);
+          setIsHandRaised(true);
+        }}
+        onLowerHand={async () => {
+          await onLowerHand(sessionId, user?.id);
+          setIsHandRaised(false);
+        }}
         onLeave={leaveRoom}
+        onEndSession={isTeacher ? async () => {
+          await onEndSession(sessionId);
+          await leaveRoom();
+        } : undefined}
       />
-
-      {!isTeacher && (
-        <div className="flex gap-2">
-          <Button onClick={() => onRaiseHand(sessionId)}>Raise Hand</Button>
-          <Button variant="outline" onClick={() => onLowerHand(sessionId)}>
-            Lower Hand
-          </Button>
-        </div>
-      )}
-
-      {isTeacher && (
-        <div className="grid shrink-0 gap-3 xl:grid-cols-4">
-          <WaitingRoomPanel
-            sessionId={sessionId}
-            participants={waitingParticipants}
-            onApprove={onApproveParticipant}
-            onReject={onRemoveParticipant}
-          />
-          <RaiseHandQueue
-            sessionId={sessionId}
-            participants={raisedHands}
-            onLowerHand={(id, userId) => onLowerHand(id, userId)}
-            onAllowMicrophone={(id, userId) => onModerateParticipant(id, userId, "allow-microphone")}
-          />
-          <TeacherControls
-            sessionId={sessionId}
-            connectedParticipants={participants.map((participant) => ({
-              identity: participant.identity,
-              name: participant.name,
-            }))}
-            onModerate={onModerateParticipant}
-            onRemove={onRemoveParticipant}
-          />
-          <Button
-            variant="destructive"
-            className="xl:self-start"
-            onClick={async () => {
-              await onEndSession(sessionId);
-              await leaveRoom();
-            }}
-          >
-            End Session
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
@@ -237,9 +347,10 @@ function TeacherClassroomLivePage({
   startPermissions,
   onLeavePage,
 }: Required<Pick<ClassroomLivePageProps, "classroomId">> & Omit<ClassroomLivePageProps, "classroomId">) {
+  const { user } = useAuth();
   const [participantNameMap, setParticipantNameMap] = useState<Record<string, string>>({});
+  const [participantRoleMap, setParticipantRoleMap] = useState<Record<string, string>>({});
   const classroomName = useClassroomName(classroomId);
-  const [layoutMode, setLayoutMode] = useState<MeetingLayoutMode>("tiled");
   const {
     session,
     tokenData,
@@ -264,11 +375,16 @@ function TeacherClassroomLivePage({
       const { data } = await ClassroomAnnouncementService.getAllClassroomUsers(classroomId);
       if (!mounted) return;
       const map: Record<string, string> = {};
-      for (const user of data || []) {
-        if (!user?.id || !user?.name) continue;
-        map[user.id] = user.name;
+      const roleMap: Record<string, string> = {};
+      for (const classroomUser of data || []) {
+        if (!classroomUser?.id || !classroomUser?.name) continue;
+        map[classroomUser.id] = classroomUser.name;
+        if (classroomUser.role) {
+          roleMap[classroomUser.id] = classroomUser.role;
+        }
       }
       setParticipantNameMap(map);
+      setParticipantRoleMap(roleMap);
     };
 
     loadParticipantNames();
@@ -321,16 +437,17 @@ function TeacherClassroomLivePage({
   };
 
   return (
-    <div className="h-[calc(100vh-1.5rem)] overflow-hidden">
+    <div className="h-[calc(100vh-1.5rem)] overflow-hidden rounded-[32px] border border-border/60 bg-card/50">
       <LiveRoomProvider token={tokenData.token} livekitUrl={tokenData.livekitUrl || import.meta.env.VITE_LIVEKIT_WS_URL}>
         <LiveRoomContent
+          classroomId={classroomId}
           sessionId={session.sessionId}
           isTeacher={isTeacher}
           permissions={effectivePermissions}
           classroomName={classroomName}
           participantNameMap={participantNameMap}
-          layoutMode={layoutMode}
-          onLayoutModeChange={setLayoutMode}
+          participantRoleMap={participantRoleMap}
+          teacherIdentity={user?.id}
           onRaiseHand={raiseHand}
           onLowerHand={lowerHand}
           onEndSession={endSession}
@@ -348,23 +465,28 @@ function TeacherClassroomLivePage({
 
 function StudentRoomRuntime({
   session,
+  classroomId,
   classroomName,
   permissions,
   participantNameMap,
+  participantRoleMap,
+  teacherIdentity,
   onConnected,
   onPermissionsChange,
   onLeavePage,
 }: {
   session: LiveSession;
+  classroomId: string;
   classroomName: string;
   permissions: LiveClassPermissions;
   participantNameMap?: Record<string, string>;
+  participantRoleMap?: Record<string, string>;
+  teacherIdentity?: string;
   onConnected: () => void;
   onPermissionsChange: (permissions: LiveClassPermissions) => void;
   onLeavePage?: () => void;
 }) {
   const { room, connectionState } = useLiveRoom();
-  const [layoutMode, setLayoutMode] = useState<MeetingLayoutMode>("tiled");
   const isSetupDone = useRef(false);
 
   useEffect(() => {
@@ -432,13 +554,14 @@ function StudentRoomRuntime({
 
   return (
     <LiveRoomContent
+      classroomId={classroomId}
       sessionId={session.sessionId}
       isTeacher={false}
       permissions={permissions}
       classroomName={classroomName}
       participantNameMap={participantNameMap}
-      layoutMode={layoutMode}
-      onLayoutModeChange={setLayoutMode}
+      participantRoleMap={participantRoleMap}
+      teacherIdentity={teacherIdentity}
       onRaiseHand={LiveSessionApi.raiseHand.bind(LiveSessionApi)}
       onLowerHand={LiveSessionApi.lowerHand.bind(LiveSessionApi)}
       onEndSession={async () => {}}
@@ -458,6 +581,7 @@ function StudentClassroomLivePage({
 }: Required<Pick<ClassroomLivePageProps, "classroomId">> & Omit<ClassroomLivePageProps, "classroomId" | "startPermissions">) {
   const { user } = useAuth();
   const [participantNameMap, setParticipantNameMap] = useState<Record<string, string>>({});
+  const [participantRoleMap, setParticipantRoleMap] = useState<Record<string, string>>({});
   const classroomName = useClassroomName(classroomId);
   const [liveState, setLiveState] = useState<StudentLiveState>("checking-session");
   const [session, setSession] = useState<LiveSession | null>(null);
@@ -469,6 +593,9 @@ function StudentClassroomLivePage({
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const teacherIdentity = useMemo(() => {
+    return Object.entries(participantRoleMap).find(([, role]) => role === "Teacher")?.[0];
+  }, [participantRoleMap]);
 
   useEffect(() => {
     let mounted = true;
@@ -476,11 +603,16 @@ function StudentClassroomLivePage({
       const { data } = await ClassroomAnnouncementService.getAllClassroomUsers(classroomId);
       if (!mounted) return;
       const map: Record<string, string> = {};
+      const roleMap: Record<string, string> = {};
       for (const classroomUser of data || []) {
         if (!classroomUser?.id || !classroomUser?.name) continue;
         map[classroomUser.id] = classroomUser.name;
+        if (classroomUser.role) {
+          roleMap[classroomUser.id] = classroomUser.role;
+        }
       }
       setParticipantNameMap(map);
+      setParticipantRoleMap(roleMap);
     };
 
     loadParticipantNames();
@@ -522,7 +654,6 @@ function StudentClassroomLivePage({
     try {
       const token = await LiveSessionApi.getToken(sessionId);
       setTokenData(token);
-      // Approved students can manage own mic/camera/screenshare.
       setPermissions({
         allowStudentMicrophone: true,
         allowStudentCamera: true,
@@ -660,13 +791,16 @@ function StudentClassroomLivePage({
   }
 
   return (
-    <div className="h-[calc(100vh-1.5rem)] overflow-hidden">
+    <div className="h-[calc(100vh-1.5rem)] overflow-hidden rounded-[32px] border border-border/60 bg-card/50">
       <LiveRoomProvider token={tokenData.token} livekitUrl={tokenData.livekitUrl || import.meta.env.VITE_LIVEKIT_WS_URL}>
         <StudentRoomRuntime
           session={session}
+          classroomId={classroomId}
           classroomName={classroomName}
           permissions={permissions}
           participantNameMap={participantNameMap}
+          participantRoleMap={participantRoleMap}
+          teacherIdentity={teacherIdentity}
           onConnected={() => setLiveState("connected")}
           onPermissionsChange={setPermissions}
           onLeavePage={onLeavePage}

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 interface RaiseHandQueueProps {
   sessionId: string;
   participants: LiveParticipant[];
+  participantNameMap?: Record<string, string>;
   onLowerHand: (sessionId: string, userId: string) => Promise<void>;
   onAllowMicrophone: (sessionId: string, userId: string) => Promise<void>;
 }
@@ -11,11 +12,12 @@ interface RaiseHandQueueProps {
 export function RaiseHandQueue({
   sessionId,
   participants,
+  participantNameMap,
   onLowerHand,
   onAllowMicrophone,
 }: RaiseHandQueueProps) {
   return (
-    <div className="flex max-h-36 flex-col gap-2 overflow-hidden rounded-xl border border-border bg-card p-3">
+    <div className="flex h-full flex-col gap-2 overflow-hidden rounded-xl bg-transparent">
       <h3 className="text-sm font-semibold">Raised Hands</h3>
       <div className="space-y-2 overflow-auto">
         {!participants.length && (
@@ -26,7 +28,7 @@ export function RaiseHandQueue({
             key={participant.userId}
             className="flex items-center justify-between gap-2 rounded-md border border-border p-2"
           >
-            <span className="truncate text-sm">Student</span>
+            <span className="truncate text-sm">{participantNameMap?.[participant.userId] || "Student"}</span>
             <div className="flex gap-2">
               <Button
                 size="sm"

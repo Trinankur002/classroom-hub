@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 import { Track } from "livekit-client";
+import { MonitorUp } from "lucide-react";
 
 interface ScreenShareViewProps {
   track: Track;
@@ -21,8 +22,12 @@ export function ScreenShareView({ track, className }: ScreenShareViewProps) {
   }, [track]);
 
   return (
-    <div className={cn("overflow-hidden rounded-xl border border-primary/30 bg-black", className)}>
+    <div className={cn("relative overflow-hidden rounded-[28px] border border-primary/20 bg-black shadow-sm", className)}>
       <video ref={videoRef} className="h-full w-full object-contain" autoPlay playsInline />
+      <div className="pointer-events-none absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-background/85 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm">
+        <MonitorUp className="h-3.5 w-3.5 text-primary" />
+        <span>Screen share</span>
+      </div>
     </div>
   );
 }
