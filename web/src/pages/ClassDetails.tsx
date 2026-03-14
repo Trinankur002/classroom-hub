@@ -189,41 +189,41 @@ function ClassDetails({ classroom, onViewAnnouncement, onNavigateTab }: Props) {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden rounded-3xl border-border/60 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-slate-50">
+      <Card className="overflow-hidden rounded-3xl border-border/60">
         <CardContent className="p-0">
           <div className="grid gap-6 p-6 md:grid-cols-[1.4fr,0.8fr] md:p-8">
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <Badge className="rounded-full bg-white/10 px-3 py-1 text-slate-100 hover:bg-white/10">
+                <Badge className="rounded-full">
                   {classroom.teacher?.name || "Teacher"}
                 </Badge>
                 {data?.activeLiveSession?.isActive && (
-                  <Badge className="rounded-full bg-emerald-400/20 px-3 py-1 text-emerald-100 hover:bg-emerald-400/20">
+                  <Badge className="rounded-full">
                     Live session active
                   </Badge>
                 )}
               </div>
               <div>
                 <h2 className="text-3xl font-semibold tracking-tight">{classroom.name}</h2>
-                <p className="mt-2 max-w-2xl text-sm text-slate-300">
+                <p className="mt-2 max-w-2xl text-sm">
                   {classroom.description || "No class description added yet."}
                 </p>
               </div>
-              <div className="flex flex-wrap gap-3 text-sm text-slate-200">
-                <div className="rounded-2xl bg-white/8 px-3 py-2">
-                  Join code: <span className="font-semibold text-white">{classroom.joinCode}</span>
+              <div className="flex flex-wrap gap-3 text-sm">
+                <div className="rounded-2xl px-3 py-2">
+                  Join code: <span className="font-semibold">{classroom.joinCode}</span>
                 </div>
-                <div className="rounded-2xl bg-white/8 px-3 py-2">
+                <div className="rounded-2xl px-3 py-2">
                   {overview?.counts.students || 0} students
                 </div>
-                <div className="rounded-2xl bg-white/8 px-3 py-2">
+                <div className="rounded-2xl px-3 py-2">
                   Created {formatDate(classroom.createdAt)}
                 </div>
               </div>
             </div>
 
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur">
-              <p className="text-sm uppercase tracking-[0.18em] text-slate-300">Quick actions</p>
+            <div className="rounded-3xl border  p-5 backdrop-blur">
+              <p className="text-sm uppercase tracking-[0.18em]">Quick actions</p>
               <div className="mt-4 grid gap-3">
                 {userRole === "teacher" ? (
                   <>
