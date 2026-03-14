@@ -10,9 +10,10 @@ interface VideoGridProps {
   participants: Participant[];
   activeSpeakerId?: string;
   layoutMode: MeetingLayoutMode;
+  participantNameMap?: Record<string, string>;
 }
 
-export function VideoGrid({ participants, activeSpeakerId, layoutMode }: VideoGridProps) {
+export function VideoGrid({ participants, activeSpeakerId, layoutMode, participantNameMap }: VideoGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { page, setPage } = useLiveRoom();
   const pageSize = 25;
@@ -57,6 +58,7 @@ export function VideoGrid({ participants, activeSpeakerId, layoutMode }: VideoGr
               <VideoTile
                 key={participant.sid}
                 participant={participant}
+                label={participantNameMap?.[participant.identity]}
                 isVisible
                 tileWidth={tileWidth}
                 className="h-full min-h-[120px]"
@@ -71,6 +73,7 @@ export function VideoGrid({ participants, activeSpeakerId, layoutMode }: VideoGr
             <VideoTile
               key={primaryParticipant.sid}
               participant={primaryParticipant}
+              label={participantNameMap?.[primaryParticipant.identity]}
               isVisible
               tileWidth={Math.max(tileWidth, 480)}
               className="min-h-0 flex-1"
@@ -83,6 +86,7 @@ export function VideoGrid({ participants, activeSpeakerId, layoutMode }: VideoGr
                   <VideoTile
                     key={participant.sid}
                     participant={participant}
+                    label={participantNameMap?.[participant.identity]}
                     isVisible
                     tileWidth={220}
                     className="h-full min-h-[80px]"
@@ -99,6 +103,7 @@ export function VideoGrid({ participants, activeSpeakerId, layoutMode }: VideoGr
             <VideoTile
               key={primaryParticipant.sid}
               participant={primaryParticipant}
+              label={participantNameMap?.[primaryParticipant.identity]}
               isVisible
               tileWidth={Math.max(tileWidth, 560)}
               className="min-h-0 h-full"
@@ -110,6 +115,7 @@ export function VideoGrid({ participants, activeSpeakerId, layoutMode }: VideoGr
                 <VideoTile
                   key={participant.sid}
                   participant={participant}
+                  label={participantNameMap?.[participant.identity]}
                   isVisible
                   tileWidth={220}
                   className="h-full min-h-[80px]"

@@ -54,6 +54,7 @@ export class LiveSessionController {
       session.id,
       teacherId,
       req.user.role,
+      req.user.name,
     );
 
     return {
@@ -115,7 +116,7 @@ export class LiveSessionController {
 
   @Get(':sessionId/token')
   getSessionToken(@Request() req, @Param('sessionId', new ParseUUIDPipe()) sessionId: string) {
-    return this.liveService.getSessionToken(sessionId, req.user.id, req.user.role);
+    return this.liveService.getSessionToken(sessionId, req.user.id, req.user.role, req.user.name);
   }
 
   @Post(':sessionId/raise-hand')

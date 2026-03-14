@@ -184,7 +184,7 @@ export class LiveSessionService {
     return saved;
   }
 
-  async getSessionToken(sessionId: string, userId: string, userRole: Role) {
+  async getSessionToken(sessionId: string, userId: string, userRole: Role, userName?: string) {
     const session = await this.getSessionById(sessionId);
     if (!session.isActive) {
       throw new ForbiddenException('Session has ended');
@@ -216,9 +216,16 @@ export class LiveSessionService {
 
     const token = await this.livekitService.generateToken(
       userId,
+      userName,
       session.roomName,
       participant.role,
+      {
+        allowStudentMicrophone: session.allowStudentMicrophone,
+        allowStudentCamera: session.allowStudentCamera,
+        allowStudentScreenShare: session.allowStudentScreenShare,
+      },
     );
+    const studentControlsEnabled = participant.role === ParticipantRole.STUDENT;
 
     return {
       sessionId,
@@ -226,9 +233,9 @@ export class LiveSessionService {
       token,
       livekitUrl: process.env.LIVEKIT_URL,
       role: participant.role,
-      allowStudentMicrophone: session.allowStudentMicrophone,
-      allowStudentCamera: session.allowStudentCamera,
-      allowStudentScreenShare: session.allowStudentScreenShare,
+      allowStudentMicrophone: studentControlsEnabled || session.allowStudentMicrophone,
+      allowStudentCamera: studentControlsEnabled || session.allowStudentCamera,
+      allowStudentScreenShare: studentControlsEnabled || session.allowStudentScreenShare,
     };
   }
 

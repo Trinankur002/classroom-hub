@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import ClassroomAnnouncementService from '@/services/classroomAnnouncementService';
 import ClassroomService from '@/services/classroomService';
+import { LiveSessionApi } from "@/services/live-session.api";
 import { IClassroom } from "@/types/classroom";
 import { IClassroomAnnouncement } from "@/types/classroomAnnouncement";
 import { Plus } from "lucide-react";
@@ -28,6 +29,7 @@ export default function Class() {
     const { id } = useParams<{ id: string }>();
     const [isloading, setIsLoading] = useState(false);
     const [classroom, setClassroom] = useState<IClassroom>();
+    const [hasActiveLiveSession, setHasActiveLiveSession] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
 
     //
@@ -101,6 +103,12 @@ export default function Class() {
 
     const handleTabChange = (newTab: string) => {
         if (newTab) {
+            if (newTab === "live") {
+                if (classroom?.id) {
+                    navigate(`/classrooms/${classroom.id}/live`);
+                }
+                return;
+            }
             setActiveTab(newTab);
             setRefreshKey(k => k + 1);
             setSelectedAnnouncement(null);
@@ -124,6 +132,30 @@ export default function Class() {
         // Cleanup the event listener on component unmount
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    useEffect(() => {
+        if (!classroom?.id) {
+            setHasActiveLiveSession(false);
+            return;
+        }
+
+        let mounted = true;
+        const loadActiveSession = async () => {
+            try {
+                const active = await LiveSessionApi.getActiveSession(classroom.id);
+                if (!mounted) return;
+                setHasActiveLiveSession(!!active?.sessionId);
+            } catch {
+                if (!mounted) return;
+                setHasActiveLiveSession(false);
+            }
+        };
+
+        loadActiveSession();
+        return () => {
+            mounted = false;
+        };
+    }, [classroom?.id]);
 
     return (
         <div>
@@ -204,6 +236,9 @@ export default function Class() {
                         {userRole === 'student' && (
                             <TabsTrigger className="flex-1 min-w-[120px]" value="chat">Chat</TabsTrigger>
                         )}
+                        {hasActiveLiveSession && (
+                            <TabsTrigger className="flex-1 min-w-[120px]" value="live">Live</TabsTrigger>
+                        )}
                         {userRole === 'teacher' && (
                             <TabsTrigger className="flex-1 min-w-[120px]" value="students">Students</TabsTrigger>
                         )}
@@ -220,6 +255,7 @@ export default function Class() {
                                 <SelectItem value="announcements">Stream</SelectItem>
                                 <SelectItem value="doubts">Doubts</SelectItem>
                                 {userRole === 'student' && <SelectItem value="chat">Chat</SelectItem>}
+                                {hasActiveLiveSession && <SelectItem value="live">Live Class</SelectItem>}
                                 {userRole === 'teacher' && <SelectItem value="students">Students</SelectItem>}
                             </SelectContent>
                         </Select>
