@@ -15,4 +15,5 @@ export enum WEBSOCKET_EVENTS {
     HAND_RAISED = "hand-raised",
     MODERATION_COMMAND = "moderation-command",
     SESSION_ENDED = "session-ended",
+    LIVE_CHAT_MESSAGE = "live-chat-message",
 }

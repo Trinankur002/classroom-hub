@@ -1,5 +1,5 @@
 import api from "./api";
-import { LiveClassPermissions, LiveParticipant, LiveSession, ModerationAction, TokenResponse } from "@/types/live-session";
+import { LiveClassPermissions, LiveParticipant, LiveSession, LiveSessionMessage, ModerationAction, TokenResponse } from "@/types/live-session";
 
 const normalizeSession = (raw: any): LiveSession | null => {
   if (!raw) return null;
@@ -85,6 +85,16 @@ class LiveSessionApiService {
 
   async getRaisedHands(sessionId: string): Promise<LiveParticipant[]> {
     const { data } = await api.get(`/live-sessions/${sessionId}/raised-hands`);
+    return data;
+  }
+
+  async getMessages(sessionId: string): Promise<LiveSessionMessage[]> {
+    const { data } = await api.get(`/live-sessions/${sessionId}/messages`);
+    return data;
+  }
+
+  async sendMessage(sessionId: string, message: string): Promise<LiveSessionMessage> {
+    const { data } = await api.post(`/live-sessions/${sessionId}/messages`, { message });
     return data;
   }
 }

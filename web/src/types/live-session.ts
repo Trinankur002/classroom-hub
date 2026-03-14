@@ -41,6 +41,15 @@ export interface LiveParticipant {
   joinedAt: string;
 }
 
+export interface LiveSessionMessage {
+  id: string;
+  liveSessionId: string;
+  senderId: string;
+  senderName: string;
+  message: string;
+  createdAt: string;
+}
+
 export type LiveConnectionState = ConnectionState | "idle";
 
 export interface LiveRoomContextValue {

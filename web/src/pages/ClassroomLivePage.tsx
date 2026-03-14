@@ -228,7 +228,6 @@ function LiveRoomContent({
 
   const sidebarContent = (
     <ParticipantSidebar
-      classroomId={classroomId}
       view={sidebarView}
       onViewChange={setSidebarView}
       connectedParticipants={allParticipants}

@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { WEBSOCKET_EVENTS } from 'src/common/websocket-events.enum';
+import { LiveSessionMessage } from './entities/live-session-message.entity';
 
 @WebSocketGateway({
     namespace: '/live-session',
@@ -72,5 +73,9 @@ export class LiveSessionGateway implements OnGatewayConnection {
 
     notifySessionEnded(sessionId: string) {
         this.server.to(sessionId).emit(WEBSOCKET_EVENTS.SESSION_ENDED, { sessionId });
+    }
+
+    notifyLiveChatMessage(sessionId: string, message: LiveSessionMessage) {
+        this.server.to(sessionId).emit(WEBSOCKET_EVENTS.LIVE_CHAT_MESSAGE, message);
     }
 }

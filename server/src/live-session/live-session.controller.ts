@@ -13,6 +13,7 @@ import { LiveSessionService } from './services/live-session.service';
 import { ApproveParticipantDto } from './dto/approve-participant.dto';
 import { ModerateParticipantDto } from './dto/moderate-participant.dto';
 import { StartLiveSessionDto } from './dto/start-live-session.dto';
+import { CreateLiveSessionMessageDto } from './dto/create-live-session-message.dto';
 
 @Controller('live-sessions')
 @UseGuards(JwtAuthGuard)
@@ -170,5 +171,19 @@ export class LiveSessionController {
   @Get(':sessionId/raised-hands')
   getRaisedHands(@Request() req, @Param('sessionId', new ParseUUIDPipe()) sessionId: string) {
     return this.liveService.getRaisedHands(sessionId, req.user.id, req.user.role);
+  }
+
+  @Get(':sessionId/messages')
+  getRecentMessages(@Request() req, @Param('sessionId', new ParseUUIDPipe()) sessionId: string) {
+    return this.liveService.getRecentMessages(sessionId, req.user.id);
+  }
+
+  @Post(':sessionId/messages')
+  createMessage(
+    @Request() req,
+    @Param('sessionId', new ParseUUIDPipe()) sessionId: string,
+    @Body() body: CreateLiveSessionMessageDto,
+  ) {
+    return this.liveService.createMessage(sessionId, req.user.id, req.user.name, body.message);
   }
 }

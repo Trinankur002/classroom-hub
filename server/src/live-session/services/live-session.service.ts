@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LiveSession } from '../entities/live-session.entity';
 import { ParticipantSession } from '../entities/participant-session.entity';
+import { LiveSessionMessage } from '../entities/live-session-message.entity';
 import { LivekitService } from './livekit.service';
 import {
   ModerationAction,
@@ -24,6 +25,8 @@ export class LiveSessionService {
     private liveSessionRepo: Repository<LiveSession>,
     @InjectRepository(ParticipantSession)
     private participantRepo: Repository<ParticipantSession>,
+    @InjectRepository(LiveSessionMessage)
+    private liveSessionMessageRepo: Repository<LiveSessionMessage>,
     @InjectRepository(Classroom)
     private classroomRepo: Repository<Classroom>,
     private livekitService: LivekitService,
@@ -75,6 +78,14 @@ export class LiveSessionService {
     }
 
     return session;
+  }
+
+  private async assertParticipantCanChat(sessionId: string, userId: string) {
+    const participant = await this.getParticipant(sessionId, userId);
+    if (!participant || participant.status !== ParticipantStatus.APPROVED) {
+      throw new ForbiddenException('Only approved participants can send live chat messages');
+    }
+    return participant;
   }
 
   async getActiveSession(classroomId: string) {
@@ -279,6 +290,44 @@ export class LiveSessionService {
     const saved = await this.liveSessionRepo.save(session);
     this.liveSessionGateway.notifySessionEnded(sessionId);
     return saved;
+  }
+
+  async getRecentMessages(sessionId: string, userId: string) {
+    await this.getSessionById(sessionId);
+    await this.assertParticipantCanChat(sessionId, userId);
+
+    const messages = await this.liveSessionMessageRepo.find({
+      where: { liveSessionId: sessionId },
+      order: { createdAt: 'DESC' },
+      take: 100,
+    });
+
+    return messages.reverse();
+  }
+
+  async createMessage(sessionId: string, senderId: string, senderName: string, message: string) {
+    const session = await this.getSessionById(sessionId);
+    if (!session.isActive) {
+      throw new ForbiddenException('Session has ended');
+    }
+
+    await this.assertParticipantCanChat(sessionId, senderId);
+    const normalizedMessage = message.trim();
+    if (!normalizedMessage) {
+      throw new ForbiddenException('Message cannot be empty');
+    }
+
+    const savedMessage = await this.liveSessionMessageRepo.save(
+      this.liveSessionMessageRepo.create({
+        liveSessionId: sessionId,
+        senderId,
+        senderName: senderName || 'Participant',
+        message: normalizedMessage,
+      }),
+    );
+
+    this.liveSessionGateway.notifyLiveChatMessage(sessionId, savedMessage);
+    return savedMessage;
   }
 
   async removeParticipant(sessionId: string, teacherId: string, userId: string) {

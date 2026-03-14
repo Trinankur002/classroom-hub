@@ -4,16 +4,15 @@ import { Hand, Mic, MicOff, Signal, UserRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ClassroomChat from "@/components/customComponent/ClassroomChat";
 import { LiveParticipant } from "@/types/live-session";
 import { TeacherControls } from "./TeacherControls";
 import { WaitingRoomPanel } from "./WaitingRoomPanel";
 import { RaiseHandQueue } from "./RaiseHandQueue";
+import { MeetingChatPanel } from "./MeetingChatPanel";
 
 type SidebarView = "participants" | "chat" | "hands";
 
 interface ParticipantSidebarProps {
-  classroomId?: string;
   view: SidebarView;
   onViewChange: (view: SidebarView) => void;
   connectedParticipants: Participant[];
@@ -42,7 +41,6 @@ function getParticipantRoleLabel(
 }
 
 export function ParticipantSidebar({
-  classroomId,
   view,
   onViewChange,
   connectedParticipants,
@@ -147,7 +145,7 @@ export function ParticipantSidebar({
 
       <TabsContent value="chat" className="mt-3 min-h-0 flex-1">
         <div className="h-full overflow-hidden rounded-2xl border border-border/70 bg-card/80 p-0">
-          {classroomId ? <ClassroomChat classroomId={classroomId} /> : <div className="p-4 text-sm text-muted-foreground">Chat unavailable.</div>}
+          <MeetingChatPanel sessionId={sessionId} />
         </div>
       </TabsContent>
 
