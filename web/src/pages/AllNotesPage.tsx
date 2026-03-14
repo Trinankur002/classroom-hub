@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
-import { StickyNote, Filter, FileText } from "lucide-react"; // Changed icon to StickyNote/FileText for context
+import { StickyNote } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 import ClassroomAnnouncementService from "@/services/classroomAnnouncementService";
@@ -15,9 +15,6 @@ import { IClassroomAnnouncement } from "@/types/classroomAnnouncement";
 
 /* shadcn-ui components */
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
 
 export default function AllNotesPage() {
     const navigate = useNavigate();
@@ -97,25 +94,6 @@ export default function AllNotesPage() {
 
     return (
         <div className="px-4 sm:px-6 lg:px-8 mt-3">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-semibold">Classroom Notes</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        View study materials and notes shared by your teachers.
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                        <Badge variant="secondary">Type: Notes</Badge>
-                        <span className="text-sm text-muted-foreground">•</span>
-                        <span className="text-sm text-muted-foreground">
-                            Classrooms: {selectedClassroomId === "all" ? "All" : classrooms.find((c) => c.id === selectedClassroomId)?.name || "Selected"}
-                        </span>
-                        <span className="text-sm text-muted-foreground">•</span>
-                        <span className="text-sm text-muted-foreground">Count: {notes.length}</span>
-                    </div>
-                </div>
-            </div>
-
             {/* Controls */}
             <div className="flex items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-5">

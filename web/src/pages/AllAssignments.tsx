@@ -18,7 +18,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge";
 
 type FilterType = "pending" | "missed" | "due" | "all";
 
@@ -57,15 +56,6 @@ export default function AllAssignments() {
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
         return d.getTime() >= todayStart.getTime();
-    };
-
-    const isPastDue = (maybeDate?: string | Date | null) => {
-        if (!maybeDate) return false;
-        const d = new Date(maybeDate);
-        if (isNaN(d.getTime())) return false;
-        const todayStart = new Date();
-        todayStart.setHours(0, 0, 0, 0);
-        return d.getTime() < todayStart.getTime();
     };
 
     const fetchAnnouncements = useCallback(
@@ -167,41 +157,8 @@ export default function AllAssignments() {
         return [...announcements].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     }, [announcements]);
 
-    // small header counts for current filter (client-side for better immediacy)
-    const counts = useMemo(() => {
-        const total = announcements.length;
-        const due = announcements.filter((a) => isDueOrFuture((a as any).dueDate)).length;
-        const missed = announcements.filter((a) => isPastDue((a as any).dueDate)).length;
-        return { total, due, missed };
-    }, [announcements]);
-
     return (
         <div className="px-4 sm:px-6 lg:px-8 mt-3">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <div>
-                    <h1 className="text-2xl font-semibold">Assignments</h1>
-                    <p className="text-sm text-muted-foreground mt-1">
-                        View your assignments — filter by classroom, status, or due date.
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                        <Badge variant="secondary">Showing: {filterType.charAt(0).toUpperCase() + filterType.slice(1)}</Badge>
-                        <span className="text-sm text-muted-foreground">•</span>
-                        <span className="text-sm text-muted-foreground">
-                            Classrooms: {selectedClassroomId === "all" ? classrooms.length : classrooms.find((c) => c.id === selectedClassroomId)?.name}
-                        </span>
-                        <span className="text-sm text-muted-foreground">•</span>
-                        <span className="text-sm text-muted-foreground">Count: {counts.total}</span>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                    {userRole === "teacher" && (
-                        <Button onClick={() => navigate("/assignments/new")}>New Assignment</Button>
-                    )}
-                </div>
-            </div>
-
             {/* Controls */}
             <div className="flex items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-5">
@@ -282,6 +239,9 @@ export default function AllAssignments() {
                         </SheetContent>
                     </Sheet>
                 </div>
+                {userRole === "teacher" && (
+                    <Button onClick={() => navigate("/assignments/new")}>New Assignment</Button>
+                )}
             </div>
 
             {/* Body */}

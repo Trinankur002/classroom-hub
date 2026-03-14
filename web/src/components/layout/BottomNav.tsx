@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Home, Users, Settings, BookOpen, NotebookPen, TvMinimalPlay } from "lucide-react";
+import { Home, Users, Settings, BookOpen, TvMinimalPlay } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function BottomNav(
@@ -13,8 +13,7 @@ export function BottomNav(
     bottomNavItems = [
       { name: "Dashboard", href: "/dashboard", icon: Home },
       { name: "Classes", href: "/classrooms", icon: Users },
-      { name: "All Assignments", href: "/allassignments", icon: BookOpen },
-      { name: "Notes", href: "/notes", icon: NotebookPen },
+      { name: "All Materials", href: "/allmaterials", icon: BookOpen },
       // { name: "Chat", href: "/chat", icon: MessageCircle },
       { name: "Settings", href: "/settings", icon: Settings },
     ];

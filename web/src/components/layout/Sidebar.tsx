@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   GraduationCap,
   ChevronRight,
-  NotebookPen,
   TvMinimalPlay
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,8 +31,7 @@ export function Sidebar({ open, onOpenChange, user, userRole }: SidebarProps) {
     navigationItems = [
       { name: "Dashboard", href: "/dashboard", icon: Home },
       { name: "Classes", href: "/classrooms", icon: Users },
-      { name: "All Assignments", href: "/allassignments", icon: BookOpen },
-      { name: "Notes", href: "/notes", icon: NotebookPen },
+      { name: "All Materials", href: "/allmaterials", icon: BookOpen },
       { name: "Settings", href: "/settings", icon: Settings },
     ];
   } else if (userRole === "teacher") {

@@ -236,7 +236,7 @@ export default function Class() {
                         {userRole === 'student' && (
                             <TabsTrigger className="flex-1 min-w-[120px]" value="chat">Chat</TabsTrigger>
                         )}
-                        {hasActiveLiveSession && (
+                        {userRole === 'student' && (
                             <TabsTrigger className="flex-1 min-w-[120px]" value="live">Live</TabsTrigger>
                         )}
                         {userRole === 'teacher' && (
@@ -255,7 +255,7 @@ export default function Class() {
                                 <SelectItem value="announcements">Stream</SelectItem>
                                 <SelectItem value="doubts">Doubts</SelectItem>
                                 {userRole === 'student' && <SelectItem value="chat">Chat</SelectItem>}
-                                {hasActiveLiveSession && <SelectItem value="live">Live Class</SelectItem>}
+                                {userRole === 'student' && <SelectItem value="live">Live Class</SelectItem>}
                                 {userRole === 'teacher' && <SelectItem value="students">Students</SelectItem>}
                             </SelectContent>
                         </Select>

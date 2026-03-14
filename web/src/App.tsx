@@ -24,6 +24,7 @@ import Class from "./pages/Class";
 import AllNotesPage from "./pages/AllNotesPage";
 import ClassroomLivePage from "./pages/ClassroomLivePage";
 import LiveClassPage from "./pages/LiveClassPage";
+import AllMaterials from "./pages/AllMaterials";
 
 const queryClient = new QueryClient();
 
@@ -54,8 +55,13 @@ const App = () => (
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="classrooms" element={<Classrooms />} />
                 <Route path="classrooms/:id" element={<Class />} />
-                <Route path="allassignments" element={<AllAssignments />} />
-                <Route path="notes" element = {<AllNotesPage/>} />
+                <Route path="allmaterials" element={<AllMaterials />}>
+                  <Route index element={<Navigate to="assignments" replace />} />
+                  <Route path="assignments" element={<AllAssignments />} />
+                  <Route path="notes" element={<AllNotesPage />} />
+                </Route>
+                <Route path="allassignments" element={<Navigate to="/allmaterials/assignments" replace />} />
+                <Route path="notes" element={<Navigate to="/allmaterials/notes" replace />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="live-class" element={<LiveClassPage />} />
                 <Route path="classrooms/:classroomId/live" element={<ClassroomLivePage />} />
