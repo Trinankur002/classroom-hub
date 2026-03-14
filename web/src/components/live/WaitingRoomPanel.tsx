@@ -26,14 +26,14 @@ export function WaitingRoomPanel({
         {participants.map((participant) => (
           <div
             key={participant.userId}
-            className="flex items-center justify-between gap-2 rounded-md border border-border p-2"
+            className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2"
           >
-            <span className="truncate text-sm">{participantNameMap?.[participant.userId] || "Student"}</span>
-            <div className="flex gap-2">
-              <Button size="sm" onClick={() => onApprove(sessionId, participant.userId)}>
+            <span className="min-w-0 flex-1 truncate text-sm">{participantNameMap?.[participant.userId] || "Student"}</span>
+            <div className="ml-auto flex shrink-0 gap-1.5">
+              <Button size="sm" className="h-8 px-3 text-xs" onClick={() => onApprove(sessionId, participant.userId)}>
                 Approve
               </Button>
-              <Button size="sm" variant="destructive" onClick={() => onReject(sessionId, participant.userId)}>
+              <Button size="sm" variant="destructive" className="h-8 px-3 text-xs" onClick={() => onReject(sessionId, participant.userId)}>
                 Reject
               </Button>
             </div>

@@ -26,13 +26,14 @@ export function RaiseHandQueue({
         {participants.map((participant) => (
           <div
             key={participant.userId}
-            className="flex items-center justify-between gap-2 rounded-md border border-border p-2"
+            className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2"
           >
-            <span className="truncate text-sm">{participantNameMap?.[participant.userId] || "Student"}</span>
-            <div className="flex gap-2">
+            <span className="min-w-0 flex-1 truncate text-sm">{participantNameMap?.[participant.userId] || "Student"}</span>
+            <div className="ml-auto flex shrink-0 gap-1.5">
               <Button
                 size="sm"
                 variant="outline"
+                className="h-8 px-3 text-xs"
                 onClick={() => onAllowMicrophone(sessionId, participant.userId)}
               >
                 Allow Mic
@@ -40,6 +41,7 @@ export function RaiseHandQueue({
               <Button
                 size="sm"
                 variant="outline"
+                className="h-8 px-3 text-xs"
                 onClick={() => onLowerHand(sessionId, participant.userId)}
               >
                 Lower Hand

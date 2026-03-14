@@ -26,16 +26,16 @@ export function TeacherControls({
           {connectedParticipants.map((participant) => (
             <div
               key={participant.identity}
-              className="flex items-center justify-between gap-2 rounded-md border border-border p-2"
+              className="flex flex-wrap items-center gap-2 rounded-md border border-border p-2"
             >
-              <div className="min-w-0 truncate text-sm">{participant.name || "Participant"}</div>
-              <div className="flex shrink-0 items-center gap-1.5">
+              <div className="min-w-0 flex-1 truncate text-sm">{participant.name || "Participant"}</div>
+              <div className="ml-auto flex shrink-0 items-center gap-1">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       size="icon"
                       variant="outline"
-                      className="h-9 w-9"
+                      className="h-8 w-8"
                       onClick={() => onModerate(sessionId, participant.identity, "mute")}
                     >
                       <MicOff className="h-4 w-4" />
@@ -49,7 +49,7 @@ export function TeacherControls({
                     <Button
                       size="icon"
                       variant="outline"
-                      className="h-9 w-9"
+                      className="h-8 w-8"
                       onClick={() => onModerate(sessionId, participant.identity, "disable-camera")}
                     >
                       <VideoOff className="h-4 w-4" />
@@ -63,7 +63,7 @@ export function TeacherControls({
                     <Button
                       size="icon"
                       variant="destructive"
-                      className="h-9 w-9"
+                      className="h-8 w-8"
                       onClick={() => onRemove(sessionId, participant.identity)}
                     >
                       <UserX className="h-4 w-4" />

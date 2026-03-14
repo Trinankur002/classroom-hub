@@ -7,9 +7,10 @@ import { Radio } from "lucide-react";
 interface LiveClassCardProps {
   session: ActiveLiveSession;
   onJoin: (session: ActiveLiveSession) => void;
+  isJoining?: boolean;
 }
 
-export function LiveClassCard({ session, onJoin }: LiveClassCardProps) {
+export function LiveClassCard({ session, onJoin, isJoining = false }: LiveClassCardProps) {
   return (
     <Card className="transition-all duration-200 hover:shadow-hover">
       <CardHeader className="space-y-3">
@@ -24,9 +25,10 @@ export function LiveClassCard({ session, onJoin }: LiveClassCardProps) {
       </CardHeader>
 
       <CardContent className="flex justify-end">
-        <Button onClick={() => onJoin(session)}>Join Live Class</Button>
+        <Button onClick={() => onJoin(session)} disabled={isJoining}>
+          {isJoining ? "Sending Request..." : "Join Live Class"}
+        </Button>
       </CardContent>
     </Card>
   );
 }
-

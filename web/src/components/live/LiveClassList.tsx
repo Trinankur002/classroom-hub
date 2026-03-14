@@ -6,9 +6,10 @@ import { TvMinimalPlay } from "lucide-react";
 interface LiveClassListProps {
   sessions: ActiveLiveSession[];
   onJoin: (session: ActiveLiveSession) => void;
+  joiningSessionId?: string | null;
 }
 
-export function LiveClassList({ sessions, onJoin }: LiveClassListProps) {
+export function LiveClassList({ sessions, onJoin, joiningSessionId = null }: LiveClassListProps) {
   if (!sessions.length) {
     return (
       <Card className="p-12 text-center">
@@ -26,9 +27,13 @@ export function LiveClassList({ sessions, onJoin }: LiveClassListProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
       {sessions.map((session) => (
-        <LiveClassCard key={session.sessionId} session={session} onJoin={onJoin} />
+        <LiveClassCard
+          key={session.sessionId}
+          session={session}
+          onJoin={onJoin}
+          isJoining={joiningSessionId === session.sessionId}
+        />
       ))}
     </div>
   );
 }
-

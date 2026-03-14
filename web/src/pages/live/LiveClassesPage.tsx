@@ -11,8 +11,10 @@ import { toast } from "@/hooks/use-toast";
 export default function LiveClassesPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const userRole = user?.role?.toLowerCase?.() || "";
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<ActiveLiveSession[]>([]);
+  const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
 
   const loadSessions = useCallback(async () => {
     setIsLoading(true);
@@ -35,11 +37,35 @@ export default function LiveClassesPage() {
     loadSessions();
   }, [loadSessions]);
 
-  const handleJoin = (session: ActiveLiveSession) => {
-    navigate(`/classrooms/${session.classroomId}/live`);
-  };
+  const handleJoin = async (session: ActiveLiveSession) => {
+    if (userRole !== "student") {
+      navigate(`/classrooms/${session.classroomId}/live`);
+      return;
+    }
 
-  const userRole = user?.role?.toLowerCase?.() || "";
+    if (joiningSessionId) return;
+
+    setJoiningSessionId(session.sessionId);
+    try {
+      const response = await LiveSessionApi.requestJoin(session.sessionId);
+      navigate(`/classrooms/${session.classroomId}/live`, {
+        state: {
+          preJoin: {
+            sessionId: session.sessionId,
+            status: String(response?.status || "waiting"),
+          },
+        },
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to join live class",
+        description: error?.response?.data?.message || error?.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setJoiningSessionId(null);
+    }
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -64,9 +90,8 @@ export default function LiveClassesPage() {
           ))}
         </div>
       ) : (
-        <LiveClassList sessions={sessions} onJoin={handleJoin} />
+        <LiveClassList sessions={sessions} onJoin={handleJoin} joiningSessionId={joiningSessionId} />
       )}
     </div>
   );
 }
-
