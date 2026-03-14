@@ -17,6 +17,7 @@ interface VideoGridProps {
   layoutMode: MeetingLayoutMode;
   isScreenSharing?: boolean;
   compactMode?: boolean;
+  hideFilmstrip?: boolean;
   pinnedParticipantId?: string | null;
   onPinParticipant?: (participantId: string | null) => void;
 }
@@ -80,6 +81,7 @@ export function VideoGrid({
   layoutMode,
   isScreenSharing = false,
   compactMode = false,
+  hideFilmstrip = false,
   pinnedParticipantId,
   onPinParticipant,
 }: VideoGridProps) {
@@ -141,14 +143,14 @@ export function VideoGrid({
     gap: GRID_GAP,
   };
 
-  const stageRailStyle: CSSProperties | undefined = isMobile
+  const stageRailStyle: CSSProperties | undefined = isMobile || hideFilmstrip
     ? undefined
     : {
       gridTemplateColumns: `minmax(0, 1fr) ${participantColumnWidth}px`,
     };
 
   return (
-    <div ref={rootRef} className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+    <div ref={rootRef} className="flex h-full min-h-0 flex-1 flex-col gap-3 overflow-hidden">
       {layoutMode === "grid" ? (
         <div className="grid min-h-0 flex-1 auto-rows-fr" style={gridStyle}>
           {orderedParticipants.map((participant) => (
@@ -173,11 +175,15 @@ export function VideoGrid({
         </div>
       ) : (
         <div
-          className={cn("grid min-h-0 flex-1 gap-3", isMobile ? "grid-cols-1 grid-rows-[minmax(0,1fr)_auto]" : "")}
+          className={cn(
+            "grid min-h-0 h-full flex-1 gap-3",
+            hideFilmstrip ? "grid-cols-1 grid-rows-[minmax(0,1fr)]" : "",
+            isMobile && !hideFilmstrip ? "grid-cols-1 grid-rows-[minmax(0,1fr)_auto]" : "",
+          )}
           style={stageRailStyle}
         >
           {showStage && stageParticipant ? (
-            <div className={cn("min-h-0 flex-1 border border-border/70 bg-card/70 shadow-sm", compactMode ? "rounded-[24px] p-1" : "rounded-[28px] p-2")}>
+            <div className={cn("min-h-0 h-full flex-1 border border-border/70 bg-card/70 shadow-sm", compactMode ? "rounded-[24px] p-1" : "rounded-[28px] p-2")}>
               <div className={cn("flex h-full min-h-[280px] flex-col bg-background/70", compactMode ? "gap-1 rounded-[20px] p-1" : "gap-2 rounded-[24px] p-2")}>
                 <div className={cn("flex items-center justify-between text-muted-foreground", compactMode ? "gap-2 px-1 pt-0.5 text-xs" : "gap-3 px-2 pt-1 text-sm")}>
                   <div className="flex items-center gap-2">
@@ -196,7 +202,7 @@ export function VideoGrid({
                   participant={stageParticipant}
                   label={participantNameMap?.[stageParticipant.identity]}
                   isVisible
-                  tileWidth={Math.max(containerSize.width - (isMobile ? 0 : participantColumnWidth), 720)}
+                  tileWidth={Math.max(containerSize.width - (isMobile || hideFilmstrip ? 0 : participantColumnWidth), 720)}
                   className="min-h-0 flex-1"
                   size="stage"
                   isActiveSpeaker={activeSpeakerId === stageParticipant.identity}
@@ -212,46 +218,48 @@ export function VideoGrid({
             </div>
           ) : null}
 
-          <aside
-            className={cn(
-              "min-h-0 overflow-hidden border border-border/70 bg-card/60 shadow-sm",
-              compactMode ? "rounded-[20px] p-2" : "rounded-[24px] p-3",
-              isMobile ? "max-h-[40vh]" : "",
-            )}
-            style={isMobile ? undefined : { width: participantColumnWidth }}
-          >
-            <div className={cn("flex items-center justify-between gap-3 px-1", compactMode ? "mb-2" : "mb-3")}>
-              <div className={cn("flex items-center gap-2 font-medium text-foreground", compactMode ? "text-xs" : "text-sm")}>
-                {isScreenSharing ? <MonitorUp className={cn(compactMode ? "h-3.5 w-3.5" : "h-4 w-4")} /> : <LayoutGrid className={cn(compactMode ? "h-3.5 w-3.5" : "h-4 w-4")} />}
-                <span>Participants</span>
-                <span className="text-muted-foreground">{filmstripParticipants.length}</span>
+          {!hideFilmstrip && (
+            <aside
+              className={cn(
+                "min-h-0 overflow-hidden border border-border/70 bg-card/60 shadow-sm",
+                compactMode ? "rounded-[20px] p-2" : "rounded-[24px] p-3",
+                isMobile ? "max-h-[40vh]" : "",
+              )}
+              style={isMobile ? undefined : { width: participantColumnWidth }}
+            >
+              <div className={cn("flex items-center justify-between gap-3 px-1", compactMode ? "mb-2" : "mb-3")}>
+                <div className={cn("flex items-center gap-2 font-medium text-foreground", compactMode ? "text-xs" : "text-sm")}>
+                  {isScreenSharing ? <MonitorUp className={cn(compactMode ? "h-3.5 w-3.5" : "h-4 w-4")} /> : <LayoutGrid className={cn(compactMode ? "h-3.5 w-3.5" : "h-4 w-4")} />}
+                  <span>Participants</span>
+                  <span className="text-muted-foreground">{filmstripParticipants.length}</span>
+                </div>
               </div>
-            </div>
 
-            <ScrollArea className="h-full rounded-xl">
-              <div className={cn("flex flex-col pr-2", compactMode ? "gap-2" : "gap-3")}>
-                {filmstripParticipants.map((participant) => (
-                  <VideoTile
-                    key={participant.sid}
-                    participant={participant}
-                    label={participantNameMap?.[participant.identity]}
-                    isVisible
-                    tileWidth={participantTileWidth}
-                    className={cn("aspect-video h-auto w-full", compactMode ? "min-h-[80px]" : "min-h-[96px]")}
-                    size="filmstrip"
-                    isActiveSpeaker={activeSpeakerId === participant.identity}
-                    handRaised={raisedHandIds?.has(participant.identity)}
-                    isPinned={participant.identity === pinnedParticipantId}
-                    onClick={() =>
-                      onPinParticipant?.(
-                        pinnedParticipantId === participant.identity ? null : participant.identity,
-                      )
-                    }
-                  />
-                ))}
-              </div>
-            </ScrollArea>
-          </aside>
+              <ScrollArea className="h-full rounded-xl">
+                <div className={cn("flex flex-col pr-2", compactMode ? "gap-2" : "gap-3")}>
+                  {filmstripParticipants.map((participant) => (
+                    <VideoTile
+                      key={participant.sid}
+                      participant={participant}
+                      label={participantNameMap?.[participant.identity]}
+                      isVisible
+                      tileWidth={participantTileWidth}
+                      className={cn("aspect-video h-auto w-full", compactMode ? "min-h-[80px]" : "min-h-[96px]")}
+                      size="filmstrip"
+                      isActiveSpeaker={activeSpeakerId === participant.identity}
+                      handRaised={raisedHandIds?.has(participant.identity)}
+                      isPinned={participant.identity === pinnedParticipantId}
+                      onClick={() =>
+                        onPinParticipant?.(
+                          pinnedParticipantId === participant.identity ? null : participant.identity,
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            </aside>
+          )}
         </div>
       )}
     </div>

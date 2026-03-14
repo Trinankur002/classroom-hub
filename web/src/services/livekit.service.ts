@@ -83,6 +83,9 @@ class LivekitRoomService {
 
   async connectToRoom(token: string, url: string) {
     const room = this.createRoom();
+    if (room.state === "connected" || room.state === "reconnecting") {
+      return room;
+    }
     await room.connect(url, token);
     this.notifyState();
     return room;

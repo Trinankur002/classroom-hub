@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { LiveSessionApi } from "@/services/live-session.api";
 import { ActiveLiveSession } from "@/types/live-session";
 import { LiveClassList } from "@/components/live/LiveClassList";
@@ -7,14 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import ClassroomLivePage from "@/pages/ClassroomLivePage";
+import { useLiveSessionContext } from "@/components/live/LiveSessionContext";
 
 export default function LiveClassesPage() {
-  const navigate = useNavigate();
   const { user } = useAuth();
+  const { liveSessionActive, currentClassroomId, currentSessionId } = useLiveSessionContext();
   const userRole = user?.role?.toLowerCase?.() || "";
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<ActiveLiveSession[]>([]);
   const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
+  const [activeClassroomId, setActiveClassroomId] = useState<string | null>(null);
+  const [preJoinState, setPreJoinState] = useState<{ sessionId?: string; status?: string } | undefined>(undefined);
 
   const loadSessions = useCallback(async () => {
     setIsLoading(true);
@@ -37,9 +40,19 @@ export default function LiveClassesPage() {
     loadSessions();
   }, [loadSessions]);
 
+  useEffect(() => {
+    if (!liveSessionActive || !currentClassroomId) return;
+    setActiveClassroomId((current) => current ?? currentClassroomId);
+    setPreJoinState((current) => current ?? {
+      sessionId: currentSessionId ?? undefined,
+      status: "approved",
+    });
+  }, [currentClassroomId, currentSessionId, liveSessionActive]);
+
   const handleJoin = async (session: ActiveLiveSession) => {
     if (userRole !== "student") {
-      navigate(`/classrooms/${session.classroomId}/live`);
+      setPreJoinState(undefined);
+      setActiveClassroomId(session.classroomId);
       return;
     }
 
@@ -48,14 +61,11 @@ export default function LiveClassesPage() {
     setJoiningSessionId(session.sessionId);
     try {
       const response = await LiveSessionApi.requestJoin(session.sessionId);
-      navigate(`/classrooms/${session.classroomId}/live`, {
-        state: {
-          preJoin: {
-            sessionId: session.sessionId,
-            status: String(response?.status || "waiting"),
-          },
-        },
+      setPreJoinState({
+        sessionId: session.sessionId,
+        status: String(response?.status || "waiting"),
       });
+      setActiveClassroomId(session.classroomId);
     } catch (error: any) {
       toast({
         title: "Failed to join live class",
@@ -66,6 +76,22 @@ export default function LiveClassesPage() {
       setJoiningSessionId(null);
     }
   };
+
+  if (activeClassroomId) {
+    return (
+      <div className="p-2">
+        <ClassroomLivePage
+          classroomId={activeClassroomId}
+          preJoinState={preJoinState}
+          onLeavePage={() => {
+            setActiveClassroomId(null);
+            setPreJoinState(undefined);
+            void loadSessions();
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">

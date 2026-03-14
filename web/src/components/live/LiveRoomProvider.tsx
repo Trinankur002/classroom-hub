@@ -7,6 +7,7 @@ import { useParticipants } from "@/hooks/useParticipants";
 interface LiveRoomProviderProps {
   token?: string;
   livekitUrl?: string;
+  preserveConnectionOnUnmount?: boolean;
   children: ReactNode;
 }
 
@@ -24,7 +25,7 @@ interface ExtendedLiveRoomContextValue extends LiveRoomContextValue {
 
 const LiveRoomContext = createContext<ExtendedLiveRoomContextValue | null>(null);
 
-export function LiveRoomProvider({ token, livekitUrl, children }: LiveRoomProviderProps) {
+export function LiveRoomProvider({ token, livekitUrl, preserveConnectionOnUnmount = false, children }: LiveRoomProviderProps) {
   const [room, setRoom] = useState<Room | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [localParticipant, setLocalParticipant] = useState<LocalParticipant | null>(null);
@@ -70,9 +71,11 @@ export function LiveRoomProvider({ token, livekitUrl, children }: LiveRoomProvid
 
     return () => {
       mounted = false;
-      livekitService.disconnect();
+      if (!preserveConnectionOnUnmount) {
+        livekitService.disconnect();
+      }
     };
-  }, [livekitUrl, token]);
+  }, [livekitUrl, preserveConnectionOnUnmount, token]);
 
   const value = useMemo<ExtendedLiveRoomContextValue>(() => ({
     room,
@@ -123,4 +126,3 @@ export function useLiveRoom() {
   }
   return context;
 }
-

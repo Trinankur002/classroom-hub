@@ -26,6 +26,8 @@ import ClassroomLivePage from "./pages/ClassroomLivePage";
 import LiveClassPage from "./pages/LiveClassPage";
 import AllMaterials from "./pages/AllMaterials";
 import LiveClassesPage from "./pages/live/LiveClassesPage";
+import { LiveSessionProvider } from "./components/live/LiveSessionContext";
+import { MiniLiveOverlay } from "./components/live/MiniLiveOverlay";
 
 const queryClient = new QueryClient();
 
@@ -47,41 +49,42 @@ const App = () => (
           <ThemeProvider />
           <Toaster />
           {/* <Sonner /> */}
-
-          <Routes>
-            {/* Protected App routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<AppLayout />}>
-                <Route index element={<Navigate to="/dashboard" replace />} />
-                <Route path="dashboard" element={<Dashboard />} />
-                <Route path="classrooms" element={<Classrooms />} />
-                <Route path="classrooms/:id" element={<Class />} />
-                <Route path="allmaterials" element={<AllMaterials />}>
-                  <Route index element={<Navigate to="assignments" replace />} />
-                  <Route path="assignments" element={<AllAssignments />} />
-                  <Route path="notes" element={<AllNotesPage />} />
+          <LiveSessionProvider>
+            <Routes>
+              {/* Protected App routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<AppLayout />}>
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="classrooms" element={<Classrooms />} />
+                  <Route path="classrooms/:id" element={<Class />} />
+                  <Route path="allmaterials" element={<AllMaterials />}>
+                    <Route index element={<Navigate to="assignments" replace />} />
+                    <Route path="assignments" element={<AllAssignments />} />
+                    <Route path="notes" element={<AllNotesPage />} />
+                  </Route>
+                  <Route path="allassignments" element={<Navigate to="/allmaterials/assignments" replace />} />
+                  <Route path="notes" element={<Navigate to="/allmaterials/notes" replace />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="live" element={<LiveClassesPage />} />
+                  <Route path="live-class" element={<LiveClassPage />} />
+                  <Route path="classrooms/:classroomId/live" element={<ClassroomLivePage />} />
                 </Route>
-                <Route path="allassignments" element={<Navigate to="/allmaterials/assignments" replace />} />
-                <Route path="notes" element={<Navigate to="/allmaterials/notes" replace />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="live" element={<LiveClassesPage />} />
-                <Route path="live-class" element={<LiveClassPage />} />
-                <Route path="classrooms/:classroomId/live" element={<ClassroomLivePage />} />
               </Route>
-            </Route>
 
-            {/* Public (auth) routes */}
-            <Route element={<PublicRoute />}>
-              <Route element={<AuthLayout />}>
-                <Route path="login" element={<Login />} />
-                <Route path="signup" element={<SignUp />} />
+              {/* Public (auth) routes */}
+              <Route element={<PublicRoute />}>
+                <Route element={<AuthLayout />}>
+                  <Route path="login" element={<Login />} />
+                  <Route path="signup" element={<SignUp />} />
+                </Route>
               </Route>
-            </Route>
 
-            {/* 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-
+              {/* 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <MiniLiveOverlay />
+          </LiveSessionProvider>
 
         </TooltipProvider>
       </AuthProvider>
