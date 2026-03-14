@@ -8,13 +8,20 @@ import { LivekitService } from './services/livekit.service';
 import { LiveSessionController } from './live-session.controller';
 import { LiveSessionGateway } from './live-session.gateway';
 import { Classroom } from 'src/classrooms/entities/classroom.entity';
+import { StudentClassroom } from 'src/classrooms/entities/student-classroom.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([LiveSession, ParticipantSession, LiveSessionMessage, Classroom]),
+        TypeOrmModule.forFeature([
+            LiveSession,
+            ParticipantSession,
+            LiveSessionMessage,
+            Classroom,
+            StudentClassroom,
+        ]),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],

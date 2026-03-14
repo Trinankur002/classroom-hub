@@ -31,6 +31,7 @@ export function Sidebar({ open, onOpenChange, user, userRole }: SidebarProps) {
     navigationItems = [
       { name: "Dashboard", href: "/dashboard", icon: Home },
       { name: "Classes", href: "/classrooms", icon: Users },
+      { name: "Live Classes", href: "/live", icon: TvMinimalPlay },
       { name: "All Materials", href: "/allmaterials", icon: BookOpen },
       { name: "Settings", href: "/settings", icon: Settings },
     ];

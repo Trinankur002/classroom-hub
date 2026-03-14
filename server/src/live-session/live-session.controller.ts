@@ -38,6 +38,11 @@ export class LiveSessionController {
     };
   }
 
+  @Get('active')
+  async getActiveSessionsForUser(@Request() req) {
+    return this.liveService.getActiveSessionsForUser(req.user.id, req.user.role);
+  }
+
   @Post(':classroomId/start')
   async startSession(
     @Request() req,

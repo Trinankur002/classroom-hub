@@ -13,7 +13,8 @@ export function BottomNav(
     bottomNavItems = [
       { name: "Dashboard", href: "/dashboard", icon: Home },
       { name: "Classes", href: "/classrooms", icon: Users },
-      { name: "All Materials", href: "/allmaterials", icon: BookOpen },
+      { name: "Live", href: "/live", icon: TvMinimalPlay },
+      { name: "Materials", href: "/allmaterials", icon: BookOpen },
       // { name: "Chat", href: "/chat", icon: MessageCircle },
       { name: "Settings", href: "/settings", icon: Settings },
     ];

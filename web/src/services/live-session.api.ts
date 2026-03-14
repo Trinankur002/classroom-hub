@@ -1,5 +1,5 @@
 import api from "./api";
-import { LiveClassPermissions, LiveParticipant, LiveSession, LiveSessionMessage, ModerationAction, TokenResponse } from "@/types/live-session";
+import { ActiveLiveSession, LiveClassPermissions, LiveParticipant, LiveSession, LiveSessionMessage, ModerationAction, TokenResponse } from "@/types/live-session";
 
 const normalizeSession = (raw: any): LiveSession | null => {
   if (!raw) return null;
@@ -33,6 +33,14 @@ class LiveSessionApiService {
   async getTeacherActiveSession(): Promise<LiveSession | null> {
     const { data } = await api.get("/live-sessions/teacher/active");
     return normalizeSession(data);
+  }
+
+  async getActiveSessionsForUser(): Promise<ActiveLiveSession[]> {
+    const { data } = await api.get("/live-sessions/active");
+    if (!Array.isArray(data)) {
+      return [];
+    }
+    return data;
   }
 
   async requestJoin(sessionId: string): Promise<{ status: string; sessionId: string }> {

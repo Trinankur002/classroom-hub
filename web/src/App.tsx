@@ -25,6 +25,7 @@ import AllNotesPage from "./pages/AllNotesPage";
 import ClassroomLivePage from "./pages/ClassroomLivePage";
 import LiveClassPage from "./pages/LiveClassPage";
 import AllMaterials from "./pages/AllMaterials";
+import LiveClassesPage from "./pages/live/LiveClassesPage";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
                 <Route path="allassignments" element={<Navigate to="/allmaterials/assignments" replace />} />
                 <Route path="notes" element={<Navigate to="/allmaterials/notes" replace />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="live" element={<LiveClassesPage />} />
                 <Route path="live-class" element={<LiveClassPage />} />
                 <Route path="classrooms/:classroomId/live" element={<ClassroomLivePage />} />
               </Route>

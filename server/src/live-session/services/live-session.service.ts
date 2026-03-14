@@ -17,6 +17,8 @@ import {
 import { Classroom } from 'src/classrooms/entities/classroom.entity';
 import { Role } from 'src/users/entities/role.enum';
 import { LiveSessionGateway } from '../live-session.gateway';
+import { StudentClassroom } from 'src/classrooms/entities/student-classroom.entity';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class LiveSessionService {
@@ -29,6 +31,8 @@ export class LiveSessionService {
     private liveSessionMessageRepo: Repository<LiveSessionMessage>,
     @InjectRepository(Classroom)
     private classroomRepo: Repository<Classroom>,
+    @InjectRepository(StudentClassroom)
+    private studentClassroomRepo: Repository<StudentClassroom>,
     private livekitService: LivekitService,
     private liveSessionGateway: LiveSessionGateway,
   ) {}
@@ -106,6 +110,55 @@ export class LiveSessionService {
       },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async getActiveSessionsForUser(userId: string, userRole: Role) {
+    const query = this.liveSessionRepo
+      .createQueryBuilder('session')
+      .innerJoin(Classroom, 'classroom', 'classroom.id::text = session.classroomId')
+      .where('session.isActive = :isActive', { isActive: true });
+
+    if (userRole === Role.Student) {
+      const memberships = await this.studentClassroomRepo.find({
+        where: { studentId: userId },
+        select: ['classroomId'],
+      });
+      const classroomIds = memberships.map((membership) => membership.classroomId);
+      if (!classroomIds.length) {
+        return [];
+      }
+      query.andWhere('session.classroomId IN (:...classroomIds)', { classroomIds });
+    } else if (userRole === Role.Teacher) {
+      query.andWhere('session.teacherId = :userId', { userId });
+    } else {
+      return [];
+    }
+
+    const rows = await query
+      .innerJoin(User, 'teacher', 'teacher.id = classroom.teacherId')
+      .select([
+        'session.id AS "sessionId"',
+        'session.classroomId AS "classroomId"',
+        'session.isActive AS "isActive"',
+        'classroom.name AS "classroomName"',
+        'teacher.name AS "teacherName"',
+      ])
+      .orderBy('session.createdAt', 'DESC')
+      .getRawMany<{
+        sessionId: string;
+        classroomId: string;
+        isActive: boolean;
+        classroomName: string;
+        teacherName: string;
+      }>();
+
+    return rows.map((row) => ({
+      sessionId: row.sessionId,
+      classroomId: row.classroomId,
+      isActive: Boolean(row.isActive),
+      classroomName: row.classroomName,
+      teacherName: row.teacherName,
+    }));
   }
 
   async startSession(

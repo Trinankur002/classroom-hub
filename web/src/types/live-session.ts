@@ -14,6 +14,14 @@ export interface LiveSession {
   allowStudentScreenShare?: boolean;
 }
 
+export interface ActiveLiveSession {
+  sessionId: string;
+  classroomId: string;
+  classroomName: string;
+  teacherName: string;
+  isActive: boolean;
+}
+
 export interface TokenResponse {
   sessionId: string;
   roomName: string;
