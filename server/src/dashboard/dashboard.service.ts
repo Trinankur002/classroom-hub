@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, LessThan, MoreThan, Repository } from 'typeorm';
+import { Brackets, In, LessThan, MoreThan, Repository } from 'typeorm';
 import { Classroom } from 'src/classrooms/entities/classroom.entity';
 import { StudentClassroom } from 'src/classrooms/entities/student-classroom.entity';
 import { ClassroomAnnouncement } from 'src/classrooms/entities/classroom-announcement.entity';
@@ -118,7 +118,7 @@ export class DashboardService {
 
     if (user.role === Role.Teacher) {
       const needsAttention = await this.getTeacherNeedsAttention(classrooms);
-      const recentActivity = await this.getTeacherRecentActivity(classrooms);
+      const recentActivity = await this.getTeacherRecentActivity(classrooms, user.id);
       const activeSession = await this.liveSessionRepo.findOne({
         where: { teacherId: user.id, isActive: true },
         order: { createdAt: 'DESC' },
@@ -448,15 +448,26 @@ export class DashboardService {
     ].slice(0, 8);
   }
 
-  private async getTeacherRecentActivity(classrooms: Classroom[]) {
+  private async getTeacherRecentActivity(classrooms: Classroom[], teacherId: string) {
     const classroomIds = classrooms.map((classroom) => classroom.id);
     if (!classroomIds.length) return [];
 
-    const events = await this.eventRepo.find({
-      where: { classroomId: In(classroomIds) },
-      order: { createdAt: 'DESC' },
-      take: 8,
-    });
+    const events = await this.eventRepo
+      .createQueryBuilder('event')
+      .where('event.classroomId IN (:...classroomIds)', { classroomIds })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('event.type IN (:...allowedEventTypes)', {
+            allowedEventTypes: [EventType.NEW_DOUBT, EventType.ASSIGNMENT_SUBMITTED],
+          }).orWhere('event.type = :mentionType AND event.targetUserId = :teacherId', {
+            mentionType: EventType.MENTION,
+            teacherId,
+          });
+        }),
+      )
+      .orderBy('event.createdAt', 'DESC')
+      .limit(8)
+      .getMany();
 
     return events.map((event) => ({
       id: event.id,
@@ -465,6 +476,7 @@ export class DashboardService {
       classroomName:
         classrooms.find((item) => item.id === event.classroomId)?.name || 'Classroom',
       announcementId: event.announcementId,
+      targetUserId: event.targetUserId,
       createdAt: event.createdAt,
       summary: this.getEventSummary(event),
     }));
@@ -476,10 +488,8 @@ export class DashboardService {
         return 'A new doubt was posted.';
       case EventType.ASSIGNMENT_SUBMITTED:
         return 'A student submitted an assignment.';
-      case EventType.ANNOUNCEMENT_POSTED:
-        return 'A new class update was posted.';
       case EventType.MENTION:
-        return 'A mention was created in a class discussion.';
+        return 'You were mentioned in a class discussion.';
       default:
         return 'Recent classroom activity.';
     }

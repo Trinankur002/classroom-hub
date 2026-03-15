@@ -28,6 +28,7 @@ export interface DashboardFeedListItem {
   classroomId?: string;
   classroomName?: string;
   announcementId?: string;
+  targetUserId?: string;
   createdAt?: string;
   dueDate?: string | null;
   pendingCount?: number;

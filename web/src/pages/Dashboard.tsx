@@ -18,7 +18,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import DashboardService from "@/services/dashboardService";
-import { DashboardFeed, DashboardSummary, DashboardTopDoubtClassroom } from "@/types/dashboard";
+import {
+  DashboardFeed,
+  DashboardFeedListItem,
+  DashboardSummary,
+  DashboardTopDoubtClassroom,
+} from "@/types/dashboard";
 
 function formatDate(value?: string | null) {
   if (!value) return "No date";
@@ -140,6 +145,31 @@ export default function Dashboard() {
             description: "Active live sessions available to join",
           },
         ];
+
+  const handleRecentActivityClick = (item: DashboardFeedListItem) => {
+    if (!item.classroomId) {
+      return;
+    }
+
+    if (item.type === "NEW_DOUBT") {
+      navigate(`/classrooms/${item.classroomId}`, {
+        state: { activeTab: "doubts" },
+      });
+      return;
+    }
+
+    if ((item.type === "MENTION" || item.type === "ASSIGNMENT_SUBMITTED") && item.announcementId) {
+      navigate(`/classrooms/${item.classroomId}`, {
+        state: {
+          activeTab: "announcements",
+          selectedAnnouncementId: item.announcementId,
+        },
+      });
+      return;
+    }
+
+    navigate(`/classrooms/${item.classroomId}`);
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -266,12 +296,16 @@ export default function Dashboard() {
                 <CardContent className="space-y-3">
                   {feed?.lists.recentActivity?.length ? (
                     feed.lists.recentActivity.map((item) => (
-                      <div key={item.id} className="rounded-2xl border border-border/70 p-4">
+                      <button
+                        key={item.id}
+                        className="w-full rounded-2xl border border-border/70 p-4 text-left transition hover:border-primary/40"
+                        onClick={() => handleRecentActivityClick(item)}
+                      >
                         <p className="font-medium text-foreground">{item.summary}</p>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {item.classroomName} · {formatDate(item.createdAt)}
                         </p>
-                      </div>
+                      </button>
                     ))
                   ) : (
                     <p className="text-sm text-muted-foreground">No recent activity to show yet.</p>
