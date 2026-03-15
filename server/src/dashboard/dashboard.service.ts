@@ -11,6 +11,8 @@ import { EventType } from 'src/event/event.interface';
 import { User } from 'src/users/entities/user.entity';
 import { Role } from 'src/users/entities/role.enum';
 import { LiveSession } from 'src/live-session/entities/live-session.entity';
+import { ParticipantSession } from 'src/live-session/entities/participant-session.entity';
+import { ParticipantRole, ParticipantStatus } from 'src/live-session/live-session.types';
 
 @Injectable()
 export class DashboardService {
@@ -29,6 +31,8 @@ export class DashboardService {
     private readonly eventRepo: Repository<Event>,
     @InjectRepository(LiveSession)
     private readonly liveSessionRepo: Repository<LiveSession>,
+    @InjectRepository(ParticipantSession)
+    private readonly participantSessionRepo: Repository<ParticipantSession>,
   ) {}
 
   async getSummary(user: User) {
@@ -215,6 +219,17 @@ export class DashboardService {
       lastDoubtAt: topClassroom.lastDoubtAt || null,
       since: sinceDate.toISOString(),
     };
+  }
+
+  async getProgress(user: User) {
+    const classrooms = await this.getUserClassrooms(user);
+    const classroomIds = classrooms.map((classroom) => classroom.id);
+
+    if (user.role === Role.Teacher) {
+      return this.getTeacherProgress(user, classrooms, classroomIds);
+    }
+
+    return this.getStudentProgress(user, classroomIds);
   }
 
   private async getUserClassrooms(user: User) {
@@ -515,6 +530,255 @@ export class DashboardService {
     return {
       id: classroom.id,
       name: classroom.name,
+    };
+  }
+
+  private safePercent(numerator: number, denominator: number) {
+    if (!denominator) return 0;
+    return Math.round((numerator / denominator) * 100);
+  }
+
+  private formatMonthKey(dateValue?: Date | string | null) {
+    if (!dateValue) return 'Unknown';
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return 'Unknown';
+    return `${date.toLocaleString('en-US', { month: 'short' })} ${date.getUTCFullYear()}`;
+  }
+
+  private async getTeacherProgress(user: User, classrooms: Classroom[], classroomIds: string[]) {
+    const allAssignments = classroomIds.length
+      ? await this.announcementRepo.find({
+          where: {
+            classroomId: In(classroomIds),
+            isAssignment: true,
+          },
+          select: ['id', 'classroomId', 'createdAt'],
+        })
+      : [];
+
+    const assignmentIds = allAssignments.map((assignment) => assignment.id);
+
+    const submissions = assignmentIds.length
+      ? await this.assignmentRepo.find({
+          where: {
+            announcementId: In(assignmentIds),
+          },
+          select: ['id', 'announcementId', 'studentId', 'grade', 'gradedAt', 'createdAt'],
+          order: { createdAt: 'ASC' },
+        })
+      : [];
+
+    const uniqueSubmissionPairs = new Set(
+      submissions.map((submission) => `${submission.announcementId}:${submission.studentId}`),
+    );
+
+    const totalExpectedSubmissions = allAssignments.reduce(
+      (sum, assignment) =>
+        sum + ((classrooms.find((item) => item.id === assignment.classroomId)?.studentCount || 0) as number),
+      0,
+    );
+
+    const allMemberships = classroomIds.length
+      ? await this.membershipRepo.find({
+          where: { classroomId: In(classroomIds) },
+          select: ['studentId'],
+        })
+      : [];
+    const uniqueStudents = new Set(allMemberships.map((item) => item.studentId));
+
+    const doubts = classroomIds.length
+      ? await this.doubtsRepo.find({
+          where: { classroomId: In(classroomIds) },
+          select: ['studentId', 'classroomId', 'createdAt'],
+        })
+      : [];
+
+    const doubtAskers = new Set(doubts.map((doubt) => doubt.studentId));
+
+    const liveSessions = classroomIds.length
+      ? await this.liveSessionRepo.find({
+          where: { classroomId: In(classroomIds) },
+          select: ['id', 'classroomId', 'createdAt'],
+        })
+      : [];
+
+    const liveSessionIds = liveSessions.map((session) => session.id);
+    const attendanceEntries = liveSessionIds.length
+      ? await this.participantSessionRepo.find({
+          where: {
+            liveSessionId: In(liveSessionIds),
+            role: ParticipantRole.STUDENT,
+            status: ParticipantStatus.APPROVED,
+          },
+          select: ['liveSessionId', 'userId', 'joinedAt'],
+        })
+      : [];
+
+    const uniqueAttendancePairs = new Set(
+      attendanceEntries.map((entry) => `${entry.liveSessionId}:${entry.userId}`),
+    );
+
+    const expectedAttendance = liveSessions.reduce(
+      (sum, session) =>
+        sum + ((classrooms.find((item) => item.id === session.classroomId)?.studentCount || 0) as number),
+      0,
+    );
+
+    const recentCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const recentSubmissionStudents = submissions
+      .filter((submission) => new Date(submission.createdAt) >= recentCutoff)
+      .map((submission) => submission.studentId);
+    const recentDoubtStudents = doubts
+      .filter((doubt) => new Date(doubt.createdAt) >= recentCutoff)
+      .map((doubt) => doubt.studentId);
+    const recentAttendanceStudents = attendanceEntries
+      .filter((entry) => new Date(entry.joinedAt) >= recentCutoff)
+      .map((entry) => entry.userId);
+    const activeStudents = new Set([
+      ...recentSubmissionStudents,
+      ...recentDoubtStudents,
+      ...recentAttendanceStudents,
+    ]);
+
+    const assignmentCompletionByClassroom = classrooms.map((classroom) => {
+      const classroomAssignments = allAssignments.filter((assignment) => assignment.classroomId === classroom.id);
+      const expected = classroomAssignments.length * (classroom.studentCount || 0);
+      const submitted = uniqueSubmissionPairs.size
+        ? Array.from(uniqueSubmissionPairs).filter((pair) =>
+            classroomAssignments.some((assignment) => pair.startsWith(`${assignment.id}:`)),
+          ).length
+        : 0;
+      return {
+        label: classroom.name,
+        value: this.safePercent(submitted, expected),
+      };
+    });
+
+    const gradeTrendMap = new Map<string, { total: number; count: number }>();
+    submissions
+      .filter((submission) => submission.grade !== null && submission.grade !== undefined)
+      .forEach((submission) => {
+        const key = this.formatMonthKey(submission.gradedAt || submission.createdAt);
+        const current = gradeTrendMap.get(key) || { total: 0, count: 0 };
+        current.total += Number(submission.grade || 0);
+        current.count += 1;
+        gradeTrendMap.set(key, current);
+      });
+
+    const gradeTrends = Array.from(gradeTrendMap.entries()).map(([label, value]) => ({
+      label,
+      value: Number((value.total / value.count).toFixed(2)),
+    }));
+
+    return {
+      role: 'teacher',
+      metrics: {
+        assignmentCompletionPercent: this.safePercent(uniqueSubmissionPairs.size, totalExpectedSubmissions),
+        studentActivityPercent: this.safePercent(activeStudents.size, uniqueStudents.size),
+        doubtParticipationPercent: this.safePercent(doubtAskers.size, uniqueStudents.size),
+        attendancePercent: this.safePercent(uniqueAttendancePairs.size, expectedAttendance),
+        assignmentsSubmitted: uniqueSubmissionPairs.size,
+        totalStudents: uniqueStudents.size,
+      },
+      charts: {
+        assignmentCompletion: assignmentCompletionByClassroom
+          .sort((a, b) => b.value - a.value)
+          .slice(0, 8),
+        gradeTrends,
+      },
+    };
+  }
+
+  private async getStudentProgress(user: User, classroomIds: string[]) {
+    const pendingAssignments = await this.getStudentPendingAssignments(user.id, classroomIds, 500);
+    const missedAssignments = await this.getStudentMissedAssignments(user.id, classroomIds, 500);
+
+    const completedSubmissions = await this.assignmentRepo.find({
+      where: { studentId: user.id },
+      select: ['announcementId', 'grade', 'createdAt', 'gradedAt'],
+      order: { createdAt: 'ASC' },
+    });
+
+    const completedAnnouncementIds = new Set(completedSubmissions.map((submission) => submission.announcementId));
+
+    const doubtsAsked = classroomIds.length
+      ? await this.doubtsRepo.count({
+          where: {
+            classroomId: In(classroomIds),
+            studentId: user.id,
+          },
+        })
+      : 0;
+
+    const liveSessions = classroomIds.length
+      ? await this.liveSessionRepo.find({
+          where: { classroomId: In(classroomIds) },
+          select: ['id'],
+        })
+      : [];
+
+    const attendanceCount = liveSessions.length
+      ? await this.participantSessionRepo
+          .createQueryBuilder('participant')
+          .select('COUNT(DISTINCT participant.liveSessionId)', 'count')
+          .where('participant.liveSessionId IN (:...liveSessionIds)', {
+            liveSessionIds: liveSessions.map((session) => session.id),
+          })
+          .andWhere('participant.userId = :userId', { userId: user.id })
+          .andWhere('participant.role = :role', { role: ParticipantRole.STUDENT })
+          .andWhere('participant.status = :status', { status: ParticipantStatus.APPROVED })
+          .getRawOne<{ count: string }>()
+      : { count: '0' };
+
+    const gradedSubmissions = completedSubmissions.filter(
+      (submission) => submission.grade !== null && submission.grade !== undefined,
+    );
+
+    const averageGrade =
+      gradedSubmissions.length > 0
+        ? Number(
+            (
+              gradedSubmissions.reduce((sum, submission) => sum + Number(submission.grade || 0), 0) /
+              gradedSubmissions.length
+            ).toFixed(2),
+          )
+        : 0;
+
+    const completedAssignments = completedAnnouncementIds.size;
+    const assignmentsMissed = missedAssignments.length;
+    const pendingCount = pendingAssignments.length;
+    const performancePercent = this.safePercent(
+      completedAssignments,
+      completedAssignments + pendingCount + assignmentsMissed,
+    );
+
+    const gradeTrends = gradedSubmissions
+      .slice(-8)
+      .map((submission) => ({
+        label: this.formatMonthKey(submission.gradedAt || submission.createdAt),
+        value: Number(submission.grade || 0),
+      }));
+
+    return {
+      role: 'student',
+      metrics: {
+        assignmentsSubmitted: completedAssignments,
+        assignmentsMissed,
+        doubtsAsked,
+        liveClassAttendance: Number(attendanceCount?.count || 0),
+        completedAssignments,
+        pendingAssignments: pendingCount,
+        grades: averageGrade,
+        performance: performancePercent,
+      },
+      charts: {
+        assignmentCompletion: [
+          { label: 'Completed', value: completedAssignments },
+          { label: 'Pending', value: pendingCount },
+          { label: 'Missed', value: assignmentsMissed },
+        ],
+        gradeTrends,
+      },
     };
   }
 

@@ -1,5 +1,5 @@
 import api from "./api";
-import { DashboardFeed, DashboardSummary, DashboardTopDoubtClassroom } from "@/types/dashboard";
+import { DashboardFeed, DashboardProgress, DashboardSummary, DashboardTopDoubtClassroom } from "@/types/dashboard";
 
 class DashboardService {
   async getSummary(): Promise<{ data?: DashboardSummary; error?: string }> {
@@ -32,6 +32,18 @@ class DashboardService {
       return { data: response.data as DashboardTopDoubtClassroom };
     } catch (error: any) {
       console.error("Error fetching top doubt classroom:", error);
+      return {
+        error: error?.response?.data?.message || error.message || "Something went wrong",
+      };
+    }
+  }
+
+  async getProgress(): Promise<{ data?: DashboardProgress; error?: string }> {
+    try {
+      const response = await api.get("/dashboard/progress");
+      return { data: response.data as DashboardProgress };
+    } catch (error: any) {
+      console.error("Error fetching dashboard progress:", error);
       return {
         error: error?.response?.data?.message || error.message || "Something went wrong",
       };

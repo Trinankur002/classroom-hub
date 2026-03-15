@@ -21,9 +21,12 @@ import DashboardService from "@/services/dashboardService";
 import {
   DashboardFeed,
   DashboardFeedListItem,
+  DashboardProgress,
   DashboardSummary,
   DashboardTopDoubtClassroom,
 } from "@/types/dashboard";
+import { Progress } from "@/components/ui/progress";
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 function formatDate(value?: string | null) {
   if (!value) return "No date";
@@ -40,6 +43,7 @@ export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [feed, setFeed] = useState<DashboardFeed | null>(null);
   const [topDoubtClassroom, setTopDoubtClassroom] = useState<DashboardTopDoubtClassroom | null>(null);
+  const [progress, setProgress] = useState<DashboardProgress | null>(null);
   const [loading, setLoading] = useState(false);
   const targetClassroomId =
     topDoubtClassroom?.classroom?.id ||
@@ -56,11 +60,13 @@ export default function Dashboard() {
         userRole === "teacher"
           ? DashboardService.getTopDoubtClassroom()
           : Promise.resolve({ data: null, error: undefined });
+      const progressRequest = DashboardService.getProgress();
 
-      const [summaryResponse, feedResponse, topDoubtClassroomResponse] = await Promise.all([
+      const [summaryResponse, feedResponse, topDoubtClassroomResponse, progressResponse] = await Promise.all([
         DashboardService.getSummary(),
         DashboardService.getFeed(),
         topDoubtClassroomRequest,
+        progressRequest,
       ]);
 
       if (summaryResponse.error) {
@@ -72,10 +78,14 @@ export default function Dashboard() {
       if (topDoubtClassroomResponse.error) {
         throw new Error(topDoubtClassroomResponse.error);
       }
+      if (progressResponse.error) {
+        throw new Error(progressResponse.error);
+      }
 
       setSummary(summaryResponse.data || null);
       setFeed(feedResponse.data || null);
       setTopDoubtClassroom(topDoubtClassroomResponse.data || null);
+      setProgress(progressResponse.data || null);
     } catch (error) {
       toast({
         title: "Failed to load dashboard",
@@ -171,6 +181,38 @@ export default function Dashboard() {
     navigate(`/classrooms/${item.classroomId}`);
   };
 
+  const assignmentCompletionData = progress?.charts.assignmentCompletion || [];
+  const gradeTrendData = progress?.charts.gradeTrends || [];
+  const hasAssignmentCompletionData = assignmentCompletionData.length > 0;
+  const hasGradeTrendData = gradeTrendData.length > 0;
+  const teacherProgressRows =
+    progress?.role === "teacher"
+      ? [
+          { label: "Assignment completion", value: progress.metrics.assignmentCompletionPercent },
+          { label: "Student activity", value: progress.metrics.studentActivityPercent },
+          { label: "Doubt participation", value: progress.metrics.doubtParticipationPercent },
+          { label: "Attendance", value: progress.metrics.attendancePercent },
+        ].filter((item) => item.value > 0)
+      : [];
+  const studentProgressTiles =
+    progress?.role === "student"
+      ? [
+          { label: "Completed assignments", value: progress.metrics.completedAssignments },
+          { label: "Pending assignments", value: progress.metrics.pendingAssignments },
+          { label: "Average grade", value: progress.metrics.grades },
+          { label: "Performance", value: progress.metrics.performance, suffix: "%" },
+          { label: "Doubts asked", value: progress.metrics.doubtsAsked },
+          { label: "Live attendance", value: progress.metrics.liveClassAttendance },
+        ].filter((item) => item.value > 0)
+      : [];
+  const hasTeacherProgressData = progress?.role === "teacher" && teacherProgressRows.length > 0;
+  const hasStudentProgressData = progress?.role === "student" && studentProgressTiles.length > 0;
+  const showProgressCard = loading || hasTeacherProgressData || hasStudentProgressData;
+  const assignmentChartHeightClass =
+    assignmentCompletionData.length <= 2 ? "h-44" : assignmentCompletionData.length <= 5 ? "h-56" : "h-64";
+  const gradeTrendHeightClass =
+    gradeTrendData.length <= 3 ? "h-48" : gradeTrendData.length <= 6 ? "h-60" : "h-72";
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -229,6 +271,116 @@ export default function Dashboard() {
             ))
           : cards.map((card) => <DashboardCard key={card.title} {...card} />)}
       </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        {showProgressCard && (
+        <Card className="rounded-3xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Student progress
+            </CardTitle>
+            <CardDescription>
+              {userRole === "teacher"
+                ? "Assignment completion, activity, doubts, and attendance across your classes."
+                : "Track your submissions, grades, performance, and participation."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {loading && !progress ? (
+              Array.from({ length: 4 }).map((_, idx) => <Skeleton key={idx} className="h-12 rounded-xl" />)
+            ) : userRole === "teacher" && progress?.role === "teacher" && teacherProgressRows.length ? (
+              <>
+                {teacherProgressRows.map((item) => (
+                  <div key={item.label}>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span>{item.label}</span>
+                      <span>{item.value}%</span>
+                    </div>
+                    <Progress value={item.value} />
+                  </div>
+                ))}
+              </>
+            ) : progress?.role === "student" && studentProgressTiles.length ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {studentProgressTiles.map((item) => (
+                  <div key={item.label} className="rounded-xl border p-3">
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className="text-xl font-semibold">
+                      {item.value}
+                      {item.suffix || ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No progress data available yet.</p>
+            )}
+          </CardContent>
+        </Card>
+        )}
+
+        {(loading || hasAssignmentCompletionData) && (
+        <Card className="rounded-3xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BookText className="h-5 w-5 text-primary" />
+              Assignment completion
+            </CardTitle>
+            <CardDescription>Completion distribution based on your role.</CardDescription>
+          </CardHeader>
+          <CardContent className={assignmentChartHeightClass}>
+            {loading && !progress ? (
+              <Skeleton className="h-full w-full rounded-xl" />
+            ) : hasAssignmentCompletionData ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={assignmentCompletionData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 12 }}
+                    interval={0}
+                    angle={assignmentCompletionData.length > 4 ? -20 : 0}
+                    textAnchor={assignmentCompletionData.length > 4 ? "end" : "middle"}
+                    height={assignmentCompletionData.length > 4 ? 50 : 30}
+                  />
+                  <YAxis tick={{ fontSize: 12 }} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : null}
+          </CardContent>
+        </Card>
+        )}
+      </div>
+
+      {(loading || hasGradeTrendData) && (
+      <Card className="rounded-3xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Grade trends
+          </CardTitle>
+          <CardDescription>How grades are trending over time.</CardDescription>
+        </CardHeader>
+        <CardContent className={gradeTrendHeightClass}>
+          {loading && !progress ? (
+            <Skeleton className="h-full w-full rounded-xl" />
+          ) : hasGradeTrendData ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={gradeTrendData}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : null}
+        </CardContent>
+      </Card>
+      )}
 
       <div className="grid gap-6 xl:grid-cols-[1.45fr,1fr]">
         <div className="space-y-6">

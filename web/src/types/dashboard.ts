@@ -10,6 +10,47 @@ export interface DashboardTopDoubtClassroom {
   lastDoubtAt?: string | null;
 }
 
+export interface DashboardProgressChartPoint {
+  label: string;
+  value: number;
+}
+
+export interface DashboardTeacherProgress {
+  role: "teacher";
+  metrics: {
+    assignmentCompletionPercent: number;
+    studentActivityPercent: number;
+    doubtParticipationPercent: number;
+    attendancePercent: number;
+    assignmentsSubmitted: number;
+    totalStudents: number;
+  };
+  charts: {
+    assignmentCompletion: DashboardProgressChartPoint[];
+    gradeTrends: DashboardProgressChartPoint[];
+  };
+}
+
+export interface DashboardStudentProgress {
+  role: "student";
+  metrics: {
+    assignmentsSubmitted: number;
+    assignmentsMissed: number;
+    doubtsAsked: number;
+    liveClassAttendance: number;
+    completedAssignments: number;
+    pendingAssignments: number;
+    grades: number;
+    performance: number;
+  };
+  charts: {
+    assignmentCompletion: DashboardProgressChartPoint[];
+    gradeTrends: DashboardProgressChartPoint[];
+  };
+}
+
+export type DashboardProgress = DashboardTeacherProgress | DashboardStudentProgress;
+
 export interface DashboardSummary {
   role: "teacher" | "student";
   stats: Record<string, number>;

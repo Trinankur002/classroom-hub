@@ -21,4 +21,9 @@ export class DashboardController {
   getTopDoubtClassroom(@Request() req) {
     return this.dashboardService.getTopDoubtClassroom(req.user);
   }
+
+  @Get('progress')
+  getProgress(@Request() req) {
+    return this.dashboardService.getProgress(req.user);
+  }
 }

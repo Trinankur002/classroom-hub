@@ -7,6 +7,7 @@ import { Assignment } from 'src/assignments/assignment.entity';
 import { Doubts } from 'src/doubts/doubts.entity';
 import { Event } from 'src/event/event.entity';
 import { LiveSession } from 'src/live-session/entities/live-session.entity';
+import { ParticipantSession } from 'src/live-session/entities/participant-session.entity';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
 
@@ -20,6 +21,7 @@ import { DashboardService } from './dashboard.service';
       Doubts,
       Event,
       LiveSession,
+      ParticipantSession,
     ]),
   ],
   controllers: [DashboardController],
