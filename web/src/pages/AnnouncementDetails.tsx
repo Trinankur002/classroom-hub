@@ -18,7 +18,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import AssignmentSubmitButton from "@/components/customComponent/AssignmentSubmitButton";
 import AssignmentService from "@/services/assignmentService";
-import { IAssignment } from "@/types/assignment";
+import { AssignmentSubmissionStatus, IAssignment } from "@/types/assignment";
 import Assignments from "@/components/customComponent/Assignments";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -102,6 +102,43 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
             setAssignmentLoading(false);
         }
     }
+
+    const handleGradeUpdate = async (
+        submissionId: string,
+        payload: {
+            grade?: number;
+            feedback?: string;
+            status?: AssignmentSubmissionStatus;
+            isResubmission?: boolean;
+        },
+    ) => {
+        try {
+            const { data, error } = await AssignmentService.gradeSubmission(submissionId, payload);
+            if (error) {
+                toast({
+                    title: "Failed to update submission",
+                    description: error,
+                    variant: "destructive",
+                });
+                return;
+            }
+
+            if (data) {
+                setAssignments((prev) => prev.map((item) => (item.id === data.id ? data : item)));
+                toast({
+                    title: "Submission updated",
+                    description: "Grade and feedback saved successfully.",
+                });
+            }
+        } catch (error) {
+            console.error("Error updating submission:", error);
+            toast({
+                title: "Failed to update submission",
+                description: "Something went wrong",
+                variant: "destructive",
+            });
+        }
+    };
 
     const handleCommentSubmit = async () => {
         if (!commentText.trim()) return;
@@ -513,9 +550,17 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                     )}
 
                     {/* Submit assignment section */}
-                    {user && userRole === 'student' && !assignments.length && announcement.isAssignment && !assignmentLoading && (
+                    {user && userRole === 'student' && announcement.isAssignment && !assignmentLoading && (
                         <div className="mt-8 flex justify-end" >
-                            <AssignmentSubmitButton userRole={userRole} assignmentId={announcementId} />
+                            <AssignmentSubmitButton
+                                userRole={userRole}
+                                assignmentId={announcementId}
+                                buttonLabel={assignments.length ? "Resubmit Assignment" : "Submit Assignment"}
+                                onAssignmentSubmit={async () => {
+                                    await loadAssignments();
+                                    await getPendingStudents(announcementId);
+                                }}
+                            />
                         </div>
                     )}
 
@@ -566,6 +611,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                             role={userRole}
                             pendingStudentOpen={pendingopen}
                             students={pendingStudents}
+                            onGradeUpdate={userRole === 'teacher' ? handleGradeUpdate : undefined}
                         />
                     )}
                     {/* Mobile-only drawer */}

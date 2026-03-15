@@ -1,9 +1,29 @@
-import { IAssignment } from "@/types/assignment";
+import { AssignmentSubmissionStatus, IAssignment } from "@/types/assignment";
 import api from "./api";
 import { IClassroomAnnouncement } from "@/types/classroomAnnouncement";
 import { User } from "@/types/user";
 
 class AssignmentService {
+    async gradeSubmission(
+        submissionId: string,
+        payload: {
+            grade?: number;
+            feedback?: string;
+            status?: AssignmentSubmissionStatus;
+            isResubmission?: boolean;
+        }
+    ): Promise<{ data?: IAssignment; error?: string }> {
+        try {
+            const response = await api.patch(`/assignments/submission/${submissionId}/grade`, payload);
+            return { data: response.data as IAssignment };
+        } catch (error: any) {
+            console.error("Error grading submission:", error?.response?.data || error.message);
+            return {
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+            };
+        }
+    }
+
     async submitAssignment(assignmentId: string, files: File[]): Promise<any> {
         try {
             const formData = new FormData();

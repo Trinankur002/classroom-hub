@@ -1,7 +1,9 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Request,
   UploadedFiles,
@@ -13,6 +15,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { Role } from 'src/users/entities/role.enum';
 import { AssignmentService } from './assignment.service';
+import { AssignmentSubmissionStatus } from './assignment.entity';
 
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
@@ -88,5 +91,31 @@ export class AssignmentsController {
   @ApiParam({ name: 'announcementid' })
   getPendingStudentsForAnnouncement(@Request() req, @Param('announcementid') announcementid: string) {
     return this.assignmentsService.getPendingStudentsForAnnouncement(announcementid, (req as any).user);
+  }
+
+  @Patch('submission/:submissionId/grade')
+  @ApiParam({ name: 'submissionId' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        grade: { type: 'number', nullable: true },
+        feedback: { type: 'string', nullable: true },
+        status: { type: 'string', enum: Object.values(AssignmentSubmissionStatus), nullable: true },
+        isResubmission: { type: 'boolean', nullable: true },
+      },
+    },
+  })
+  gradeSubmission(
+    @Request() req,
+    @Param('submissionId') submissionId: string,
+    @Body() body: {
+      grade?: number;
+      feedback?: string;
+      status?: AssignmentSubmissionStatus;
+      isResubmission?: boolean;
+    },
+  ) {
+    return this.assignmentsService.gradeSubmission(submissionId, (req as any).user, body);
   }
 }

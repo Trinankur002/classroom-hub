@@ -19,9 +19,10 @@ interface Props {
     userRole: "teacher" | "student";
     assignmentId: string;
     onAssignmentSubmit?: () => void;
+    buttonLabel?: string;
 }
 
-function AssignmentSubmitButton({ userRole, assignmentId, onAssignmentSubmit }: Props) {
+function AssignmentSubmitButton({ userRole, assignmentId, onAssignmentSubmit, buttonLabel = "Submit Assignment" }: Props) {
     const { toast } = useToast();
     const [open, setOpen] = useState(false);
     const [files, setFiles] = useState<File[]>([]);
@@ -110,7 +111,7 @@ function AssignmentSubmitButton({ userRole, assignmentId, onAssignmentSubmit }: 
         <>
             {userRole === "student" && (
                 <Button size="sm" onClick={() => setOpen(true)}>
-                    Submit Assignment
+                    {buttonLabel}
                 </Button>
             )}
 

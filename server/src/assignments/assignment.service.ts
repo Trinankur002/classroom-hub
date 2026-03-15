@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
-import { Assignment } from "./assignment.entity";
+import { Assignment, AssignmentGradeHistoryEntry, AssignmentSubmissionStatus } from "./assignment.entity";
 import { In, LessThan, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import { FileService } from "src/fileServices/file.service";
@@ -27,12 +27,28 @@ export class AssignmentService {
         private eventService: EventService,
     ) { }
 
-    async submitAssignment(announcementid: string, user: User, files: Express.Multer.File[]) {
-        const existing = await this.getAssignmentSubmissionForStudentForAnnouncement(announcementid, user);
-        if (existing.length > 0) {
-            throw new HttpException('Assignment already submitted', HttpStatus.BAD_REQUEST);
-        }
+    private appendGradeHistory(
+        assignment: Assignment,
+        teacherId: string,
+    ) {
+        const history: AssignmentGradeHistoryEntry[] = Array.isArray(assignment.gradeHistory)
+            ? assignment.gradeHistory
+            : [];
 
+        history.push({
+            gradedAt: new Date().toISOString(),
+            gradedById: teacherId,
+            grade: assignment.grade ?? null,
+            feedback: assignment.feedback ?? null,
+            status: assignment.status,
+            isLate: !!assignment.isLate,
+            isResubmission: !!assignment.isResubmission,
+        });
+
+        assignment.gradeHistory = history;
+    }
+
+    async submitAssignment(announcementid: string, user: User, files: Express.Multer.File[]) {
         return await this.assignmentRepository.manager.transaction(async (manager) => {
             // ... (existing code for finding student and announcement) ...
 
@@ -46,14 +62,15 @@ export class AssignmentService {
                 throw new HttpException('Announcement not found', HttpStatus.NOT_FOUND);
             }
 
-            if (announcement.dueDate) {
-                const now = new Date();
-                const gracePeriodDueDate = new Date(announcement.dueDate.getTime() + 2 * 60 * 1000);
+            const existingSubmissionCount = await manager.count(Assignment, {
+                where: {
+                    announcementId: announcement.id,
+                    studentId: student.id,
+                },
+            });
 
-                if (now > gracePeriodDueDate) {
-                    throw new HttpException('Due date has passed', HttpStatus.BAD_REQUEST);
-                }
-            }
+            const now = new Date();
+            const isLateSubmission = !!announcement.dueDate && now > new Date(announcement.dueDate);
 
             const fileEntities: FileEntity[] = [];
             if (files?.length) {
@@ -91,6 +108,10 @@ export class AssignmentService {
                 announcementId: announcement.id,
                 studentId: student.id,
                 files: fileEntities,
+                fileUrl: fileEntities[0]?.url,
+                status: isLateSubmission ? AssignmentSubmissionStatus.LATE : AssignmentSubmissionStatus.SUBMITTED,
+                isLate: isLateSubmission,
+                isResubmission: existingSubmissionCount > 0,
             });
 
             this.eventService.createEvent({
@@ -112,7 +133,10 @@ export class AssignmentService {
                 announcementId: announcementid,
                 studentId: user.id,
             },
-            relations: ['files'],
+            relations: ['files', 'gradedBy'],
+            order: {
+                createdAt: 'DESC',
+            },
         });
         return instanceToPlain(data);
     }
@@ -147,7 +171,10 @@ export class AssignmentService {
                 studentId: user.id ,
                 announcement: { classroom: { id: classroomId } },
             },
-            relations: ['announcement', 'user', 'files'],
+            relations: ['announcement', 'student', 'files', 'gradedBy'],
+            order: {
+                createdAt: 'DESC',
+            },
         });
     }
 
@@ -254,11 +281,28 @@ export class AssignmentService {
             where: {
                 announcementId: announcementid,
             },
-            relations: ['files', 'student'],
+            relations: ['files', 'student', 'gradedBy'],
+            order: {
+                createdAt: 'DESC',
+            },
             select: {
                 id: true,
                 announcementId: true,
                 studentId: true,
+                fileUrl: true,
+                grade: true,
+                feedback: true,
+                status: true,
+                isLate: true,
+                isResubmission: true,
+                gradeHistory: true,
+                gradedAt: true,
+                gradedById: true,
+                gradedBy: {
+                    id: true,
+                    name: true,
+                    email: true,
+                },
                 student: {
                     id: true,
                     name: true,
@@ -270,6 +314,93 @@ export class AssignmentService {
             }
         });
        
+    }
+
+    async gradeSubmission(
+        submissionId: string,
+        user: User,
+        payload: {
+            grade?: number;
+            feedback?: string;
+            status?: AssignmentSubmissionStatus;
+            isResubmission?: boolean;
+        },
+    ): Promise<Assignment> {
+        if (user.role !== Role.Teacher) {
+            throw new HttpException('Only teachers can grade submissions.', HttpStatus.FORBIDDEN);
+        }
+
+        const assignment = await this.assignmentRepository.findOne({
+            where: { id: submissionId },
+            relations: ['announcement', 'student', 'files', 'gradedBy'],
+        });
+
+        if (!assignment) {
+            throw new HttpException('Submission not found.', HttpStatus.NOT_FOUND);
+        }
+
+        const announcement = await this.announcementRepository.findOne({
+            where: { id: assignment.announcementId, teacherId: user.id },
+        });
+
+        if (!announcement) {
+            throw new HttpException('You are not authorized to grade this submission.', HttpStatus.FORBIDDEN);
+        }
+
+        const hasGradeChange = payload.grade !== undefined;
+        const hasFeedbackChange = payload.feedback !== undefined;
+        const hasExplicitStatus =
+            payload.status !== undefined && payload.status !== AssignmentSubmissionStatus.LATE;
+        const computedIsLate = !!announcement.dueDate && new Date(assignment.createdAt) > new Date(announcement.dueDate);
+
+        if (payload.grade !== undefined && Number.isNaN(payload.grade)) {
+            throw new HttpException('Grade must be a valid number.', HttpStatus.BAD_REQUEST);
+        }
+
+        if (payload.grade !== undefined) {
+            assignment.grade = payload.grade;
+        }
+
+        if (payload.feedback !== undefined) {
+            assignment.feedback = payload.feedback;
+        }
+
+        // Late is always derived from due date and submission time.
+        assignment.isLate = computedIsLate;
+
+        if (payload.isResubmission !== undefined) {
+            assignment.isResubmission = payload.isResubmission;
+        }
+
+        if (payload.status && payload.status !== AssignmentSubmissionStatus.LATE) {
+            assignment.status = payload.status;
+        } else if (hasGradeChange || hasFeedbackChange) {
+            assignment.status = AssignmentSubmissionStatus.GRADED;
+        } else if (assignment.isLate) {
+            assignment.status = AssignmentSubmissionStatus.LATE;
+        } else {
+            assignment.status = AssignmentSubmissionStatus.SUBMITTED;
+        }
+
+        if (hasGradeChange || hasFeedbackChange || hasExplicitStatus) {
+            assignment.gradedAt = new Date();
+            assignment.gradedById = user.id;
+        }
+
+        this.appendGradeHistory(assignment, user.id);
+
+        const saved = await this.assignmentRepository.save(assignment);
+
+        const updated = await this.assignmentRepository.findOne({
+            where: { id: saved.id },
+            relations: ['files', 'student', 'gradedBy'],
+        });
+
+        if (!updated) {
+            throw new HttpException('Failed to load graded submission.', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        return updated;
     }
 
     async getPendingStudentsForAnnouncement(announcementid: string, user: User): Promise<User[]> {
