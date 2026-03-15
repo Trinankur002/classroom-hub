@@ -16,4 +16,9 @@ export class DashboardController {
   getFeed(@Request() req) {
     return this.dashboardService.getFeed(req.user);
   }
+
+  @Get('top-doubt-classroom')
+  getTopDoubtClassroom(@Request() req) {
+    return this.dashboardService.getTopDoubtClassroom(req.user);
+  }
 }

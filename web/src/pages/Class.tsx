@@ -208,7 +208,7 @@ export default function Class() {
                         </TabsTrigger>
                         <TabsTrigger className="flex-1 min-w-[120px]" value="announcements">Stream</TabsTrigger>
                         <TabsTrigger className="flex-1 min-w-[120px]" value="doubts">Doubts</TabsTrigger>
-                        <TabsTrigger className="flex-1 min-w-[120px]" value="chat">Chat</TabsTrigger>
+                        {userRole === 'student' && (<TabsTrigger className="flex-1 min-w-[120px]" value="chat">Chat</TabsTrigger>)}
                         {userRole === 'teacher' && (
                             <TabsTrigger className="flex-1 min-w-[120px]" value="students">Students</TabsTrigger>
                         )}

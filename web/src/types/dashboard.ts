@@ -3,6 +3,13 @@ export interface DashboardClassroomRef {
   name: string;
 }
 
+export interface DashboardTopDoubtClassroom {
+  classroom: DashboardClassroomRef | null;
+  doubtCount: number;
+  since: string;
+  lastDoubtAt?: string | null;
+}
+
 export interface DashboardSummary {
   role: "teacher" | "student";
   stats: Record<string, number>;

@@ -25,6 +25,9 @@ function StudentsList(props: Props) {
     const [userToRemove, setUserToRemove] = useState<IClassroomUser | null>(null);
 
     const loadClassroomUsers = async () => {
+        if (!classroomId?.trim()) {
+            return;
+        }
         try {
             setIsLoading(true);
             const { data, error } = await ClassroomAnnouncementService.getAllClassroomUsers(classroomId);
@@ -75,7 +78,7 @@ function StudentsList(props: Props) {
     };
 
     useEffect(() => {
-        if (!user) {
+        if (!user || !classroomId?.trim()) {
             return;
         }
         loadClassroomUsers()

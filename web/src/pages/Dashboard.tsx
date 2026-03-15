@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import DashboardService from "@/services/dashboardService";
-import { DashboardFeed, DashboardSummary } from "@/types/dashboard";
+import { DashboardFeed, DashboardSummary, DashboardTopDoubtClassroom } from "@/types/dashboard";
 
 function formatDate(value?: string | null) {
   if (!value) return "No date";
@@ -34,14 +34,28 @@ export default function Dashboard() {
   const userRole = user.role.toString().toLowerCase();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [feed, setFeed] = useState<DashboardFeed | null>(null);
+  const [topDoubtClassroom, setTopDoubtClassroom] = useState<DashboardTopDoubtClassroom | null>(null);
   const [loading, setLoading] = useState(false);
+  const targetClassroomId =
+    topDoubtClassroom?.classroom?.id ||
+    summary?.shortcuts?.busiestClassroom?.id ||
+    summary?.shortcuts?.firstClassroom?.id;
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const [summaryResponse, feedResponse] = await Promise.all([
+      const topDoubtClassroomRequest: Promise<{
+        data?: DashboardTopDoubtClassroom | null;
+        error?: string;
+      }> =
+        userRole === "teacher"
+          ? DashboardService.getTopDoubtClassroom()
+          : Promise.resolve({ data: null, error: undefined });
+
+      const [summaryResponse, feedResponse, topDoubtClassroomResponse] = await Promise.all([
         DashboardService.getSummary(),
         DashboardService.getFeed(),
+        topDoubtClassroomRequest,
       ]);
 
       if (summaryResponse.error) {
@@ -50,9 +64,13 @@ export default function Dashboard() {
       if (feedResponse.error) {
         throw new Error(feedResponse.error);
       }
+      if (topDoubtClassroomResponse.error) {
+        throw new Error(topDoubtClassroomResponse.error);
+      }
 
       setSummary(summaryResponse.data || null);
       setFeed(feedResponse.data || null);
+      setTopDoubtClassroom(topDoubtClassroomResponse.data || null);
     } catch (error) {
       toast({
         title: "Failed to load dashboard",
@@ -62,7 +80,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userRole]);
 
   useEffect(() => {
     loadDashboard();
@@ -149,28 +167,26 @@ export default function Dashboard() {
           )}
           {userRole === "teacher" && (
             <>
-              <Button
+              {targetClassroomId  &&( <Button
                 variant="outline"
-                onClick={() =>
-                  summary?.shortcuts?.busiestClassroom &&
-                  navigate(`/classrooms/${summary.shortcuts.busiestClassroom.id}`, {
-                    state: { activeTab: "students" },
-                  })
-                }
+                onClick={() => {
+                  if (!targetClassroomId) {
+                    toast({
+                      title: "No classroom doubts found",
+                      variant: "default",
+                    });
+                    return;
+                  }
+
+                  navigate(`/classrooms/${targetClassroomId}`, {
+                    state: {
+                      activeTab: topDoubtClassroom?.classroom?.id ? "doubts" : "students",
+                    },
+                  });
+                }}
               >
                 Busiest class
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() =>
-                  summary?.shortcuts?.recentDoubtClassroom &&
-                  navigate(`/classrooms/${summary.shortcuts.recentDoubtClassroom.id}`, {
-                    state: { activeTab: "doubts" },
-                  })
-                }
-              >
-                Recent doubts
-              </Button>
+              </Button>)}
             </>
           )}
         </div>

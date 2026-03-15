@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, LessThan, MoreThan, Repository } from 'typeorm';
 import { Classroom } from 'src/classrooms/entities/classroom.entity';
@@ -163,6 +163,57 @@ export class DashboardService {
         recentMentions: mentions,
         activeLiveClasses: liveSessions,
       },
+    };
+  }
+
+  async getTopDoubtClassroom(user: User) {
+    if (user.role !== Role.Teacher) {
+      throw new ForbiddenException('Only teachers can access top doubt classroom analytics.');
+    }
+
+    const classrooms = await this.getUserClassrooms(user);
+    const classroomIds = classrooms.map((classroom) => classroom.id);
+    const sinceDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
+    if (!classroomIds.length) {
+      return {
+        classroom: null,
+        doubtCount: 0,
+        since: sinceDate.toISOString(),
+      };
+    }
+
+    const topClassroom = await this.doubtsRepo
+      .createQueryBuilder('doubt')
+      .select('doubt.classroomId', 'classroomId')
+      .addSelect('COUNT(doubt.id)', 'doubtCount')
+      .addSelect('MAX(doubt.createdAt)', 'lastDoubtAt')
+      .where('doubt.classroomId IN (:...classroomIds)', { classroomIds })
+      .andWhere('doubt.createdAt >= :sinceDate', { sinceDate })
+      .groupBy('doubt.classroomId')
+      .orderBy('COUNT(doubt.id)', 'DESC')
+      .addOrderBy('MAX(doubt.createdAt)', 'DESC')
+      .limit(1)
+      .getRawOne<{ classroomId: string; doubtCount: string; lastDoubtAt: string }>();
+
+    if (!topClassroom?.classroomId) {
+      return {
+        classroom: null,
+        doubtCount: 0,
+        since: sinceDate.toISOString(),
+      };
+    }
+
+    const classroom = classrooms.find((item) => item.id === topClassroom.classroomId);
+
+    return {
+      classroom: {
+        id: topClassroom.classroomId,
+        name: classroom?.name || 'Classroom',
+      },
+      doubtCount: Number(topClassroom.doubtCount) || 0,
+      lastDoubtAt: topClassroom.lastDoubtAt || null,
+      since: sinceDate.toISOString(),
     };
   }
 

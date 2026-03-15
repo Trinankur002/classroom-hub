@@ -94,6 +94,12 @@ class ClassroomAnnouncementService {
 
     async getAllClassroomUsers(classroomId: string): Promise<{ data: IClassroomUser[]; error?: string }> {
         try {
+            if (!classroomId?.trim()) {
+                return {
+                    data: [],
+                    error: "Missing classroomId",
+                };
+            }
             const response = await api.get(`/classrooms/${classroomId}/users`);
             return { data: response.data };
         } catch (error: any) {

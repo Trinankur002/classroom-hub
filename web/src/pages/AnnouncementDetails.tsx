@@ -72,6 +72,9 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
     }
 
     const loadClassroomUsers = async () => {
+        if (!classroomId?.trim()) {
+            return;
+        }
         try {
             const { data, error } = await ClassroomAnnouncementService.getAllClassroomUsers(classroomId);
             if (error) {
