@@ -21,6 +21,9 @@ function Doubts({ classroomId }: Props) {
     const [selectedDoubt, setSelectedDoubt] = useState<IDoubt | null>(null);
 
     const loadDoubts = async () => {
+        if (!classroomId?.trim()) {
+            return;
+        }
         try {
             setIsLoading(true);
             const { data, error } = await DoubtService.getDoubts(classroomId);
@@ -38,7 +41,7 @@ function Doubts({ classroomId }: Props) {
     };
 
     useEffect(() => {
-        if (!user) {
+        if (!user || !classroomId?.trim()) {
             return;
         }
         loadDoubts();

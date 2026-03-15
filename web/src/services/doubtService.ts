@@ -8,6 +8,12 @@ class DoubtService {
         limit?: number
     ): Promise<{ data: IDoubt[], error?: string }> {
         try {
+            if (!classroomId?.trim()) {
+                return {
+                    data: [],
+                    error: "Missing classroomId",
+                };
+            }
             let url = `/doubts/classroom/${classroomId}`;
 
             // Construct the query string with optional parameters
