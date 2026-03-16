@@ -114,6 +114,13 @@ export class ClassroomsService {
       student.id
     );
 
+    this.eventService.createEvent({
+      type: EventType.STUDENT_JOINED,
+      actorId: student.id,
+      classroomId: classroom.id,
+      targetUserId: student.id,
+    });
+
     return classroomEntity;
 
   }

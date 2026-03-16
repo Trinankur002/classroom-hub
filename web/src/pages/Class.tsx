@@ -105,6 +105,7 @@ export default function Class() {
 
     const handleAnnouncementChange = () => setRefreshKey(k => k + 1);
     const [activeTab, setActiveTab] = useState("updates");
+    const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
 
     const handleTabChange = (newTab: string) => {
         if (newTab) {
@@ -181,6 +182,8 @@ export default function Class() {
                             userRole={userRole}
                             classromId={classroom.id}
                             onAnnouncementChange={handleAnnouncementChange}
+                            open={isAnnouncementDialogOpen}
+                            onOpenChange={setIsAnnouncementDialogOpen}
                         />
                     </div>
                 )}
@@ -276,28 +279,24 @@ export default function Class() {
             {/*Create Announcement Button and Mobile FAB with dynamic classes */}
             {!isloading && classroom && userRole === "teacher" && (activeTab === "updates" || activeTab === "announcements") && (
                 <div className="fixed bottom-20 right-6 sm:hidden z-50">
-                    <div className="hidden">
-                        <AnnouncementButton
-                            userRole={userRole}
-                            classromId={classroom.id}
-                            onAnnouncementChange={handleAnnouncementChange}
-                        />
-                    </div>
+                    <AnnouncementButton
+                        userRole={userRole}
+                        classromId={classroom.id}
+                        onAnnouncementChange={handleAnnouncementChange}
+                        open={isAnnouncementDialogOpen}
+                        onOpenChange={setIsAnnouncementDialogOpen}
+                        hideTriggerButton
+                    />
 
                     <Button
                         variant="accent"
-                        onClick={() => {
-                            const btn = Array.from(document.querySelectorAll("button")).find((el) =>
-                                el.textContent?.includes("Create Announcement")
-                            ) as HTMLButtonElement | undefined;
-                            btn?.click();
-                        }}
+                        onClick={() => setIsAnnouncementDialogOpen(true)}
                         className={`h-12 rounded-2xl shadow-lg flex items-center justify-center transition-all duration-400 ease-in-out ${isScrolled ? 'w-12 px-0' : 'px-4 w-auto'}`}
                     >
                         <Plus className="h-6 w-6" />
                         {!isScrolled && (
                             <span className="ml-2 whitespace-nowrap ease-in-out duration-400 transition-all">
-                                Create Announcement
+                                Share Update
                             </span>
                         )}
                     </Button>

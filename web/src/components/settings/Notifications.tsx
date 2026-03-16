@@ -11,16 +11,31 @@ interface NotificationsProps {
         assignments: boolean;
         grades: boolean;
     };
+    userRole?: string;
     setNotifications: (val: NotificationsProps["notifications"]) => void;
 }
 
-export default function Notifications({ notifications, setNotifications }: NotificationsProps) {
-    const items = [
+export default function Notifications({ notifications, userRole, setNotifications }: NotificationsProps) {
+    const normalizedRole = (userRole || "").toLowerCase();
+    const isTeacher = normalizedRole === "teacher";
+
+    const commonItems = [
         { key: "email", label: "Email Notifications", description: "Receive notifications via email", icon: Mail },
-        { key: "messages", label: "Chat Messages", description: "New messages in classrooms", icon: Bell },
-        { key: "assignments", label: "Assignment Updates", description: "Due dates and new assignments", icon: BookOpen },
-        { key: "grades", label: "Grade Updates", description: "When grades are posted", icon: School },
+        { key: "push", label: "Push Notifications", description: "Receive browser/device notifications", icon: Bell },
     ] as const;
+
+    const roleItems = isTeacher
+        ? [
+            { key: "messages", label: "Classroom Activity", description: "Student joins, doubts, and live class updates", icon: Bell },
+            { key: "assignments", label: "Submission Alerts", description: "When students submit assignments", icon: BookOpen },
+        ] as const
+        : [
+            { key: "messages", label: "Classroom Messages", description: "Announcements, doubts, and live class updates", icon: Bell },
+            { key: "assignments", label: "Assignment Updates", description: "New assignments and reminders", icon: BookOpen },
+            { key: "grades", label: "Grade Updates", description: "When your submissions are graded", icon: School },
+        ] as const;
+
+    const items = [...commonItems, ...roleItems];
 
     return (
         <Card>

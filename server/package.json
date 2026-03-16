@@ -58,6 +58,7 @@
     "typeorm": "^0.3.25",
     "typeorm-transactional-cls-hooked": "^0.1.21",
     "uuid": "^11.1.0",
+    "web-push": "^3.6.7",
     "winston": "^3.17.0"
   },
   "devDependencies": {

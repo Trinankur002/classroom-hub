@@ -1,11 +1,11 @@
 // src/queues/notification-queue.module.ts
 import { Module } from '@nestjs/common';
+import { NotificationModule } from './notification.module';
 import { NotificationWorkerService } from './notification-worker.service';
-import { NotificationsGateway } from './notifications.gateway';
-import { NotificationService } from './notification.service';
 
 @Module({
-    providers: [NotificationWorkerService, NotificationsGateway, NotificationService],
+    imports: [NotificationModule],
+    providers: [NotificationWorkerService],
     exports: [NotificationWorkerService],
 })
 export class NotificationQueueModule { }

@@ -8,6 +8,7 @@ export enum WEBSOCKET_EVENTS {
   ROOM_JOINED = 'room_joined',
   CHAT_ERROR = 'chat_error',
   NOTIFICATION = 'notification',
+  NOTIFICATION_NEW = 'notification:new',
   WAITING_LIST_UPDATED = 'waiting_list_updated',
   PERTICIPENT_APPROVED = 'participant-approved',
   LIVE_SESSION_JOIN = 'live-session-join',

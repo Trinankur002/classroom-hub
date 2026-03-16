@@ -19,6 +19,7 @@ import { Role } from 'src/users/entities/role.enum';
 import { LiveSessionGateway } from '../live-session.gateway';
 import { StudentClassroom } from 'src/classrooms/entities/student-classroom.entity';
 import { User } from 'src/users/entities/user.entity';
+import { emitNotificationEvent, NotificationEvents } from 'src/notification/notification.events';
 
 @Injectable()
 export class LiveSessionService {
@@ -197,6 +198,12 @@ export class LiveSessionService {
       role: ParticipantRole.TEACHER,
       status: ParticipantStatus.APPROVED,
       isConnected: false,
+    });
+
+    emitNotificationEvent(NotificationEvents.LIVECLASS_STARTED, {
+      actorId: teacherId,
+      classroomId,
+      liveSessionId: savedSession.id,
     });
 
     return savedSession;

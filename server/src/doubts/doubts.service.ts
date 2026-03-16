@@ -246,6 +246,18 @@ export class DoubtsService {
         );
       }
 
+      if (isClassroomTeacher) {
+        this.eventService.createEvent({
+          type: EventType.DOUBT_ANSWERED,
+          actorId: user.id,
+          classroomId: doubt.classroomId,
+          targetUserId: doubt.studentId,
+          metadata: {
+            doubtId: doubt.id,
+          },
+        });
+      }
+
       return finalDoubt;
     });
   }

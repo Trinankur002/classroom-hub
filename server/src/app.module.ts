@@ -40,7 +40,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     EventsModule,
     LiveSessionModule,
     DashboardModule,
-    // NotificationModule
+    NotificationModule,
   ],
 
   controllers: [AppController],

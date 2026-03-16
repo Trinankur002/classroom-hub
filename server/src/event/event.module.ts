@@ -4,7 +4,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Event } from './event.entity';
 import { EventService } from './event.service';
 import { ClassroomsModule } from 'src/classrooms/classrooms.module';
-import { NotificationModule } from 'src/notification/notification.module';
 import { EventsController } from './event.controller';
 
 @Module({

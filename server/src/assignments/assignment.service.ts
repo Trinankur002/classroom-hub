@@ -400,6 +400,15 @@ export class AssignmentService {
             throw new HttpException('Failed to load graded submission.', HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
+        this.eventService.createEvent({
+            type: EventType.ASSIGNMENT_GRADED,
+            actorId: user.id,
+            classroomId: announcement.classroomId,
+            targetUserId: assignment.studentId,
+            assignmentId: updated.id,
+            announcementId: assignment.announcementId,
+        });
+
         return updated;
     }
 

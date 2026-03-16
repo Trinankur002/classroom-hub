@@ -24,11 +24,30 @@ interface Props {
     userRole: "teacher" | "student";
     classromId: string;
     onAnnouncementChange?: () => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    hideTriggerButton?: boolean;
 }
 
-function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Props) {
+function AnnouncementButton({
+    userRole,
+    classromId,
+    onAnnouncementChange,
+    open: controlledOpen,
+    onOpenChange,
+    hideTriggerButton = false,
+}: Props) {
     const { toast } = useToast();
-    const [open, setOpen] = useState(false);
+    const [internalOpen, setInternalOpen] = useState(false);
+    const isControlled = controlledOpen !== undefined;
+    const open = isControlled ? controlledOpen : internalOpen;
+
+    const setOpen = (nextOpen: boolean) => {
+        if (!isControlled) {
+            setInternalOpen(nextOpen);
+        }
+        onOpenChange?.(nextOpen);
+    };
 
     // Controlled form state
     const [name, setName] = useState("");
@@ -157,7 +176,7 @@ function AnnouncementButton({ userRole, classromId, onAnnouncementChange }: Prop
 
     return (
         <>
-            {userRole === "teacher" && (
+            {userRole === "teacher" && !hideTriggerButton && (
                 <Button variant="accent" size="sm" onClick={() => setOpen(true)}>
                     Share Update
                 </Button>

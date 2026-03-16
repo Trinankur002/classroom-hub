@@ -6,7 +6,7 @@ import { EventType, ICreateEventParams } from "./event.interface";
 import { Event } from "./event.entity";
 import { ClassroomsService } from "src/classrooms/classrooms.service";
 import { User } from "src/users/entities/user.entity";
-// import { NotificationQueueService } from "src/notification/notification-queue.service";
+import { emitNotificationEvent, NotificationEvents } from "src/notification/notification.events";
 
 @Injectable()
 export class EventService {
@@ -15,34 +15,86 @@ export class EventService {
         private readonly eventRepo: Repository<Event>,
         @Inject(forwardRef(() => ClassroomsService))
         private readonly classroomService: ClassroomsService,
-        // Add the NotificationQueueService here
-        // private readonly notificationQueueService: NotificationQueueService,
     ) { }
 
     async createEvent(params: ICreateEventParams): Promise<Event> {
         const event = this.eventRepo.create(params);
         const savedEvent = await this.eventRepo.save(event);
 
-        if (params.type === EventType.ASSIGNMENT_CREATED) {
-            // Check if classroomId and assignmentId exist
-            if (params.classroomId && params.assignmentId) {
-                const studentIds: string[] = await this.classroomService.getStudentIds(
-                    params.classroomId,
-                );
-
-                // Add a job to the notification queue
-                // await this.notificationQueueService.addDeliverJob({
-                //     userIds: studentIds,
-                //     type: params.type,
-                //     payload: {
-                //         assignmentId: params.assignmentId,
-                //         classroomId: params.classroomId,
-                //         // You can add more data to the payload as needed
-                //     },
-                // });
-            }
-        }
+        this.emitNotificationEvent(params);
         return savedEvent;
+    }
+
+    private emitNotificationEvent(params: ICreateEventParams) {
+        switch (params.type) {
+            case EventType.ANNOUNCEMENT_POSTED:
+                if (params.classroomId && params.announcementId) {
+                    emitNotificationEvent(NotificationEvents.ANNOUNCEMENT_CREATED, {
+                        actorId: params.actorId,
+                        classroomId: params.classroomId,
+                        announcementId: params.announcementId,
+                    });
+                }
+                return;
+            case EventType.ASSIGNMENT_CREATED:
+                if (params.classroomId && params.announcementId) {
+                    emitNotificationEvent(NotificationEvents.ASSIGNMENT_CREATED, {
+                        actorId: params.actorId,
+                        classroomId: params.classroomId,
+                        announcementId: params.announcementId,
+                    });
+                }
+                return;
+            case EventType.ASSIGNMENT_SUBMITTED:
+                if (params.classroomId && params.announcementId) {
+                    emitNotificationEvent(NotificationEvents.ASSIGNMENT_SUBMITTED, {
+                        actorId: params.actorId,
+                        classroomId: params.classroomId,
+                        announcementId: params.announcementId,
+                    });
+                }
+                return;
+            case EventType.ASSIGNMENT_GRADED:
+                if (params.assignmentId) {
+                    emitNotificationEvent(NotificationEvents.ASSIGNMENT_GRADED, {
+                        actorId: params.actorId,
+                        assignmentSubmissionId: params.assignmentId,
+                        classroomId: params.classroomId,
+                        targetUserId: params.targetUserId,
+                    });
+                }
+                return;
+            case EventType.DOUBT_ANSWERED:
+                if (params.metadata?.doubtId) {
+                    emitNotificationEvent(NotificationEvents.DOUBT_REPLIED, {
+                        actorId: params.actorId,
+                        classroomId: params.classroomId,
+                        doubtId: params.metadata.doubtId,
+                        targetUserId: params.targetUserId,
+                    });
+                }
+                return;
+            case EventType.STUDENT_JOINED:
+                if (params.classroomId) {
+                    emitNotificationEvent(NotificationEvents.CLASSROOM_STUDENT_JOINED, {
+                        actorId: params.actorId,
+                        classroomId: params.classroomId,
+                        studentId: params.targetUserId,
+                    });
+                }
+                return;
+            case EventType.STUDENT_REMOVED:
+                if (params.classroomId && params.targetUserId) {
+                    emitNotificationEvent(NotificationEvents.CLASSROOM_STUDENT_REMOVED, {
+                        actorId: params.actorId,
+                        classroomId: params.classroomId,
+                        targetUserId: params.targetUserId,
+                    });
+                }
+                return;
+            default:
+                return;
+        }
     }
 
     async getClassroomEvents(classroomId: string, limit = 10, offset = 0) {

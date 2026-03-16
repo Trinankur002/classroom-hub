@@ -13,6 +13,8 @@ import Notifications from "@/components/settings/Notifications";
 import Privacy from "@/components/settings/Privacy";
 import AvatarUpload from "@/components/settings/AvatarUpload";
 import ChangePassword from "@/components/settings/ChangePassword";
+import { notificationsApi, NotificationPreferences } from "@/features/notifications/api";
+import { disableBrowserPush, enableBrowserPush } from "@/features/notifications/push";
 
 // helper to create a blob from canvas
 async function getCroppedImg(
@@ -68,13 +70,15 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState<TabValue>("basics");
 
   // Notifications
-  const [notifications, setNotifications] = useState({
+  const [notifications, setNotifications] = useState<NotificationPreferences>({
     email: true,
     push: true,
     messages: true,
     assignments: true,
     grades: true,
   });
+  const [notificationPreferencesLoaded, setNotificationPreferencesLoaded] = useState(false);
+  const previousPushValueRef = useRef<boolean>(true);
 
   // Avatar upload + crop
   const [isCropOpen, setIsCropOpen] = useState(false);
@@ -100,6 +104,7 @@ export default function Settings() {
   // Load user
   useEffect(() => {
     fetchUser();
+    loadNotificationPreferences();
   }, []);
 
   const fetchUser = async () => {
@@ -118,6 +123,73 @@ export default function Settings() {
       });
     }
   };
+
+  const loadNotificationPreferences = async () => {
+    try {
+      const prefs = await notificationsApi.getPreferences();
+      setNotifications(prefs);
+      previousPushValueRef.current = prefs.push;
+      if (prefs.push && Notification.permission === "granted") {
+        await enableBrowserPush();
+      }
+      setNotificationPreferencesLoaded(true);
+    } catch (error) {
+      console.error("Failed to load notification preferences", error);
+      setNotificationPreferencesLoaded(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!notificationPreferencesLoaded) {
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        await notificationsApi.updatePreferences(notifications);
+      } catch (error: any) {
+        console.error("Failed to save notification preferences", error);
+        toast({
+          title: "Failed to save notification preferences",
+          description: error?.response?.data?.message || error?.message || "Something went wrong",
+          variant: "destructive",
+        });
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [notifications, notificationPreferencesLoaded, toast]);
+
+  useEffect(() => {
+    if (!notificationPreferencesLoaded) {
+      return;
+    }
+
+    const handlePushToggle = async () => {
+      const previousPush = previousPushValueRef.current;
+      if (previousPush === notifications.push) {
+        return;
+      }
+
+      if (notifications.push) {
+        const result = await enableBrowserPush();
+        if (!result.enabled) {
+          setNotifications((current) => ({ ...current, push: false }));
+          toast({
+            title: "Push notifications are not enabled",
+            description: result.reason || "Permission denied or unsupported browser.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        await disableBrowserPush();
+      }
+
+      previousPushValueRef.current = notifications.push;
+    };
+
+    void handlePushToggle();
+  }, [notifications.push, notificationPreferencesLoaded, toast]);
 
   // Avatar handlers
   const onFileSelected = async (file?: File) => {
@@ -268,7 +340,11 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="notifications">
-          <Notifications notifications={notifications} setNotifications={setNotifications} />
+          <Notifications
+            notifications={notifications}
+            userRole={user?.role}
+            setNotifications={setNotifications}
+          />
         </TabsContent>
 
         <TabsContent value="privacy">

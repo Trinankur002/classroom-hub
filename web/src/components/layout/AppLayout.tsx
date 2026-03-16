@@ -4,6 +4,7 @@ import { BottomNav } from "./BottomNav";
 import { Sidebar } from "./Sidebar";
 import { useAuth } from "@/hooks/AuthContext";
 import { useState } from "react";
+import { NotificationBell } from "@/features/notifications/NotificationBell";
 
 export function AppLayout() {
   const { user } = useAuth();
@@ -31,6 +32,9 @@ export function AppLayout() {
         className={`transition-all duration-300 ease-smooth ${!isMobile ? (sidebarOpen ? "ml-64" : "ml-16") : "pb-16"
           }`}
       >
+        <div className="flex justify-end p-4 pb-0">
+          <NotificationBell />
+        </div>
         <div className="animate-fade-in">
           <Outlet />
         </div>
