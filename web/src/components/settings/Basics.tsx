@@ -69,23 +69,6 @@ export default function Basics({ user, theme, toggleTheme, handleAvatarButtonCli
                         </div>
                         <Switch checked={theme === "dark"} onCheckedChange={toggleTheme} />
                     </div>
-                    <Separator />
-                    <div className="space-y-4">
-                        <Label className="text-base font-medium">Preview</Label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="p-4 border rounded-lg bg-card space-y-3">
-                                <div className="h-4 bg-muted rounded w-3/4"></div>
-                                <div className="h-3 bg-muted rounded w-1/2"></div>
-                                <div className="h-3 bg-muted rounded w-2/3"></div>
-                            </div>
-                            <div className="p-4 border rounded-lg bg-card space-y-3">
-                                <div className="h-10 bg-primary rounded w-full flex items-center justify-center">
-                                    <span className="text-sm text-primary-foreground font-medium">Sample Button</span>
-                                </div>
-                                <div className="h-3 bg-muted rounded w-full"></div>
-                            </div>
-                        </div>
-                    </div>
                 </CardContent>
             </Card>
 
