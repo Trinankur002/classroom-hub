@@ -9,6 +9,10 @@ interface NotificationDropdownProps {
   onOpenNotification: (notification: NotificationItem) => void;
   onDeleteNotification: (id: string) => void;
   onMarkAllRead: () => void;
+  pushPermission?: NotificationPermission | "unsupported";
+  pushHint?: string | null;
+  isEnablingPush?: boolean;
+  onEnablePush?: () => void;
 }
 
 export function NotificationDropdown({
@@ -16,7 +20,13 @@ export function NotificationDropdown({
   onOpenNotification,
   onDeleteNotification,
   onMarkAllRead,
+  pushPermission,
+  pushHint,
+  isEnablingPush,
+  onEnablePush,
 }: NotificationDropdownProps) {
+  const showPushHeadsUp = pushPermission && pushPermission !== "granted";
+
   return (
     <div className="w-[340px] rounded-md border bg-popover p-2 shadow-md">
       <div className="mb-2 flex items-center justify-between px-1">
@@ -25,6 +35,28 @@ export function NotificationDropdown({
           Mark all read
         </Button>
       </div>
+      {showPushHeadsUp && (
+        <div className="mb-2 rounded-md border border-amber-300/40 bg-amber-500/10 p-2">
+          <p className="text-xs font-medium text-amber-200">Push notifications are off</p>
+          <p className="mt-1 text-[11px] text-amber-100/90">
+            {pushPermission === "denied"
+              ? "Browser permission is blocked. Enable notifications in browser settings."
+              : "Enable push to receive notifications when app is in background or closed."}
+          </p>
+          {pushHint && <p className="mt-1 text-[11px] text-amber-100/80">{pushHint}</p>}
+          {pushPermission !== "denied" && onEnablePush && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-2 h-7 text-xs"
+              onClick={onEnablePush}
+              disabled={isEnablingPush}
+            >
+              {isEnablingPush ? "Enabling..." : "Enable Push"}
+            </Button>
+          )}
+        </div>
+      )}
       <ScrollArea className="max-h-[360px]">
         <div className="space-y-1">
           {notifications.length === 0 && (

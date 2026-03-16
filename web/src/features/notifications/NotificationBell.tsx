@@ -54,7 +54,17 @@ function getNotificationNavigation(notification: NotificationItem) {
 export function NotificationBell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const { notifications, unreadCount, markRead, markAllRead, deleteNotification } =
+  const {
+    notifications,
+    unreadCount,
+    markRead,
+    markAllRead,
+    deleteNotification,
+    pushPermission,
+    pushHint,
+    isEnablingPush,
+    enablePush,
+  } =
     useNotifications();
 
   const handleOpenNotification = async (notification: NotificationItem) => {
@@ -84,6 +94,10 @@ export function NotificationBell() {
           onOpenNotification={handleOpenNotification}
           onDeleteNotification={(id) => void deleteNotification(id)}
           onMarkAllRead={() => void markAllRead()}
+          pushPermission={pushPermission}
+          pushHint={pushHint}
+          isEnablingPush={isEnablingPush}
+          onEnablePush={() => void enablePush()}
         />
       </DropdownMenuContent>
     </DropdownMenu>

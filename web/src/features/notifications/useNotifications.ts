@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { notificationsApi, NotificationItem } from "./api";
 import {
@@ -7,6 +7,7 @@ import {
   offNewNotification,
   onNewNotification,
 } from "./socket";
+import { disableBrowserPush, enableBrowserPush } from "./push";
 
 const NOTIFICATIONS_QUERY_KEY = ["notifications", "list"];
 const UNREAD_COUNT_QUERY_KEY = ["notifications", "unread-count"];
@@ -14,6 +15,11 @@ const UNREAD_COUNT_QUERY_KEY = ["notifications", "unread-count"];
 export function useNotifications() {
   const queryClient = useQueryClient();
   const token = localStorage.getItem("token") || "";
+  const [pushPermission, setPushPermission] = useState<NotificationPermission | "unsupported">(
+    typeof Notification === "undefined" ? "unsupported" : Notification.permission,
+  );
+  const [isEnablingPush, setIsEnablingPush] = useState(false);
+  const [pushHint, setPushHint] = useState<string | null>(null);
 
   const notificationsQuery = useQuery({
     queryKey: NOTIFICATIONS_QUERY_KEY,
@@ -66,6 +72,32 @@ export function useNotifications() {
       disconnectNotificationSocket();
     };
   }, [queryClient, token]);
+
+  useEffect(() => {
+    if (!token) return;
+    if (typeof Notification === "undefined") {
+      setPushPermission("unsupported");
+      return;
+    }
+
+    const syncPermission = async () => {
+      const permission = Notification.permission;
+      setPushPermission(permission);
+
+      try {
+        const preferences = await notificationsApi.getPreferences();
+        if (permission !== "granted" && preferences.push) {
+          await notificationsApi.updatePreferences({ push: false });
+          await disableBrowserPush();
+          setPushHint("Browser permission is off, so push was turned off in your preferences.");
+        }
+      } catch (error) {
+        console.error("Failed syncing notification permission with preferences", error);
+      }
+    };
+
+    void syncPermission();
+  }, [token]);
 
   const markReadMutation = useMutation({
     mutationFn: (id: string) => notificationsApi.markRead(id),
@@ -123,6 +155,36 @@ export function useNotifications() {
     },
   });
 
+  const enablePush = async () => {
+    if (typeof Notification === "undefined") {
+      setPushPermission("unsupported");
+      setPushHint("Your browser does not support push notifications.");
+      return;
+    }
+
+    setIsEnablingPush(true);
+    try {
+      const result = await enableBrowserPush();
+      const permission = Notification.permission;
+      setPushPermission(permission);
+
+      if (!result.enabled) {
+        await notificationsApi.updatePreferences({ push: false });
+        setPushHint(result.reason || "Push notification permission is not enabled.");
+        return;
+      }
+
+      await notificationsApi.updatePreferences({ push: true });
+      setPushHint(null);
+    } catch (error: any) {
+      console.error("Failed to enable push notifications", error);
+      await notificationsApi.updatePreferences({ push: false });
+      setPushHint(error?.message || "Failed to enable push notifications.");
+    } finally {
+      setIsEnablingPush(false);
+    }
+  };
+
   return {
     notifications: notificationsQuery.data?.items ?? [],
     unreadCount: unreadCountQuery.data ?? 0,
@@ -131,5 +193,9 @@ export function useNotifications() {
     markAllRead: markAllReadMutation.mutateAsync,
     deleteNotification: deleteMutation.mutateAsync,
     refetch: notificationsQuery.refetch,
+    pushPermission,
+    pushHint,
+    isEnablingPush,
+    enablePush,
   };
 }

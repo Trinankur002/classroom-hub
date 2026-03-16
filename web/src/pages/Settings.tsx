@@ -79,6 +79,10 @@ export default function Settings() {
   });
   const [notificationPreferencesLoaded, setNotificationPreferencesLoaded] = useState(false);
   const previousPushValueRef = useRef<boolean>(true);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission | "unsupported">(
+    typeof Notification === "undefined" ? "unsupported" : Notification.permission,
+  );
+  const [pushActionLoading, setPushActionLoading] = useState(false);
 
   // Avatar upload + crop
   const [isCropOpen, setIsCropOpen] = useState(false);
@@ -126,11 +130,24 @@ export default function Settings() {
 
   const loadNotificationPreferences = async () => {
     try {
+      if (typeof Notification !== "undefined") {
+        setPushPermission(Notification.permission);
+      }
+
       const prefs = await notificationsApi.getPreferences();
-      setNotifications(prefs);
-      previousPushValueRef.current = prefs.push;
-      if (prefs.push && Notification.permission === "granted") {
+      const browserPermissionGranted =
+        typeof Notification !== "undefined" ? Notification.permission === "granted" : false;
+      const normalizedPrefs = {
+        ...prefs,
+        push: browserPermissionGranted ? prefs.push : false,
+      };
+      setNotifications(normalizedPrefs);
+      previousPushValueRef.current = normalizedPrefs.push;
+      if (normalizedPrefs.push && browserPermissionGranted) {
         await enableBrowserPush();
+      }
+      if (!browserPermissionGranted && prefs.push) {
+        await notificationsApi.updatePreferences({ push: false });
       }
       setNotificationPreferencesLoaded(true);
     } catch (error) {
@@ -173,6 +190,9 @@ export default function Settings() {
 
       if (notifications.push) {
         const result = await enableBrowserPush();
+        if (typeof Notification !== "undefined") {
+          setPushPermission(Notification.permission);
+        }
         if (!result.enabled) {
           setNotifications((current) => ({ ...current, push: false }));
           toast({
@@ -183,6 +203,9 @@ export default function Settings() {
         }
       } else {
         await disableBrowserPush();
+        if (typeof Notification !== "undefined") {
+          setPushPermission(Notification.permission);
+        }
       }
 
       previousPushValueRef.current = notifications.push;
@@ -190,6 +213,38 @@ export default function Settings() {
 
     void handlePushToggle();
   }, [notifications.push, notificationPreferencesLoaded, toast]);
+
+  const handleEnablePushFromSettings = async () => {
+    setPushActionLoading(true);
+    try {
+      const result = await enableBrowserPush();
+      if (typeof Notification !== "undefined") {
+        setPushPermission(Notification.permission);
+      }
+      if (!result.enabled) {
+        toast({
+          title: "Push notifications are not enabled",
+          description: result.reason || "Please allow browser permission first.",
+          variant: "destructive",
+        });
+        setNotifications((current) => ({ ...current, push: false }));
+        return;
+      }
+
+      setNotifications((current) => ({ ...current, push: true }));
+      toast({
+        title: "Push notifications enabled",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to enable push notifications",
+        description: error?.message || "Something went wrong",
+        variant: "destructive",
+      });
+    } finally {
+      setPushActionLoading(false);
+    }
+  };
 
   // Avatar handlers
   const onFileSelected = async (file?: File) => {
@@ -343,6 +398,9 @@ export default function Settings() {
           <Notifications
             notifications={notifications}
             userRole={user?.role}
+            pushPermission={pushPermission}
+            pushActionLoading={pushActionLoading}
+            onEnablePush={handleEnablePushFromSettings}
             setNotifications={setNotifications}
           />
         </TabsContent>
