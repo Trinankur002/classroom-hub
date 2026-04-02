@@ -48,6 +48,7 @@
     "multer-s3": "^3.0.1",
     "nanoid": "^5.1.5",
     "nest-winston": "^1.10.2",
+    "nodemailer": "^8.0.4",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.16.3",

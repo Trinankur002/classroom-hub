@@ -45,6 +45,17 @@ export class UsersService {
     return this.usersRepository.save(exixtingUser);
   }
 
+  async setPasswordById(userId: string, newPassword: string): Promise<User> {
+    const existingUser = await this.findById(userId);
+
+    if (!existingUser) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    existingUser.password = newPassword;
+    return this.usersRepository.save(existingUser);
+  }
+
   async updateAvatar(user: User, file?: Express.Multer.File): Promise<User> {
     return await this.usersRepository.manager.transaction(async (manager) => {
       const me = await manager.findOne(User, { where: { id: user.id } });

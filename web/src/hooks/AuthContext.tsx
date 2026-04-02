@@ -10,6 +10,7 @@ interface AuthContextType {
   user: any | null;
   login: (data: any) => Promise<void>;
   signup: (data: any) => Promise<void>;
+  loginWithToken: (token: string, userData?: any | null) => Promise<void>;
   logout: () => void;
 }
 
@@ -107,6 +108,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const loginWithToken = async (token: string, userData?: any | null) => {
+    setIsLoading(true);
+    try {
+      localStorage.setItem("token", token);
+
+      const resolvedUser = userData ?? (await AuthService.me());
+      setUser(resolvedUser);
+      localStorage.setItem("user", JSON.stringify(resolvedUser));
+      setIsAuthenticated(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     toast({
@@ -120,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ login, signup, logout, isLoading, isVerifying, isAuthenticated, user }}>
+    <AuthContext.Provider value={{ login, signup, loginWithToken, logout, isLoading, isVerifying, isAuthenticated, user }}>
       {children}
     </AuthContext.Provider>
   );

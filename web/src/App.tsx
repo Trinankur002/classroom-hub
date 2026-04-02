@@ -15,6 +15,8 @@ import React from "react";
 import { AuthLayout } from "./components/auth/AuthLayout";
 import { Login } from "./components/auth/Login";
 import { SignUp } from "./components/auth/SignUp";
+import { ForgotPassword } from "./components/auth/ForgotPassword";
+import { ResetPassword } from "./components/auth/ResetPassword";
 import { AppLayout } from "./components/layout/AppLayout";
 import { AuthProvider } from "./hooks/AuthContext";
 import { useThemeStore } from "./lib/store";
@@ -101,6 +103,8 @@ function AppContent() {
           <Route element={<AuthLayout />}>
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<SignUp />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
           </Route>
         </Route>
 

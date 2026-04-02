@@ -60,6 +60,30 @@ class AuthService {
             throw error;
         }
     }
+
+    async forgotPassword(email: string): Promise<any> {
+        try {
+            const res = await api.post(`/auth/forgot-password`, { email });
+            return res.data;
+        } catch (error) {
+            console.error('Error requesting forgot password', error);
+            throw error;
+        }
+    }
+
+    async resetPassword(data: {
+        email: string;
+        otp: string;
+        newPassword: string;
+    }): Promise<any> {
+        try {
+            const res = await api.post(`/auth/reset-password`, data);
+            return res.data;
+        } catch (error) {
+            console.error('Error resetting password', error);
+            throw error;
+        }
+    }
 }
 
 export default new AuthService();
