@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,6 +49,8 @@ export function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendSecondsLeft, setResendSecondsLeft] = useState(0);
@@ -67,7 +69,7 @@ export function ResetPassword() {
     };
   }, [resendSecondsLeft]);
 
-  const validateForm = () => {
+  const validateOtpStep = () => {
     if (!email.trim()) {
       toast({
         variant: "destructive",
@@ -85,6 +87,10 @@ export function ResetPassword() {
       return false;
     }
 
+    return true;
+  };
+
+  const validatePasswordStep = () => {
     if (newPassword.length < 8) {
       toast({
         variant: "destructive",
@@ -105,10 +111,59 @@ export function ResetPassword() {
     return true;
   };
 
+  const handleVerifyOtp = async () => {
+    if (!validateOtpStep()) {
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+
+    try {
+      await AuthService.verifyResetOtp({
+        email: email.trim().toLowerCase(),
+        otp,
+      });
+
+      setIsOtpVerified(true);
+      toast({
+        title: "OTP verified",
+        description: "Now set your new password.",
+      });
+    } catch (error: any) {
+      const message = extractErrorMessage(error).toLowerCase();
+
+      if (message.includes("expired")) {
+        toast({
+          variant: "destructive",
+          title: "OTP expired",
+          description: "Please request a new OTP and try again.",
+        });
+        return;
+      }
+
+      toast({
+        variant: "destructive",
+        title: "Invalid OTP",
+        description: "Please check the code and try again.",
+      });
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!validateForm()) {
+    if (!isOtpVerified) {
+      toast({
+        variant: "destructive",
+        title: "Verify OTP first",
+        description: "Please verify your OTP before setting a new password.",
+      });
+      return;
+    }
+
+    if (!validatePasswordStep()) {
       return;
     }
 
@@ -140,19 +195,21 @@ export function ResetPassword() {
       const lower = message.toLowerCase();
 
       if (lower.includes("expired")) {
+        setIsOtpVerified(false);
         toast({
           variant: "destructive",
           title: "OTP expired",
-          description: "Please request a new OTP and try again.",
+          description: "Please verify again with a fresh OTP.",
         });
         return;
       }
 
       if (lower.includes("invalid otp") || lower.includes("invalid")) {
+        setIsOtpVerified(false);
         toast({
           variant: "destructive",
           title: "Invalid OTP",
-          description: "Please check the code and try again.",
+          description: "Please verify OTP again.",
         });
         return;
       }
@@ -186,6 +243,10 @@ export function ResetPassword() {
     try {
       await AuthService.forgotPassword(email.trim().toLowerCase());
       setResendSecondsLeft(RESEND_SECONDS);
+      setIsOtpVerified(false);
+      setOtp("");
+      setNewPassword("");
+      setConfirmPassword("");
 
       toast({
         title: "OTP sent",
@@ -207,12 +268,30 @@ export function ResetPassword() {
     }
   };
 
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (isOtpVerified) {
+      setIsOtpVerified(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  };
+
+  const handleOtpChange = (value: string) => {
+    setOtp(value.replace(/\D/g, "").slice(0, 6));
+    if (isOtpVerified) {
+      setIsOtpVerified(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-foreground">Reset Password</h2>
         <p className="text-muted-foreground mt-2">
-          Enter the OTP from your email and set a new password
+          Verify your OTP first, then set a new password
         </p>
       </div>
 
@@ -223,8 +302,8 @@ export function ResetPassword() {
             id="email"
             type="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            disabled={isSubmitting || isResending}
+            onChange={(event) => handleEmailChange(event.target.value)}
+            disabled={isSubmitting || isResending || isVerifyingOtp}
             className="transition-all duration-200 focus:ring-2 focus:ring-primary"
           />
         </div>
@@ -233,8 +312,8 @@ export function ResetPassword() {
           <Label htmlFor="otp">OTP</Label>
           <OtpInput
             value={otp}
-            onChange={(value) => setOtp(value.replace(/\D/g, "").slice(0, 6))}
-            disabled={isSubmitting || isResending}
+            onChange={handleOtpChange}
+            disabled={isSubmitting || isResending || isVerifyingOtp}
           />
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">Enter the 6-digit OTP sent to your email.</p>
@@ -243,7 +322,7 @@ export function ResetPassword() {
               variant="ghost"
               size="sm"
               onClick={handleResendOtp}
-              disabled={isSubmitting || isResending || resendSecondsLeft > 0 || !email.trim()}
+              disabled={isSubmitting || isResending || isVerifyingOtp || resendSecondsLeft > 0 || !email.trim()}
               className="h-auto px-0"
             >
               {isResending
@@ -255,64 +334,91 @@ export function ResetPassword() {
           </div>
         </div>
 
-        <div className="space-y-2 relative">
-          <Label htmlFor="newPassword">New Password</Label>
-          <Input
-            id="newPassword"
-            type={showPassword ? "text" : "password"}
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-            disabled={isSubmitting}
-            placeholder="At least 8 characters"
-            className="transition-all duration-200 focus:ring-2 focus:ring-primary pr-10"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute right-3 top-9 text-muted-foreground"
-            disabled={isSubmitting}
-          >
-            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
-        </div>
-
-        <div className="space-y-2 relative">
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
-          <Input
-            id="confirmPassword"
-            type={showConfirmPassword ? "text" : "password"}
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
-            disabled={isSubmitting}
-            placeholder="Repeat new password"
-            className="transition-all duration-200 focus:ring-2 focus:ring-primary pr-10"
-          />
-          <button
-            type="button"
-            onClick={() => setShowConfirmPassword((prev) => !prev)}
-            className="absolute right-3 top-9 text-muted-foreground"
-            disabled={isSubmitting}
-          >
-            {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-          </button>
-        </div>
-
         <Button
-          type="submit"
-          variant="gradient"
+          type="button"
+          variant="outline"
           size="lg"
           className="w-full"
-          disabled={isSubmitting || isResending}
+          onClick={handleVerifyOtp}
+          disabled={isSubmitting || isResending || isVerifyingOtp || otp.length !== 6 || !email.trim()}
         >
-          {isSubmitting ? (
+          {isVerifyingOtp ? (
             <span className="inline-flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Resetting password...
+              Verifying OTP...
+            </span>
+          ) : isOtpVerified ? (
+            <span className="inline-flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              OTP Verified
             </span>
           ) : (
-            "Reset Password"
+            "Verify OTP"
           )}
         </Button>
+
+        {isOtpVerified && (
+          <>
+            <div className="space-y-2 relative">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type={showPassword ? "text" : "password"}
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                disabled={isSubmitting}
+                placeholder="At least 8 characters"
+                className="transition-all duration-200 focus:ring-2 focus:ring-primary pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-9 text-muted-foreground"
+                disabled={isSubmitting}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
+            <div className="space-y-2 relative">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                disabled={isSubmitting}
+                placeholder="Repeat new password"
+                className="transition-all duration-200 focus:ring-2 focus:ring-primary pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute right-3 top-9 text-muted-foreground"
+                disabled={isSubmitting}
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+
+            <Button
+              type="submit"
+              variant="gradient"
+              size="lg"
+              className="w-full"
+              disabled={isSubmitting || isResending}
+            >
+              {isSubmitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Resetting password...
+                </span>
+              ) : (
+                "Reset Password"
+              )}
+            </Button>
+          </>
+        )}
       </form>
 
       <div className="text-center">

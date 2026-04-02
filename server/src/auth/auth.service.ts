@@ -15,6 +15,7 @@ import { User } from 'src/users/entities/user.entity';
 import { ChangePasswordDto } from './dto/changePassword.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyResetOtpDto } from './dto/verify-reset-otp.dto';
 import { randomInt } from 'crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PasswordResetOtp } from './entities/password-reset-otp.entity';
@@ -181,20 +182,7 @@ export class AuthService {
       throw new BadRequestException('Invalid OTP or expired OTP');
     }
 
-    const otpRecord = await this.passwordResetOtpRepository.findOne({
-      where: { userId: user.id },
-      order: { createdAt: 'DESC' },
-    });
-
-    if (!otpRecord || otpRecord.used || otpRecord.expiresAt < new Date()) {
-      throw new BadRequestException('Invalid OTP or expired OTP');
-    }
-
-    const isOtpValid = await bcrypt.compare(resetPasswordDto.otp, otpRecord.otpHash);
-
-    if (!isOtpValid) {
-      throw new BadRequestException('Invalid OTP or expired OTP');
-    }
+    await this.validatePasswordResetOtp(user.id, resetPasswordDto.otp);
 
     await this.usersService.setPasswordById(user.id, resetPasswordDto.newPassword);
     await this.passwordResetOtpRepository.update({ userId: user.id }, { used: true });
@@ -207,7 +195,44 @@ export class AuthService {
     };
   }
 
+  async verifyResetOtp(
+    verifyResetOtpDto: VerifyResetOtpDto,
+  ): Promise<{ message: string }> {
+    const normalizedEmail = verifyResetOtpDto.email.trim().toLowerCase();
+    const user = await this.usersService.findByEmail(normalizedEmail);
+
+    if (!user) {
+      throw new BadRequestException('Invalid OTP or expired OTP');
+    }
+
+    await this.validatePasswordResetOtp(user.id, verifyResetOtpDto.otp);
+
+    return { message: 'OTP verified successfully' };
+  }
+
   private generateSixDigitOtp(): string {
     return randomInt(0, 1000000).toString().padStart(6, '0');
+  }
+
+  private async validatePasswordResetOtp(
+    userId: string,
+    otp: string,
+  ): Promise<PasswordResetOtp> {
+    const otpRecord = await this.passwordResetOtpRepository.findOne({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (!otpRecord || otpRecord.used || otpRecord.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid OTP or expired OTP');
+    }
+
+    const isOtpValid = await bcrypt.compare(otp, otpRecord.otpHash);
+
+    if (!isOtpValid) {
+      throw new BadRequestException('Invalid OTP or expired OTP');
+    }
+
+    return otpRecord;
   }
 }

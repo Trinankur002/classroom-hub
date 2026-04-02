@@ -84,6 +84,16 @@ class AuthService {
             throw error;
         }
     }
+
+    async verifyResetOtp(data: { email: string; otp: string }): Promise<any> {
+        try {
+            const res = await api.post(`/auth/verify-reset-otp`, data);
+            return res.data;
+        } catch (error) {
+            console.error('Error verifying reset OTP', error);
+            throw error;
+        }
+    }
 }
 
 export default new AuthService();

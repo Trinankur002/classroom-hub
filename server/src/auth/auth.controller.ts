@@ -8,6 +8,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ChangePasswordDto } from './dto/changePassword.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyResetOtpDto } from './dto/verify-reset-otp.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -35,6 +36,12 @@ export class AuthController {
   @ApiBody({ type: ResetPasswordDto })
   resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  @Post('verify-reset-otp')
+  @ApiBody({ type: VerifyResetOtpDto })
+  verifyResetOtp(@Body() verifyResetOtpDto: VerifyResetOtpDto) {
+    return this.authService.verifyResetOtp(verifyResetOtpDto);
   }
 
 
