@@ -279,6 +279,7 @@ export class ClassroomsService {
         if (data.isAssignment) {
           announcement.isAssignment = true;
           announcement.dueDate = data.dueDate;
+          announcement.totalMarks = data.totalMarks;
         }
         const savedAnnouncement = await manager.save(announcement);
 
@@ -368,6 +369,7 @@ export class ClassroomsService {
 
         // Due date only applies if it is an assignment
         dueDate: isAssignment ? data.dueDate : undefined,
+        totalMarks: isAssignment ? data.totalMarks : undefined,
       });
 
       const savedAnnouncement = await manager.save(announcement);
@@ -417,6 +419,7 @@ export class ClassroomsService {
           isAssignment: true,
           isNote: true,
           dueDate: true,
+          totalMarks: true,
           createdAt: true,
           updatedAt: true,
           teacher: {
@@ -505,6 +508,7 @@ export class ClassroomsService {
           teacherId: true,
           isAssignment: true,
           dueDate: true,
+          totalMarks: true,
           isNote: true,
           createdAt: true,
           updatedAt: true,
@@ -532,6 +536,57 @@ export class ClassroomsService {
     } catch (error) {
       throw new Error("Failed to fetch announcements: " + error);
     }
+  }
+
+  async getAssignmentAnnouncementsForUser(
+    user: User,
+    classroomId?: string,
+  ): Promise<ClassroomAnnouncement[]> {
+    if (user.role === Role.Teacher) {
+      if (classroomId) {
+        const classroom = await this.classroomsRepository.findOne({
+          where: { id: classroomId, teacherId: user.id },
+        });
+        if (!classroom) {
+          throw new ForbiddenException('You are not authorized to view assignments for this classroom.');
+        }
+        return this.getAnnouncements(classroomId, { isAssignment: true });
+      }
+
+      const classrooms = await this.classroomsRepository.find({
+        where: { teacherId: user.id },
+        select: ['id'],
+      });
+      const classroomIds = classrooms.map((c) => c.id);
+      if (!classroomIds.length) {
+        return [];
+      }
+      return this.getAnnouncements(classroomIds, { isAssignment: true });
+    }
+
+    if (user.role === Role.Student) {
+      if (classroomId) {
+        const membership = await this.studentClassroomsRepository.findOne({
+          where: { classroomId, studentId: user.id },
+        });
+        if (!membership) {
+          throw new ForbiddenException('You are not authorized to view assignments for this classroom.');
+        }
+        return this.getAnnouncements(classroomId, { isAssignment: true });
+      }
+
+      const memberships = await this.studentClassroomsRepository.find({
+        where: { studentId: user.id },
+        select: ['classroomId'],
+      });
+      const classroomIds = memberships.map((m) => m.classroomId);
+      if (!classroomIds.length) {
+        return [];
+      }
+      return this.getAnnouncements(classroomIds, { isAssignment: true });
+    }
+
+    return [];
   }
 
   async getNotesForStudent(
@@ -574,6 +629,7 @@ export class ClassroomsService {
         teacherId: true,
         isAssignment: true,
         dueDate: true,
+        totalMarks: true,
         isNote: true,
         comments: true,
         createdAt: true,

@@ -357,6 +357,18 @@ export class AssignmentService {
             throw new HttpException('Grade must be a valid number.', HttpStatus.BAD_REQUEST);
         }
 
+        if (
+            payload.grade !== undefined &&
+            announcement.totalMarks !== undefined &&
+            announcement.totalMarks !== null &&
+            payload.grade > announcement.totalMarks
+        ) {
+            throw new HttpException(
+                `Grade cannot be greater than total marks (${announcement.totalMarks}).`,
+                HttpStatus.BAD_REQUEST,
+            );
+        }
+
         if (payload.grade !== undefined) {
             assignment.grade = payload.grade;
         }

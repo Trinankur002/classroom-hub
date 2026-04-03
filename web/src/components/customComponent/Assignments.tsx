@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 interface Props {
     assignments?: IAssignment[]
     role: 'teacher' | 'student';
+    totalMarks?: number | null;
     pendingStudentOpen?: boolean;
     students?: User[];
     onGradeUpdate?: (
@@ -31,7 +32,7 @@ interface Props {
     ) => Promise<void>;
 }
 
-function Assignments({ assignments = [], role, pendingStudentOpen, students = [], onGradeUpdate }: Props) {
+function Assignments({ assignments = [], role, totalMarks, pendingStudentOpen, students = [], onGradeUpdate }: Props) {
     const [loadingSubmissionIds, setLoadingSubmissionIds] = useState<Set<string>>(new Set());
     const [statusOverrides, setStatusOverrides] = useState<Record<string, AssignmentSubmissionStatus>>({});
 
@@ -56,16 +57,28 @@ function Assignments({ assignments = [], role, pendingStudentOpen, students = []
         }
     };
 
-    const getStatusVariant = (status?: AssignmentSubmissionStatus) => {
-        if (status === 'graded') return 'noHoverDefault';
-        if (status === 'late') return 'destructive';
-        return 'noHoverSecondary';
+    const getTeacherStatusVariant = (status?: AssignmentSubmissionStatus) => {
+        if (status === 'graded') return 'success';
+        if (status === 'late') return 'danger';
+        return 'info';
     };
 
     const getStatusLabel = (status?: AssignmentSubmissionStatus) => {
         if (status === 'graded') return 'Graded';
         if (status === 'late') return 'Late';
         return 'Submitted';
+    };
+
+    const formatGrade = (grade?: number) => {
+        if (grade === undefined || grade === null) {
+            return "";
+        }
+
+        if (totalMarks !== undefined && totalMarks !== null) {
+            return `${grade} / ${totalMarks}`;
+        }
+
+        return `${grade}`;
     };
 
     return (
@@ -101,11 +114,15 @@ function Assignments({ assignments = [], role, pendingStudentOpen, students = []
                                     Submitted at: {format(new Date(assignment.updatedAt), "MMM dd, yyyy h:mm a")}
                                 </p>
                                 <div className="mt-1 flex flex-wrap gap-2">
-                                    <Badge variant={getStatusVariant(assignment.status)}>
-                                        {getStatusLabel(assignment.status)}
-                                    </Badge>
-                                    {assignment.isLate && <Badge variant="destructive">Marked late</Badge>}
-                                    {assignment.isResubmission && <Badge variant="outline">Resubmission</Badge>}
+                                    {role === 'teacher' && (
+                                        <Badge variant={getTeacherStatusVariant(assignment.status)}>
+                                            {getStatusLabel(assignment.status)}
+                                        </Badge>
+                                    )}
+                                    {assignment.isLate && (
+                                        <Badge variant="danger">{role === 'teacher' ? 'Marked late' : 'Late'}</Badge>
+                                    )}
+                                    {assignment.isResubmission && <Badge variant="warning">Resubmission</Badge>}
                                 </div>
                             </div>
                         </CardHeader>
@@ -119,7 +136,7 @@ function Assignments({ assignments = [], role, pendingStudentOpen, students = []
 
                             <div className="mt-4 space-y-2 text-sm">
                                 {assignment.grade !== undefined && assignment.grade !== null && (
-                                    <p><span className="font-semibold">Grade:</span> {assignment.grade}</p>
+                                    <p><span className="font-semibold">Grade:</span> {formatGrade(assignment.grade)}</p>
                                 )}
                                 {assignment.feedback && (
                                     <p><span className="font-semibold">Teacher feedback:</span> {assignment.feedback}</p>
@@ -148,6 +165,9 @@ function Assignments({ assignments = [], role, pendingStudentOpen, students = []
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div>
                                             <p className="text-xs text-muted-foreground mb-1">Grade</p>
+                                            {totalMarks !== undefined && totalMarks !== null && (
+                                                <p className="text-xs text-muted-foreground mb-1">Out of {totalMarks}</p>
+                                            )}
                                             <Input
                                                 type="number"
                                                 name="grade"
@@ -216,25 +236,6 @@ function Assignments({ assignments = [], role, pendingStudentOpen, students = []
                                 </form>
                             )}
 
-                            {role === 'student' && assignment.gradeHistory && assignment.gradeHistory.length > 0 && (
-                                <div className="mt-4 border-t pt-4">
-                                    <h4 className="text-sm font-semibold mb-2">Grade history</h4>
-                                    <div className="space-y-2">
-                                        {assignment.gradeHistory
-                                            .slice()
-                                            .reverse()
-                                            .map((entry, idx) => (
-                                                <div key={`${assignment.id}-history-${idx}`} className="rounded-md border p-2 text-xs">
-                                                    <p>
-                                                        {format(new Date(entry.gradedAt), "MMM dd, yyyy h:mm a")} · {entry.status}
-                                                    </p>
-                                                    <p>Grade: {entry.grade ?? "N/A"}</p>
-                                                    {entry.feedback && <p>Feedback: {entry.feedback}</p>}
-                                                </div>
-                                            ))}
-                                    </div>
-                                </div>
-                            )}
                         </CardContent>
                     </Card>
                     );

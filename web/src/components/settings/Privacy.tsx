@@ -24,13 +24,13 @@ export default function Privacy({ onOpenChangePassword }: PrivacyProps) {
                     <Button variant="outline" onClick={onOpenChangePassword}>Change Password</Button>
                 </div>
 
-                <Separator />
+                {/* <Separator /> */}
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                     <Label className="text-base font-medium text-destructive">Danger Zone</Label>
                     <p className="text-sm text-muted-foreground">Permanently delete your account and all data</p>
                     <Button variant="destructive">Delete Account</Button>
-                </div>
+                </div> */}
             </CardContent>
         </Card>
     );

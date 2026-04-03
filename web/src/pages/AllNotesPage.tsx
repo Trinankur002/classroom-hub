@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export default function AllNotesPage() {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user") || "null");
+    const userRole = user?.role?.toString()?.toLowerCase?.() ?? "student";
 
     const [classrooms, setClassrooms] = useState<IClassroom[]>([]);
     const [selectedClassroomId, setSelectedClassroomId] = useState<string>("all");
@@ -71,10 +72,7 @@ export default function AllNotesPage() {
             navigate("/");
             return;
         }
-        (async () => {
-            await loadClassrooms();
-            await fetchNotes("all");
-        })();
+        loadClassrooms();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -98,7 +96,7 @@ export default function AllNotesPage() {
             <div className="flex items-center justify-between gap-2 mb-4">
                 <div className="flex items-center gap-5">
                     <div className="md:block">
-                        <Select onValueChange={(v) => setSelectedClassroomId(v || "all")} defaultValue="all">
+                        <Select value={selectedClassroomId} onValueChange={(v) => setSelectedClassroomId(v || "all")}>
                             <SelectTrigger className="w-48">
                                 <SelectValue placeholder="All Classrooms" />
                             </SelectTrigger>
@@ -127,7 +125,9 @@ export default function AllNotesPage() {
                             <div>
                                 <h3 className="text-lg font-semibold text-foreground">No Notes Found</h3>
                                 <p className="text-muted-foreground">
-                                    Your teachers haven't posted any notes in the selected classroom(s) yet.
+                                    {userRole === "teacher"
+                                        ? "No notes found in the selected classroom(s)."
+                                        : "Your teachers haven't posted any notes in the selected classroom(s) yet."}
                                 </p>
                             </div>
                         </div>

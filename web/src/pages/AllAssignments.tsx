@@ -28,7 +28,7 @@ export default function AllAssignments() {
 
     const [classrooms, setClassrooms] = useState<IClassroom[]>([]);
     const [selectedClassroomId, setSelectedClassroomId] = useState<string>("all");
-    const [filterType, setFilterType] = useState<FilterType>("pending");
+    const [filterType, setFilterType] = useState<FilterType>(userRole === "teacher" ? "all" : "pending");
     const [announcements, setAnnouncements] = useState<IClassroomAnnouncement[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -62,6 +62,10 @@ export default function AllAssignments() {
         async (classroomId: string | "all", fType: FilterType) => {
             setIsLoading(true);
             try {
+                if (userRole === "teacher" && fType !== "all") {
+                    fType = "all";
+                }
+
                 // Pending (server)
                 if (fType === "pending") {
                     if (classroomId === "all") {
@@ -109,21 +113,15 @@ export default function AllAssignments() {
 
                 // All: merge pending + missed (server side where available)
                 else if (fType === "all") {
-                    const [{ data: pending = [] }, { data: missed = [] }] = await Promise.allSettled([
-                        ClassroomAnnouncementService.getAllPendingAssignmentsForStudent(),
-                        ClassroomAnnouncementService.getAllMissedForStudent(),
-                    ]).then((results) =>
-                        results.map((r) => {
-                            if (r.status === "fulfilled") return r.value;
-                            return { data: [] };
-                        })
+                    const { data, error } = await ClassroomAnnouncementService.getAssignmentAnnouncements(
+                        classroomId === "all" ? undefined : classroomId,
                     );
-
-                    // merge unique by id
-                    const map = new Map<string, IClassroomAnnouncement>();
-                    (pending || []).forEach((p: IClassroomAnnouncement) => map.set(p.id, p));
-                    (missed || []).forEach((m: IClassroomAnnouncement) => map.set(m.id, m));
-                    setAnnouncements(Array.from(map.values()));
+                    if (error) {
+                        toast({ title: "Failed to load assignments", description: "Something went wrong", variant: "destructive" });
+                        setAnnouncements([]);
+                    } else {
+                        setAnnouncements(data || []);
+                    }
                 }
             } catch (err) {
                 console.error(err);
@@ -132,7 +130,7 @@ export default function AllAssignments() {
                 setIsLoading(false);
             }
         },
-        []
+        [userRole]
     );
 
     // initial load
@@ -143,7 +141,7 @@ export default function AllAssignments() {
         }
         (async () => {
             await loadClassrooms();
-            await fetchAnnouncements("all", "pending");
+            await fetchAnnouncements("all", userRole === "teacher" ? "all" : "pending");
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -182,9 +180,9 @@ export default function AllAssignments() {
                     <div className="hidden md:block">
                         <Tabs defaultValue={filterType} value={filterType} onValueChange={(v) => setFilterType(v as FilterType)}>
                             <TabsList>
-                                <TabsTrigger value="pending">Pending</TabsTrigger>
-                                <TabsTrigger value="missed">Missed</TabsTrigger>
-                                <TabsTrigger value="due">Due</TabsTrigger>
+                                {userRole !== "teacher" && <TabsTrigger value="pending">Pending</TabsTrigger>}
+                                {userRole !== "teacher" && <TabsTrigger value="missed">Missed</TabsTrigger>}
+                                {userRole !== "teacher" && <TabsTrigger value="due">Due</TabsTrigger>}
                                 <TabsTrigger value="all">All</TabsTrigger>
                             </TabsList>
                         </Tabs>
@@ -225,9 +223,15 @@ export default function AllAssignments() {
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Type</label>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <Button variant={filterType === "pending" ? "default" : "ghost"} onClick={() => setFilterType("pending")}>Pending</Button>
-                                        <Button variant={filterType === "missed" ? "default" : "ghost"} onClick={() => setFilterType("missed")}>Missed</Button>
-                                        <Button variant={filterType === "due" ? "default" : "ghost"} onClick={() => setFilterType("due")}>Due</Button>
+                                        {userRole !== "teacher" && (
+                                            <Button variant={filterType === "pending" ? "default" : "ghost"} onClick={() => setFilterType("pending")}>Pending</Button>
+                                        )}
+                                        {userRole !== "teacher" && (
+                                            <Button variant={filterType === "missed" ? "default" : "ghost"} onClick={() => setFilterType("missed")}>Missed</Button>
+                                        )}
+                                        {userRole !== "teacher" && (
+                                            <Button variant={filterType === "due" ? "default" : "ghost"} onClick={() => setFilterType("due")}>Due</Button>
+                                        )}
                                         <Button variant={filterType === "all" ? "default" : "ghost"} onClick={() => setFilterType("all")}>All</Button>
                                     </div>
                                 </div>

@@ -124,7 +124,7 @@ export function SignUp() {
 
         <Button
           type="submit"
-          variant="gradient"
+          variant="default"
           size="lg"
           className="w-full"
           disabled={isLoading}

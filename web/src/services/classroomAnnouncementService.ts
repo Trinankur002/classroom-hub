@@ -4,6 +4,20 @@ import { IClassroomUser } from "@/types/user";
 import { IAssignment } from "@/types/assignment";
 
 class ClassroomAnnouncementService {
+    async getAssignmentAnnouncements(classroomId?: string): Promise<{ data: IClassroomAnnouncement[]; error?: string }> {
+        try {
+            const query = classroomId ? `?classroomId=${encodeURIComponent(classroomId)}` : "";
+            const response = await api.get(`/classrooms/announcements${query}`);
+            return { data: response.data };
+        } catch (error: any) {
+            console.error('Error Fetching Assignments:', error?.response?.data || error.message);
+            return {
+                data: [],
+                error: error?.response?.data?.message || error.message || "Something went wrong",
+            };
+        }
+    }
+
     async getAll(classroomId: string): Promise<{ data: IClassroomAnnouncement[]; error?: string }> {
         try {            
             const response = await api.get(`/classrooms/announcements/${classroomId}`);
@@ -24,6 +38,7 @@ class ClassroomAnnouncementService {
             classroomId: string;
             isAssignment?: boolean;
             dueDate?: string; // or Date, but stringify for form
+            totalMarks?: number;
             isNote?: boolean;
         },
         files: File[]
@@ -37,6 +52,7 @@ class ClassroomAnnouncementService {
             formData.append("classroomId", payload.classroomId);
             if (payload.isAssignment !== undefined) formData.append("isAssignment", String(payload.isAssignment));
             if (payload.dueDate) formData.append("dueDate", new Date(payload.dueDate).toISOString());
+            if (payload.totalMarks !== undefined) formData.append("totalMarks", String(payload.totalMarks));
             if (payload.isNote !== undefined) formData.append("isNote", String(payload.isNote));
 
             // append files

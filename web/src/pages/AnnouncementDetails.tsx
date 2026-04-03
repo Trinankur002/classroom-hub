@@ -609,6 +609,7 @@ export default function AnnouncementDetails({ announcementId, classroomId, onBac
                         <Assignments
                             assignments={assignments}
                             role={userRole}
+                            totalMarks={announcement.totalMarks}
                             pendingStudentOpen={pendingopen}
                             students={pendingStudents}
                             onGradeUpdate={userRole === 'teacher' ? handleGradeUpdate : undefined}

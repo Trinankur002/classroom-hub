@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsString, IsOptional, IsUUID, IsNotEmpty, IsArray, ArrayNotEmpty, IsDateString, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsNotEmpty, IsArray, ArrayNotEmpty, IsBoolean, IsNumber, Min } from 'class-validator';
 
 export class CreateAnnouncementDto {
     @ApiProperty({ description: 'Name of the announcement', example: 'Welcome to the new semester!' })
@@ -57,4 +57,16 @@ export class CreateAnnouncementDto {
     @IsOptional()
     @Type(() => Date)
     dueDate: Date
+
+    @ApiProperty({
+        description: 'Total marks for this assignment.',
+        example: 100,
+        required: false,
+        type: Number,
+    })
+    @IsOptional()
+    @Transform(({ value }) => value === '' || value === null || value === undefined ? undefined : Number(value))
+    @IsNumber()
+    @Min(1)
+    totalMarks?: number;
 }

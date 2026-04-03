@@ -107,6 +107,7 @@ export class ClassroomsController {
         isAssignment: { type: "boolean" },
         isNote: { type: "boolean" },
         dueDate: { type: "string", format: "date-time" },
+        totalMarks: { type: "number" },
         files: {
           type: "array",
           items: { type: "string", format: "binary" },
@@ -128,9 +129,16 @@ export class ClassroomsController {
   @ApiParam({ name: 'classroomId', description: 'Classroom ID (UUID)' })
   async getAnnouncements(
     @Param('classroomId') classroomId: string,
-    @Request() req,
   ): Promise<ClassroomAnnouncement[]> {
     return this.classroomsService.getAnnouncements(classroomId);
+  }
+
+  @Get('announcements')
+  async getAllAssignmentsForUser(
+    @Request() req,
+    @Query('classroomId') classroomId?: string,
+  ): Promise<ClassroomAnnouncement[]> {
+    return this.classroomsService.getAssignmentAnnouncementsForUser(req.user, classroomId);
   }
 
   @Get('announcement/notes')

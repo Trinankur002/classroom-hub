@@ -26,6 +26,7 @@ export interface IClassroomAnnouncement {
     comments: IClassroomComment[];
     isAssignment: boolean;
     dueDate: Date;
+    totalMarks?: number;
     createdAt: Date;
     updatedAt: Date;
 }

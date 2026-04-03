@@ -55,6 +55,7 @@ function AnnouncementButton({
     const [isAssignment, setIsAssignment] = useState(false);
     const [isNote, setIsNote] = useState(false); // 👈 New state for Note
     const [dueDateTime, setDueDateTime] = useState<Date | undefined>(undefined);
+    const [totalMarks, setTotalMarks] = useState<string>("");
     const [files, setFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false); // State for drag-and-drop
     const [formSubmitting, setFormSubmitting] = useState(false);
@@ -74,6 +75,8 @@ function AnnouncementButton({
         setIsAssignment(checked);
         if (checked) {
             setIsNote(false); // If assignment, it cannot be a note
+        } else {
+            setTotalMarks("");
         }
     };
 
@@ -83,6 +86,7 @@ function AnnouncementButton({
         if (checked) {
             setIsAssignment(false); // If note, it cannot be an assignment
             setDueDateTime(undefined); // Clear due date if it becomes a note
+            setTotalMarks("");
         }
     };
 
@@ -109,6 +113,7 @@ function AnnouncementButton({
                     isAssignment,
                     isNote, // 👈 Include in payload
                     dueDate: dueDateTime?.toISOString() || undefined,
+                    totalMarks: totalMarks.trim() === "" ? undefined : Number(totalMarks),
                 },
                 files
             );
@@ -122,6 +127,7 @@ function AnnouncementButton({
             setIsAssignment(false);
             setIsNote(false); // 👈 Reset
             setDueDateTime(undefined);
+            setTotalMarks("");
             setFiles([]);
 
             onAnnouncementChange?.()
@@ -145,6 +151,7 @@ function AnnouncementButton({
         setIsAssignment(false);
         setIsNote(false); // 👈 Reset
         setDueDateTime(undefined);
+        setTotalMarks("");
         setFiles([]);
     };
 
@@ -283,13 +290,27 @@ function AnnouncementButton({
 
                             {/* Due Date and Time Picker */}
                             {isAssignment && (
-                                <DateTimePicker
-                                    label="Due Date & Time"
-                                    value={dueDateTime}
-                                    onChange={setDueDateTime}
-                                    minDate={new Date()} // Prevent selecting past dates
-                                    placeholder="Select due date and time"
-                                />
+                                <>
+                                    <DateTimePicker
+                                        label="Due Date & Time"
+                                        value={dueDateTime}
+                                        onChange={setDueDateTime}
+                                        minDate={new Date()} // Prevent selecting past dates
+                                        placeholder="Select due date and time"
+                                    />
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="totalMarks">Total Marks (Optional)</Label>
+                                        <Input
+                                            id="totalMarks"
+                                            type="number"
+                                            min="1"
+                                            step="0.1"
+                                            value={totalMarks}
+                                            onChange={(e) => setTotalMarks(e.target.value)}
+                                            placeholder="e.g. 100"
+                                        />
+                                    </div>
+                                </>
                             )}
                         </div>
 

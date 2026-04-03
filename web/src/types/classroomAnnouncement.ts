@@ -12,6 +12,7 @@ export interface IClassroomAnnouncement {
     comments?: IClassroomComment[];
     isAssignment?: boolean;
     dueDate?: string | null;
+    totalMarks?: number | null;
     isNote?: boolean;
     updatedAt?: string,
 }

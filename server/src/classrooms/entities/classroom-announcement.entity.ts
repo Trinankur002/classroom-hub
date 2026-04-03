@@ -60,6 +60,9 @@ export class ClassroomAnnouncement {
     @Column({ nullable: true })
     dueDate: Date
 
+    @Column({ type: 'float', nullable: true })
+    totalMarks?: number;
+
     @CreateDateColumn()
     createdAt: Date;
 
