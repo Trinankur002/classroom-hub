@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { Navigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { StudentClassroomLivePage } from "@/components/live/StudentClassroomLivePage";
 import { TeacherClassroomLivePage } from "@/components/live/TeacherClassroomLivePage";
@@ -11,12 +11,27 @@ export default function ClassroomLivePage({
   onLeavePage,
 }: ClassroomLivePageProps) {
   const { classroomId: classroomIdParam } = useParams<{ classroomId: string }>();
+  const location = useLocation();
   const classroomId = classroomIdProp || classroomIdParam;
   const { user } = useAuth();
   const isTeacher = user?.role?.toLowerCase?.() === "teacher";
 
   if (!classroomId) {
     return <div className="p-4">Select a classroom to start live class.</div>;
+  }
+
+  // Keep a single student live entry point via /live to avoid duplicated flows/UI.
+  if (!isTeacher && location.pathname !== "/live") {
+    return (
+      <Navigate
+        to="/live"
+        replace
+        state={{
+          classroomId,
+          preJoin: preJoinState?.preJoin,
+        }}
+      />
+    );
   }
 
   if (isTeacher) {

@@ -5,6 +5,7 @@ import { Track } from "livekit-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { livekitService } from "@/services/livekit.service";
+import { useAuth } from "@/hooks/useAuth";
 import { useLiveSessionContext } from "./LiveSessionContext";
 
 function getPreviewTrack(room: ReturnType<typeof livekitService.getRoom>) {
@@ -102,6 +103,8 @@ function MiniVideoPreview() {
 
 export function MiniLiveOverlay() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const userRole = user?.role?.toLowerCase?.() || "";
   const [isMicEnabled, setIsMicEnabled] = useState(false);
   const [isCameraEnabled, setIsCameraEnabled] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
@@ -200,7 +203,15 @@ export function MiniLiveOverlay() {
           type="button"
           size="sm"
           className="flex-1"
-          onClick={() => navigate(currentLiveRoutePath || `/classrooms/${currentClassroomId}/live`)}
+          onClick={() =>
+            navigate(
+              currentLiveRoutePath ||
+                (userRole === "student" ? "/live" : `/classrooms/${currentClassroomId}/live`),
+              {
+                state: userRole === "student" ? { classroomId: currentClassroomId } : undefined,
+              },
+            )
+          }
         >
           <Maximize2 className="mr-1.5 h-3.5 w-3.5" />
           Return

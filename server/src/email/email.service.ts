@@ -47,7 +47,19 @@ export class EmailService {
       html: emailContent.html,
     });
 
-    this.logger.log(`Password reset OTP email sent to ${email}`);
+    this.logger.log(`Password reset OTP email sent to ${this.maskEmail(email)}`);
+  }
+
+  private maskEmail(email: string): string {
+    const [localPart, domain] = String(email || '').split('@');
+    if (!localPart || !domain) {
+      return '***';
+    }
+    if (localPart.length <= 2) {
+      return `**@${domain}`;
+    }
+    const maskedLocal = `${localPart[0]}${'*'.repeat(Math.max(localPart.length - 2, 1))}${localPart[localPart.length - 1]}`;
+    return `${maskedLocal}@${domain}`;
   }
 
   private buildPasswordResetOtpEmail(otp: string): { html: string; text: string } {

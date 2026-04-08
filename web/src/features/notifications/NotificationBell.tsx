@@ -10,8 +10,9 @@ import {
 import { NotificationDropdown } from "./NotificationDropdown";
 import { NotificationItem } from "./api";
 import { useNotifications } from "./useNotifications";
+import { useAuth } from "@/hooks/useAuth";
 
-function getNotificationNavigation(notification: NotificationItem) {
+function getNotificationNavigation(notification: NotificationItem, userRole: string) {
   if (notification.data?.route) {
     return { pathname: notification.data.route };
   }
@@ -34,6 +35,12 @@ function getNotificationNavigation(notification: NotificationItem) {
         state: { activeTab: "announcements" },
       };
     case "live_class":
+      if (userRole === "student") {
+        return {
+          pathname: "/live",
+          state: { classroomId: notification.entityId },
+        };
+      }
       return {
         pathname: `/classrooms/${notification.entityId}/live`,
       };
@@ -53,6 +60,8 @@ function getNotificationNavigation(notification: NotificationItem) {
 
 export function NotificationBell() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const userRole = user?.role?.toLowerCase?.() || "";
   const [open, setOpen] = useState(false);
   const {
     notifications,
@@ -71,7 +80,7 @@ export function NotificationBell() {
     if (!notification.isRead) {
       await markRead(notification.id);
     }
-    const route = getNotificationNavigation(notification);
+    const route = getNotificationNavigation(notification, userRole);
     navigate(route.pathname, { state: route.state });
     setOpen(false);
   };

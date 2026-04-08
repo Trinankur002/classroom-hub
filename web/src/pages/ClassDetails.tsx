@@ -162,7 +162,10 @@ function ClassDetails({ classroom, onViewAnnouncement, onNavigateTab }: Props) {
   const openChat = () => onNavigateTab?.("chat");
   const openDoubts = () => onNavigateTab?.("doubts");
   const openStudents = () => onNavigateTab?.("students");
-  const openLive = () => navigate(`/classrooms/${classroom.id}/live`);
+  const openLive = () =>
+    navigate(userRole === "student" ? "/live" : `/classrooms/${classroom.id}/live`, {
+      state: userRole === "student" ? { classroomId: classroom.id } : undefined,
+    });
   const openAssignments = () => navigate("/allmaterials/assignments");
   const openMaterials = () => navigate("/allmaterials/notes");
 

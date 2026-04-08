@@ -90,9 +90,9 @@ export function StudentClassroomLivePage({
         const token = await LiveSessionApi.getToken(sessionId);
         setTokenData(token);
         setPermissions({
-          allowStudentMicrophone: true,
-          allowStudentCamera: true,
-          allowStudentScreenShare: true,
+          allowStudentMicrophone: token.allowStudentMicrophone ?? false,
+          allowStudentCamera: token.allowStudentCamera ?? false,
+          allowStudentScreenShare: token.allowStudentScreenShare ?? false,
         });
       } catch (err: any) {
         setTokenData(null);

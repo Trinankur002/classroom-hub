@@ -1,5 +1,6 @@
 import { io, Socket } from "socket.io-client";
 import { WEBSOCKET_EVENTS } from "@/constants/websocketEvents";
+import { resolveBackendOrigin } from "@/lib/backend-url";
 
 type LiveEventPayload = Record<string, unknown>;
 
@@ -7,13 +8,7 @@ class LiveSessionSocketService {
   private socket: Socket | null = null;
 
   private getNamespaceUrl() {
-    let raw = import.meta.env.VITE_BACKEND_API_URL as string;
-    if (!/^https?:\/\//i.test(raw)) {
-      raw = `http://${raw}`;
-    }
-    const normalized = raw.replace(/\/+$/, "");
-    const { origin } = new URL(normalized);
-    return `${origin}/live-session`;
+    return `${resolveBackendOrigin()}/live-session`;
   }
 
   connect(token: string) {

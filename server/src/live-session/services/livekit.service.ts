@@ -15,8 +15,14 @@ export class LivekitService {
             allowStudentScreenShare?: boolean;
         },
     ): Promise<string> {
-        const canPublishSources = [TrackSource.MICROPHONE, TrackSource.CAMERA, TrackSource.SCREEN_SHARE];
-        const canPublish = role === ParticipantRole.TEACHER || role === ParticipantRole.STUDENT;
+        const canPublishSources = role === ParticipantRole.TEACHER
+            ? [TrackSource.MICROPHONE, TrackSource.CAMERA, TrackSource.SCREEN_SHARE]
+            : [
+                  ...(options?.allowStudentMicrophone ? [TrackSource.MICROPHONE] : []),
+                  ...(options?.allowStudentCamera ? [TrackSource.CAMERA] : []),
+                  ...(options?.allowStudentScreenShare ? [TrackSource.SCREEN_SHARE] : []),
+              ];
+        const canPublish = canPublishSources.length > 0;
 
         const token = new AccessToken(
             process.env.LIVEKIT_API_KEY,

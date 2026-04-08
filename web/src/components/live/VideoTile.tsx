@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Participant, Track } from "livekit-client";
 import { Hand, Mic, MicOff, Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -196,17 +196,4 @@ function VideoTileComponent({
   );
 }
 
-export const VideoTile = memo(VideoTileComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.participant === nextProps.participant &&
-    prevProps.isActiveSpeaker === nextProps.isActiveSpeaker &&
-    prevProps.isVisible === nextProps.isVisible &&
-    prevProps.tileWidth === nextProps.tileWidth &&
-    prevProps.label === nextProps.label &&
-    prevProps.className === nextProps.className &&
-    prevProps.size === nextProps.size &&
-    prevProps.handRaised === nextProps.handRaised &&
-    prevProps.isPinned === nextProps.isPinned &&
-    prevProps.onClick === nextProps.onClick
-  );
-});
+export const VideoTile = VideoTileComponent;

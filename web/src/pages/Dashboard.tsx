@@ -540,7 +540,10 @@ export default function Dashboard() {
                     key={item.sessionId || item.id}
                     className="w-full rounded-2xl border border-border/70 p-4 text-left transition hover:border-primary/40"
                     onClick={() =>
-                      item.classroomId && navigate(`/classrooms/${item.classroomId}/live`)
+                      item.classroomId &&
+                      navigate(userRole === "student" ? "/live" : `/classrooms/${item.classroomId}/live`, {
+                        state: userRole === "student" ? { classroomId: item.classroomId } : undefined,
+                      })
                     }
                   >
                     <p className="font-medium text-foreground">

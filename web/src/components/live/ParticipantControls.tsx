@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { Track } from "livekit-client";
 import { Hand, Mic, MicOff, MonitorUp, PhoneOff, Video, VideoOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -87,6 +87,21 @@ export function ParticipantControls({
   const isMicEnabled = !!micPublication && !micPublication.isMuted;
   const isCameraEnabled = !!cameraPublication && !cameraPublication.isMuted;
   const isScreenSharing = !!screenSharePublication && !screenSharePublication.isMuted;
+  const [uiMicEnabled, setUiMicEnabled] = useState(isMicEnabled);
+  const [uiCameraEnabled, setUiCameraEnabled] = useState(isCameraEnabled);
+  const [uiScreenSharing, setUiScreenSharing] = useState(isScreenSharing);
+
+  useEffect(() => {
+    setUiMicEnabled(isMicEnabled);
+  }, [isMicEnabled]);
+
+  useEffect(() => {
+    setUiCameraEnabled(isCameraEnabled);
+  }, [isCameraEnabled]);
+
+  useEffect(() => {
+    setUiScreenSharing(isScreenSharing);
+  }, [isScreenSharing]);
 
   const withControlError = (error: unknown, control: string) => {
     const message =
@@ -125,20 +140,28 @@ export function ParticipantControls({
         )}
       >
         <ControlButton
-          active={isMicEnabled}
+          active={uiMicEnabled}
           disabled={!localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentMicrophone)}
-          onClick={() => runControl("Microphone", () => (isMicEnabled ? disableMicrophone() : enableMicrophone()))}
-          icon={isMicEnabled ? <Mic className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} /> : <MicOff className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
-          label={isMicEnabled ? "Turn microphone off" : "Turn microphone on"}
+          onClick={() => {
+            const next = !uiMicEnabled;
+            setUiMicEnabled(next);
+            return runControl("Microphone", () => (next ? enableMicrophone() : disableMicrophone()));
+          }}
+          icon={uiMicEnabled ? <Mic className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} /> : <MicOff className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
+          label={uiMicEnabled ? "Turn microphone off" : "Turn microphone on"}
           compactMode={compactMode || isMobile}
         />
 
         <ControlButton
-          active={isCameraEnabled}
+          active={uiCameraEnabled}
           disabled={!localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentCamera)}
-          onClick={() => runControl("Camera", () => (isCameraEnabled ? disableCamera() : enableCamera()))}
-          icon={isCameraEnabled ? <Video className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} /> : <VideoOff className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
-          label={isCameraEnabled ? "Turn camera off" : "Turn camera on"}
+          onClick={() => {
+            const next = !uiCameraEnabled;
+            setUiCameraEnabled(next);
+            return runControl("Camera", () => (next ? enableCamera() : disableCamera()));
+          }}
+          icon={uiCameraEnabled ? <Video className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} /> : <VideoOff className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
+          label={uiCameraEnabled ? "Turn camera off" : "Turn camera on"}
           compactMode={compactMode || isMobile}
         />
 
@@ -160,11 +183,15 @@ export function ParticipantControls({
         )}
 
         <ControlButton
-          active={isScreenSharing}
+          active={uiScreenSharing}
           disabled={!localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentScreenShare)}
-          onClick={() => runControl("Screen sharing", () => (isScreenSharing ? stopScreenShare() : startScreenShare()))}
+          onClick={() => {
+            const next = !uiScreenSharing;
+            setUiScreenSharing(next);
+            return runControl("Screen sharing", () => (next ? startScreenShare() : stopScreenShare()));
+          }}
           icon={<MonitorUp className={cn(isMobile ? "h-4 w-4" : "h-5 w-5")} />}
-          label={isScreenSharing ? "Stop sharing screen" : "Share screen"}
+          label={uiScreenSharing ? "Stop sharing screen" : "Share screen"}
           compactMode={compactMode || isMobile}
         />
 

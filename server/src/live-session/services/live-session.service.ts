@@ -296,17 +296,15 @@ export class LiveSessionService {
         allowStudentScreenShare: session.allowStudentScreenShare,
       },
     );
-    const studentControlsEnabled = participant.role === ParticipantRole.STUDENT;
-
     return {
       sessionId,
       roomName: session.roomName,
       token,
       livekitUrl: process.env.LIVEKIT_URL,
       role: participant.role,
-      allowStudentMicrophone: studentControlsEnabled || session.allowStudentMicrophone,
-      allowStudentCamera: studentControlsEnabled || session.allowStudentCamera,
-      allowStudentScreenShare: studentControlsEnabled || session.allowStudentScreenShare,
+      allowStudentMicrophone: session.allowStudentMicrophone,
+      allowStudentCamera: session.allowStudentCamera,
+      allowStudentScreenShare: session.allowStudentScreenShare,
     };
   }
 

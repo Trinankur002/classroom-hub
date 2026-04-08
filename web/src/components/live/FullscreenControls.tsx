@@ -49,6 +49,21 @@ export function FullscreenControls({
   const isMicEnabled = !!micPublication && !micPublication.isMuted;
   const isCameraEnabled = !!cameraPublication && !cameraPublication.isMuted;
   const isScreenSharing = !!screenSharePublication && !screenSharePublication.isMuted;
+  const [uiMicEnabled, setUiMicEnabled] = useState(isMicEnabled);
+  const [uiCameraEnabled, setUiCameraEnabled] = useState(isCameraEnabled);
+  const [uiScreenSharing, setUiScreenSharing] = useState(isScreenSharing);
+
+  useEffect(() => {
+    setUiMicEnabled(isMicEnabled);
+  }, [isMicEnabled]);
+
+  useEffect(() => {
+    setUiCameraEnabled(isCameraEnabled);
+  }, [isCameraEnabled]);
+
+  useEffect(() => {
+    setUiScreenSharing(isScreenSharing);
+  }, [isScreenSharing]);
 
   const withControlError = (error: unknown, control: string) => {
     const message =
@@ -95,27 +110,39 @@ export function FullscreenControls({
     const list = [
       {
         key: "mic",
-        label: isMicEnabled ? "Mic on" : "Mic off",
-        icon: isMicEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />,
-        active: isMicEnabled,
+        label: uiMicEnabled ? "Mic on" : "Mic off",
+        icon: uiMicEnabled ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />,
+        active: uiMicEnabled,
         disabled: !localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentMicrophone),
-        onClick: () => runControl("Microphone", () => (isMicEnabled ? disableMicrophone() : enableMicrophone())),
+        onClick: () => {
+          const next = !uiMicEnabled;
+          setUiMicEnabled(next);
+          return runControl("Microphone", () => (next ? enableMicrophone() : disableMicrophone()));
+        },
       },
       {
         key: "cam",
-        label: isCameraEnabled ? "Camera on" : "Camera off",
-        icon: isCameraEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />,
-        active: isCameraEnabled,
+        label: uiCameraEnabled ? "Camera on" : "Camera off",
+        icon: uiCameraEnabled ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />,
+        active: uiCameraEnabled,
         disabled: !localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentCamera),
-        onClick: () => runControl("Camera", () => (isCameraEnabled ? disableCamera() : enableCamera())),
+        onClick: () => {
+          const next = !uiCameraEnabled;
+          setUiCameraEnabled(next);
+          return runControl("Camera", () => (next ? enableCamera() : disableCamera()));
+        },
       },
       {
         key: "share",
-        label: isScreenSharing ? "Stop share" : "Share",
+        label: uiScreenSharing ? "Stop share" : "Share",
         icon: <MonitorUp className="h-4 w-4" />,
-        active: isScreenSharing,
+        active: uiScreenSharing,
         disabled: !localParticipant || isSubmitting || (!isTeacher && !permissions.allowStudentScreenShare),
-        onClick: () => runControl("Screen sharing", () => (isScreenSharing ? stopScreenShare() : startScreenShare())),
+        onClick: () => {
+          const next = !uiScreenSharing;
+          setUiScreenSharing(next);
+          return runControl("Screen sharing", () => (next ? startScreenShare() : stopScreenShare()));
+        },
       },
     ];
 
@@ -162,10 +189,10 @@ export function FullscreenControls({
     disableMicrophone,
     enableCamera,
     enableMicrophone,
-    isCameraEnabled,
+    uiCameraEnabled,
     isHandRaised,
-    isMicEnabled,
-    isScreenSharing,
+    uiMicEnabled,
+    uiScreenSharing,
     isSubmitting,
     isTeacher,
     localParticipant,

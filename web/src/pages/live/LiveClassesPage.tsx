@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { LiveSessionApi } from "@/services/live-session.api";
 import { ActiveLiveSession } from "@/types/live-session";
 import { LiveClassList } from "@/components/live/LiveClassList";
@@ -11,6 +12,8 @@ import { useLiveSessionContext } from "@/components/live/LiveSessionContext";
 
 export default function LiveClassesPage() {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { liveSessionActive, currentClassroomId, currentSessionId } = useLiveSessionContext();
   const userRole = user?.role?.toLowerCase?.() || "";
   const [isLoading, setIsLoading] = useState(false);
@@ -18,6 +21,9 @@ export default function LiveClassesPage() {
   const [joiningSessionId, setJoiningSessionId] = useState<string | null>(null);
   const [activeClassroomId, setActiveClassroomId] = useState<string | null>(null);
   const [preJoinState, setPreJoinState] = useState<{ sessionId?: string; status?: string } | undefined>(undefined);
+  const [hasAppliedRouteClassroomHint, setHasAppliedRouteClassroomHint] = useState(false);
+  const classroomHint = (location.state as { classroomId?: string; preJoin?: { sessionId?: string; status?: string } } | null)?.classroomId;
+  const routePreJoin = (location.state as { classroomId?: string; preJoin?: { sessionId?: string; status?: string } } | null)?.preJoin;
 
   const loadSessions = useCallback(async () => {
     setIsLoading(true);
@@ -76,6 +82,53 @@ export default function LiveClassesPage() {
       setJoiningSessionId(null);
     }
   };
+
+  useEffect(() => {
+    if (hasAppliedRouteClassroomHint) return;
+    if (!classroomHint || !sessions.length) return;
+
+    const matched = sessions.find((session) => session.classroomId === classroomHint);
+    if (!matched) {
+      setHasAppliedRouteClassroomHint(true);
+      navigate(location.pathname, { replace: true, state: null });
+      return;
+    }
+
+    setHasAppliedRouteClassroomHint(true);
+
+    if (userRole !== "student") {
+      setPreJoinState(routePreJoin);
+      setActiveClassroomId(matched.classroomId);
+      navigate(location.pathname, { replace: true, state: null });
+      return;
+    }
+
+    void (async () => {
+      setJoiningSessionId(matched.sessionId);
+      try {
+        const response = await LiveSessionApi.requestJoin(matched.sessionId);
+        setPreJoinState({
+          sessionId: matched.sessionId,
+          status: String(response?.status || routePreJoin?.status || "waiting"),
+        });
+        setActiveClassroomId(matched.classroomId);
+      } catch {
+        setPreJoinState(routePreJoin);
+        setActiveClassroomId(matched.classroomId);
+      } finally {
+        setJoiningSessionId(null);
+        navigate(location.pathname, { replace: true, state: null });
+      }
+    })();
+  }, [
+    classroomHint,
+    hasAppliedRouteClassroomHint,
+    location.pathname,
+    navigate,
+    routePreJoin,
+    sessions,
+    userRole,
+  ]);
 
   if (activeClassroomId) {
     return (

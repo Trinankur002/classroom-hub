@@ -56,7 +56,6 @@ export class LiveSessionGateway implements OnGatewayConnection {
     notifyParticipantApproved(sessionId: string, userId: string) {
         const payload = { userId };
         this.server.to(sessionId).emit(WEBSOCKET_EVENTS.PARTICIPANT_APPROVED, payload);
-        this.server.to(sessionId).emit(WEBSOCKET_EVENTS.PERTICIPENT_APPROVED, payload);
     }
 
     notifyParticipantRemoved(sessionId: string, userId: string) {
