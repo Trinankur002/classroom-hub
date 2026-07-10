@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Participant, Track } from "livekit-client";
 import { Hand, Mic, MicOff, Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,39 +47,34 @@ function VideoTileComponent({
   const audioRef = useRef<HTMLAudioElement>(null);
   const { setParticipantVisibility } = useLiveRoom();
 
-  const { cameraTrack, microphoneTrack, isMicMuted, participantDisplayName } = useMemo(() => {
-    const publications = Array.from(participant.trackPublications.values());
-    const cameraPublication = publications.find(
-      (publication) =>
-        publication.kind === Track.Kind.Video &&
-        publication.source === Track.Source.Camera,
-    );
-    const microphonePublication = publications.find(
-      (publication) =>
-        publication.kind === Track.Kind.Audio &&
-        publication.source === Track.Source.Microphone,
-    );
+  const publications = Array.from(participant.trackPublications.values());
+  const cameraPublication = publications.find(
+    (publication) =>
+      publication.kind === Track.Kind.Video &&
+      publication.source === Track.Source.Camera,
+  );
+  const microphonePublication = publications.find(
+    (publication) =>
+      publication.kind === Track.Kind.Audio &&
+      publication.source === Track.Source.Microphone,
+  );
 
-    const candidate = (label || participant.name || "").trim();
-    const participantDisplayName = !candidate || UUID_REGEX.test(candidate)
-      ? participant.isLocal
-        ? "You"
-        : "Participant"
-      : candidate;
+  const candidate = (label || participant.name || "").trim();
+  const participantDisplayName = !candidate || UUID_REGEX.test(candidate)
+    ? participant.isLocal
+      ? "You"
+      : "Participant"
+    : candidate;
 
-    return {
-      cameraTrack:
-        cameraPublication?.track && !cameraPublication.isMuted
-          ? cameraPublication.track
-          : null,
-      microphoneTrack:
-        microphonePublication?.track && !microphonePublication.isMuted
-          ? microphonePublication.track
-          : null,
-      isMicMuted: !microphonePublication || microphonePublication.isMuted,
-      participantDisplayName,
-    };
-  }, [label, participant]);
+  const cameraTrack =
+    cameraPublication?.track && !cameraPublication.isMuted
+      ? cameraPublication.track
+      : null;
+  const microphoneTrack =
+    microphonePublication?.track && !microphonePublication.isMuted
+      ? microphonePublication.track
+      : null;
+  const isMicMuted = !microphonePublication || microphonePublication.isMuted;
 
   const shouldPlayAudio = !participant.isLocal && !!microphoneTrack;
 
