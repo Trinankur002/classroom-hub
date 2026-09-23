@@ -8,8 +8,9 @@ export default defineConfig(({ mode }) => {
   // load .env, .env.development, etc
   const env = loadEnv(mode, process.cwd(), "");
 
-  // ensure no trailing slash here
-  const backend = env.VITE_BACKEND_API_URL.replace(/\/$/, "");
+  // ensure no trailing slash here, with safe fallback to localhost:3000
+  const backendUrl = env.VITE_BACKEND_API_URL || env.VITE_API_URL || "http://localhost:3000";
+  const backend = backendUrl.replace(/\/$/, "");
 
   return {
     server: {

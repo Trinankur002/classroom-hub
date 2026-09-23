@@ -6,6 +6,8 @@ import { AppLogger } from './logger/logger.service';
 import { AllExceptionsFilter } from './logger/all-exceptions.filter';
 import { LoggerMiddleware } from './logger/logger.middleware';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
+import * as path from 'path';
 
 async function bootstrap() {
   dotenv.config();
@@ -21,7 +23,6 @@ async function bootstrap() {
   
   // const frontendUrl = process.env.FRONTEND_URL;
 
-  // 🔥 CORS: allow from anywhere
   // 🔥 CORS: allow from anywhere and handle credentials
   app.enableCors({
     origin: true, 
@@ -30,7 +31,9 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', {
+    exclude: ['health', 'api/health'],
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -49,8 +52,37 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  await app.listen(3000);
-  appLogger.log('🚀 Server running at http://localhost:3000/api');
-  appLogger.log('📜 Swagger at http://localhost:3000/api-docs');
+  // Serve frontend SPA in single-container deployment if build artifacts exist
+  const clientPaths = [
+    process.env.CLIENT_BUILD_PATH,
+    path.resolve(__dirname, '../client'), // Docker container layout (/app/client)
+    path.resolve(__dirname, '../../web/dist'), // Monorepo build layout
+  ].filter(Boolean) as string[];
+
+  for (const clientPath of clientPaths) {
+    if (fs.existsSync(clientPath)) {
+      const express = require('express');
+      const expressApp = app.getHttpAdapter().getInstance();
+      expressApp.use(express.static(clientPath));
+      expressApp.use((req: any, res: any, next: any) => {
+        if (
+          req.method !== 'GET' ||
+          req.path.startsWith('/api') ||
+          req.path.startsWith('/socket.io') ||
+          req.path.startsWith('/health')
+        ) {
+          return next();
+        }
+        res.sendFile(path.join(clientPath, 'index.html'));
+      });
+      appLogger.log(`📦 Serving frontend SPA from ${clientPath}`);
+      break;
+    }
+  }
+
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  await app.listen(port, '0.0.0.0');
+  appLogger.log(`🚀 Server running at http://localhost:${port}/api`);
+  appLogger.log(`📜 Swagger at http://localhost:${port}/api-docs`);
 }
 bootstrap();

@@ -468,13 +468,29 @@ If you use a different config, hostname, or port, update the env values to match
 
 ## Running the Project
 
-### Start the backend
+### Start both frontend and backend together (Recommended)
+
+From the project root:
+
+```bash
+npm start
+```
+*(or `npm run dev`, or `node start.js`)*
+
+This single command starts:
+- Backend NestJS server + LiveKit
+- Frontend Vite dev server
+- Prefix-tagged logs (`[BACKEND]` and `[FRONTEND]`)
+- Graceful shutdown of all services when pressing `Ctrl+C`
+
+### Start the backend individually
 
 From `server/`:
 
 ```bash
 npm run start:dev
 ```
+*(or `npm run dev`, or `npm start`)*
 
 Backend default:
 
@@ -482,30 +498,127 @@ Backend default:
 
 Note:
 
-- on Windows, `npm run start:dev` also triggers the bundled LiveKit startup helper
+- on Windows, `npm run start:dev` (and `npm run dev`) triggers the bundled LiveKit startup helper
 - on Linux/macOS, use Docker or run a native LiveKit binary manually before starting the backend
 - Swagger runs at `http://localhost:3000/api-docs`
 
-### Start the frontend
+### Start the frontend individually
 
 From `web/`:
 
 ```bash
 npm run dev
 ```
+*(or `npm start`)*
 
 Frontend default:
 
 - app: `http://localhost:5173`
 
-## Available Scripts
+### Root scripts
+
+From the project root (`classroom-hub/`):
+
+- `npm start` / `npm run dev`: run pre-flight environment check and start both services concurrently
+- `npm run stop`: stop all running services and free ports 3000 and 8080
+- `npm run start:install`: install dependencies in both folders and start services
+- `npm run check:env`: run pre-flight environment check only (validates `.env`, DB, keys, and dependencies)
+- `npm run setup:env`: initialize `.env` files from templates if missing
+- `npm run class` / `npm run class:start`: alias for starting both services
+- `npm run start:server`: start only the backend dev server from root
+- `npm run start:web`: start only the frontend dev server from root
+- `npm run install:all`: install dependencies for both `server/` and `web/`
+
+## Health Check & Keep-Alive Monitoring (`/health`)
+
+Classroom Hub includes a dedicated health check endpoint at `/health` (and `/api/health`) designed for uptime monitors and **[cron-job.org](https://console.cron-job.org/)**:
+
+- **URL**: `https://<your-render-url>/health` (or `http://localhost:3000/health`)
+- **Method**: `GET`
+- **Purpose**:
+  1. Prevents Render free instances from going to sleep (schedule a job every 10–14 minutes on cron-job.org).
+  2. Inspects real-time service status (`online` / `offline` / `not_configured`) for:
+     - **Database**: Active query to PostgreSQL (Neon) with roundtrip latency.
+     - **Redis**: Ping to Upstash/Redis instance with roundtrip latency.
+     - **LiveKit**: Ping to the video session server with latency.
+     - **Storage**: GCP Bucket and credentials key verification.
+     - **System**: Server uptime, RSS memory usage, Node version, and environment.
+
+### Example Response:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-09-23T20:09:02.927Z",
+  "uptimeSeconds": 320,
+  "environment": "production",
+  "services": {
+    "database": {
+      "status": "online",
+      "latencyMs": 142,
+      "provider": "PostgreSQL"
+    },
+    "redis": {
+      "status": "online",
+      "latencyMs": 85,
+      "host": "above-panda-11627.upstash.io"
+    },
+    "livekit": {
+      "status": "online",
+      "latencyMs": 210,
+      "url": "wss://classroom-hub-livekit.onrender.com"
+    },
+    "storage": {
+      "status": "online",
+      "provider": "Google Cloud Storage",
+      "bucket": "classroom-app1",
+      "keyFileFound": true
+    }
+  },
+  "system": {
+    "memoryRssMB": 124,
+    "nodeVersion": "v22.14.0"
+  }
+}
+```
+
+## Deployment to Render (Single Container)
+
+Classroom Hub is configured to deploy as a unified full-stack application inside a single Docker container on **[Render](https://render.com/)**:
+
+1. **How it works**:
+   - The root [Dockerfile](file:///c:/Users/Trinankur/Projects/myOwnProjects/classroom-hub/Dockerfile) compiles the Vite frontend (`web/dist`) and the NestJS backend (`server/dist`).
+   - The production container starts NestJS on the port provided by Render (`$PORT`, default 10000).
+   - NestJS serves the REST API on `/api/*`, WebSockets on `/socket.io/*`, Swagger on `/api-docs`, and automatically serves the React SPA on all other routes.
+   - `/health` is automatically excluded from the SPA router so external monitors hit the API directly.
+   - **No CORS issues**: Both frontend and backend share the exact same domain and port!
+
+2. **Deploy via Render Dashboard**:
+   - Connect your GitHub repository to Render.
+   - Choose **New Web Service** &rarr; select **Docker** runtime.
+   - Set the environment variables in the Render dashboard:
+     - `DATABASE_URL`: your PostgreSQL connection string (e.g. Neon)
+     - `JWT_SECRET`: your secret key
+     - `LIVEKIT_API_KEY`: `devkey`
+     - `LIVEKIT_SECRET`: `secret`
+     - `LIVEKIT_URL`: your LiveKit WebSocket URL (e.g. `wss://classroom-hub-livekit.onrender.com`)
+     - (Optional) `GCP_PROJECT_ID`, `GCP_BUCKET_NAME`, and upload your GCP JSON key as a Secret File (`./gcp-key.json`).
+     - (Optional) `REDIS_*` and `SMTP_*` if using queues and emails.
+   - Deploy! Render will build the multi-stage Docker container and launch the app.
+3. **Configure cron-job.org**:
+   - Log into [console.cron-job.org](https://console.cron-job.org/)
+   - Create a cron job:
+     - **Title**: `Classroom Hub Keep-Alive`
+     - **URL**: `https://<your-render-app>.onrender.com/health`
+     - **Schedule**: Every 10 minutes (`*/10 * * * *`)
+     - **Method**: `GET`
+   - This keeps your Render instance awake 24/7 without shutting down!
 
 ### Backend scripts
 
 From `server/`:
 
 - `npm run build`: build the NestJS app
-- `npm run dev`: run custom backend dev bootstrap script
+- `npm run dev`: run custom backend dev bootstrap script (starts LiveKit + NestJS watch)
 - `npm run start:dev`: start backend in watch mode and run LiveKit startup script
 - `npm run start:debug`: start backend in debug watch mode
 - `npm run start:prod`: run compiled backend
@@ -516,7 +629,7 @@ From `server/`:
 
 From `web/`:
 
-- `npm run dev`: start Vite dev server
+- `npm start` / `npm run dev`: start Vite dev server
 - `npm run build`: build production bundle
 - `npm run build:dev`: build in development mode
 - `npm run lint`: run ESLint
