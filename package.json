@@ -1,0 +1,19 @@
+{
+  "name": "classroom-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Classroom Hub - Full-stack classroom management platform",
+  "scripts": {
+    "start": "node start.js",
+    "stop": "node stop.js",
+    "start:install": "node start.js --install",
+    "check:env": "node start.js --check",
+    "dev": "node start.js",
+    "class": "node start.js",
+    "class:start": "node start.js",
+    "start:server": "npm --prefix server run dev",
+    "start:web": "npm --prefix web run dev",
+    "setup:env": "node -e \"const fs = require('fs'); if (!fs.existsSync('server/.env')) fs.copyFileSync('server/.env.example', 'server/.env'); if (!fs.existsSync('web/.env')) fs.copyFileSync('web/.env.example', 'web/.env'); console.log('Created server/.env and web/.env from templates.');\"",
+    "install:all": "npm --prefix server install && npm --prefix web install"
+  }
+}

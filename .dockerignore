@@ -1,0 +1,16 @@
+.git
+.gitignore
+node_modules
+server/node_modules
+web/node_modules
+server/dist
+web/dist
+*.log
+*.pid
+.env
+*.env
+server/.env
+web/.env
+server/classroom-hub-backend.env
+server/livekit/*.exe
+server/livekit/*.pid

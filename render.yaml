@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: classroom-hub
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: LIVEKIT_API_KEY
+        value: devkey
+      - key: LIVEKIT_SECRET
+        value: secret
+      - key: LIVEKIT_URL
+        value: wss://classroom-hub-livekit.onrender.com
+      - key: GCP_PROJECT_ID
+        sync: false
+      - key: GCP_BUCKET_NAME
+        sync: false
+      - key: GCP_KEY_FILE
+        value: ./gcp-key.json
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        value: "6379"
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_TLS
+        value: "true"
+      - key: REDIS_USERNAME
+        value: default
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
