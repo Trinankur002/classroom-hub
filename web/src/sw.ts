@@ -6,7 +6,12 @@ import { CacheFirst, NetworkFirst, NetworkOnly } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 
+import { clientsClaim } from "workbox-core";
+
 declare let self: ServiceWorkerGlobalScope;
+
+self.skipWaiting();
+clientsClaim();
 
 // ✅ precache (important)
 precacheAndRoute(self.__WB_MANIFEST);
