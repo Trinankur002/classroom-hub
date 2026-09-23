@@ -21,8 +21,6 @@ export default defineConfig(({ mode }) => {
         "/api": {
           target: backend,
           changeOrigin: true,
-          // strip the /api prefix before forwarding
-          rewrite: (p) => p.replace(/^\/api/, ""),
         },
       },
     },

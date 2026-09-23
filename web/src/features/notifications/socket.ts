@@ -1,16 +1,11 @@
 import { io, Socket } from "socket.io-client";
 import { NotificationItem } from "./api";
+import { resolveBackendOrigin } from "@/lib/backend-url";
 
 let notificationSocket: Socket | null = null;
 
 function getNotificationNamespaceUrl() {
-  let raw = import.meta.env.VITE_BACKEND_API_URL as string;
-  if (!/^https?:\/\//i.test(raw)) {
-    raw = `http://${raw}`;
-  }
-  const normalized = raw.replace(/\/+$/, "");
-  const { origin } = new URL(normalized);
-  return `${origin}/notifications`;
+  return `${resolveBackendOrigin()}/notifications`;
 }
 
 export function connectNotificationSocket(token: string) {

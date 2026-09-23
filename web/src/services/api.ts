@@ -1,18 +1,8 @@
 import axios from "axios";
-
-let raw = import.meta.env.VITE_BACKEND_API_URL;
-
-let baseURL = "/api";
-if (raw) {
-    if (!/^https?:\/\//i.test(raw)) {
-        raw = `http://${raw}`;
-    }
-    const backend = raw.replace(/\/+$/, "");
-    baseURL = backend.endsWith("/api") ? backend : `${backend}/api`;
-}
+import { resolveBackendBaseUrl } from "@/lib/backend-url";
 
 const api = axios.create({
-    baseURL,
+    baseURL: resolveBackendBaseUrl(),
     headers: { "Content-Type": "application/json" },
     withCredentials: true, // optional
 });
