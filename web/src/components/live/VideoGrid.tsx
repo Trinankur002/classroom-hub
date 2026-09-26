@@ -143,7 +143,9 @@ export function VideoGrid({
     gap: GRID_GAP,
   };
 
-  const stageRailStyle: CSSProperties | undefined = isMobile || hideFilmstrip
+  const hasFilmstrip = !hideFilmstrip && filmstripParticipants.length > 0;
+
+  const stageRailStyle: CSSProperties | undefined = isMobile || !hasFilmstrip
     ? undefined
     : {
       gridTemplateColumns: `minmax(0, 1fr) ${participantColumnWidth}px`,
@@ -177,8 +179,8 @@ export function VideoGrid({
         <div
           className={cn(
             "grid min-h-0 h-full flex-1 gap-3",
-            hideFilmstrip ? "grid-cols-1 grid-rows-[minmax(0,1fr)]" : "",
-            isMobile && !hideFilmstrip ? "grid-cols-1 grid-rows-[minmax(0,1fr)_auto]" : "",
+            !hasFilmstrip ? "grid-cols-1 grid-rows-[minmax(0,1fr)]" : "",
+            isMobile && hasFilmstrip ? "grid-cols-1 grid-rows-[minmax(0,1fr)_auto]" : "",
           )}
           style={stageRailStyle}
         >
@@ -202,7 +204,7 @@ export function VideoGrid({
                   participant={stageParticipant}
                   label={participantNameMap?.[stageParticipant.identity]}
                   isVisible
-                  tileWidth={Math.max(containerSize.width - (isMobile || hideFilmstrip ? 0 : participantColumnWidth), 720)}
+                  tileWidth={Math.max(containerSize.width - (isMobile || !hasFilmstrip ? 0 : participantColumnWidth), 720)}
                   className="min-h-0 flex-1"
                   size="stage"
                   isActiveSpeaker={activeSpeakerId === stageParticipant.identity}
@@ -218,7 +220,7 @@ export function VideoGrid({
             </div>
           ) : null}
 
-          {!hideFilmstrip && (
+          {hasFilmstrip && (
             <aside
               className={cn(
                 "min-h-0 overflow-hidden border border-border/70 bg-card/60 shadow-sm",
